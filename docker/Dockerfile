@@ -18,7 +18,15 @@ RUN mkdir -p /media/usb/tracks
 
 # copy mw_serve repo
 
-RUN git clone --single-branch -b develop https://github.com/LUSHDigital/lrpi_player.git /opt/code 
+RUN pip3 install dbus-python && \
+    pip3 install flask && \
+    pip3 install -U flask-cors && \
+    pip3 install Flask-RESTful && \
+    pip3 install Flask-Jsonpify && \
+    pip3 install flask-inputs && \
+    pip3 install omxplayer-wrapper && \     
+    git clone --single-branch -b develop https://github.com/LUSHDigital/lrpi_player.git /opt/code 
+
 # expect rclone1.43.1_expect.sh
 # rclone sync arupiot-expect:mlp_samples_test /opt/usb -v -P
 
@@ -32,6 +40,9 @@ RUN git clone --single-branch -b develop https://github.com/LUSHDigital/lrpi_pla
 # serve Flask from 80
 WORKDIR /opt/code/flask
 
-EXPOSE 5000
+ENTRYPOINT ["python3"]
+CMD ["omx-player-service.py"]
+
+EXPOSE 80
 
 RUN [ "cross-build-end" ]
