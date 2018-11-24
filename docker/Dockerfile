@@ -30,8 +30,8 @@ RUN git clone --single-branch -b develop https://github.com/LUSHDigital/lrpi_pla
 # we serve the dist from the flask app
 
 # serve Flask from 80
-WORKDIR /opt/code/lrpi_player/flask
+WORKDIR /opt/code/flask
 
-EXPOSE 80
+EXPOSE 5000
 
 RUN [ "cross-build-end" ]
