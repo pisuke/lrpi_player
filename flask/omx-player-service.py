@@ -20,7 +20,7 @@ import json
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
 
-TRACK_BASE_PATH = "/media/usb/demo/"
+TRACK_BASE_PATH = "/media/usb/tracks/"
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 
 TEST_TRACK = TRACK_BASE_PATH + AUDIO_PATH_TEST_MP4
