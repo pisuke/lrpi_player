@@ -1,0 +1,7 @@
+dbus-python
+flask
+flask-cors
+Flask-RESTful
+Flask-Jsonpify
+flask-inputs
+omxplayer-wrapper
