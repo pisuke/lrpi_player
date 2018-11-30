@@ -20,7 +20,7 @@ import json
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
 
-TRACK_BASE_PATH = "/media/usb/tracks/"
+TRACK_BASE_PATH = "/media/usb/demo/"
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 
 TEST_TRACK = TRACK_BASE_PATH + AUDIO_PATH_TEST_MP4
@@ -92,7 +92,7 @@ class PlaySingleTrack(Resource):
             print("Playing: " + pathToTrack)
             
             print('Spawning player')
-            player = OMXPlayer(pathToTrack, args=['--layout', '5.1', '-w', '-o', 'hdmi'])
+            player = OMXPlayer(pathToTrack, args=['-w'])
             sleep(2.5)
             
                 
