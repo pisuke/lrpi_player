@@ -4,7 +4,6 @@ from flask_restful import Resource, Api
 from json import dumps
 from flask_jsonpify import jsonify
 from flask_restful import reqparse
-from pathlib import Path
 
 # from omxplayer.player import OMXPlayer
 # from pathlib import Path
@@ -82,7 +81,9 @@ class GetSingleTrack(Resource):
                 return jsonify(track["Name"])
 
 def posEvent(a, b):
+    global player
     print('Position event!')
+    print('Position: ' + str(player.position()) + "s")
     return
             
 class PlaySingleTrack(Resource):
@@ -132,7 +133,7 @@ class ScrubFoward(Resource):
         global player
         if findArm():
             # scrub the track
-            player.action(20)
+            player.set_position(int(player.position() + 5))
             return jsonify("Scrub successful!") 
         return jsonify("(Scrub) You don't seem to be on a media_warrior...")
 
@@ -163,8 +164,6 @@ api.add_resource(PlaySingleTrack, '/play-single-track')
 api.add_resource(ScrubFoward, '/scrub-forward')
 api.add_resource(PauseTrack, '/pause-track')
 api.add_resource(StopAll, '/stop')
-
-
 
 if __name__ == '__main__':
    app.run(debug=True, port=80, host='0.0.0.0')
