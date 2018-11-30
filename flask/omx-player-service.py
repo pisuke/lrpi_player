@@ -131,6 +131,15 @@ class PlaySingleTrack(Resource):
         
         return jsonify("(Playing) You don't seem to be on a media_warrior...")
 
+class ScrubFoward(Resource):
+    def get(self):
+        global player
+        if findArm():
+            # Pause the track
+            player.action(22)
+            return jsonify("Scrub successful!") 
+        return jsonify("(Scrub) You don't seem to be on a media_warrior...")
+
 class PauseTrack(Resource):
     def get(self):
         global player
@@ -142,7 +151,7 @@ class PauseTrack(Resource):
             return jsonify("Pause successful!") 
         return jsonify("(Pausing) You don't seem to be on a media_warrior...")
         
-class Stop(Resource):
+class StopAll(Resource):
     def get(self):
         if findArm():
             # For the moment, kill every omxplayer process
@@ -155,8 +164,9 @@ class Stop(Resource):
 api.add_resource(GetTrackList, '/get-track-list')
 api.add_resource(GetSingleTrack, '/get-single-track')
 api.add_resource(PlaySingleTrack, '/play-single-track')
+api.add_resource(ScrubFoward, '/scrub-forward')
 api.add_resource(PauseTrack, '/pause-track')
-api.add_resource(Stop, '/stop')
+api.add_resource(StopAll, '/stop')
 
 
 
