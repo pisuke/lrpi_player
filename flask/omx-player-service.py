@@ -28,6 +28,7 @@ TEST_TRACK = TRACK_BASE_PATH + AUDIO_PATH_TEST_MP4
 CORS(app)
 
 NEW_TRACK_ARRAY = []
+paused = None
 
 # player = OMXPlayer(AUDIO_PATH_MLP, args=['--layout', '5.1', '-w', '-o', 'hdmi'])
 
@@ -62,6 +63,8 @@ if findArm():
 class GetTrackList(Resource): 
     def get(self): 
         global NEW_TRACK_ARRAY
+        os.system("killall omxplayer.bin")
+        print('omxplayer processes killed!')
         with open('../tracks.json') as data:
             NEW_TRACK_ARRAY = json.load(data)
             for track in NEW_TRACK_ARRAY:
@@ -81,6 +84,7 @@ class GetSingleTrack(Resource):
 class PlaySingleTrack(Resource):    
     def get(self):
         global player
+        global paused
         if findArm():
             args = getIdInput()
             thisTrack = None
@@ -92,7 +96,13 @@ class PlaySingleTrack(Resource):
             print("Playing: " + pathToTrack)
             
             print('Spawning player')
-            player = OMXPlayer(pathToTrack, args=['-w'])
+            if (paused == True and paused is not None):
+                player.action(16)
+                paused = False
+            else:
+                player = OMXPlayer(pathToTrack, args=['-w'])
+               
+            
             sleep(2.5)
             
                 
@@ -110,11 +120,11 @@ class PlaySingleTrack(Resource):
 class PauseTrack(Resource):
     def get(self):
         global player
+        global paused
         if findArm():
             # Pause the track
-            if player.can_pause():
-                player.pause()
-            
+            player.action(16)
+            paused = True            
             return jsonify("Pause successful!") 
         return jsonify("(Pausing) You don't seem to be on a media_warrior...")
         
