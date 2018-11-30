@@ -16,8 +16,6 @@ import time
 import subprocess
 import json
 
-# Kill all old omxplayers
-
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
 
@@ -32,7 +30,6 @@ NEW_TRACK_ARRAY = []
 paused = None
 
 # player = OMXPlayer(AUDIO_PATH_MLP, args=['--layout', '5.1', '-w', '-o', 'hdmi'])
-
 
 
 # serve the angular app
@@ -89,7 +86,6 @@ def posEvent(a, b):
     return
             
 class PlaySingleTrack(Resource):
-    
     def get(self):
         global player
         global paused
@@ -135,8 +131,8 @@ class ScrubFoward(Resource):
     def get(self):
         global player
         if findArm():
-            # Pause the track
-            player.action(22)
+            # scrub the track
+            player.action(20)
             return jsonify("Scrub successful!") 
         return jsonify("(Scrub) You don't seem to be on a media_warrior...")
 
