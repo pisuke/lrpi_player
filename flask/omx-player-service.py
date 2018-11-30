@@ -112,8 +112,9 @@ class PauseTrack(Resource):
         global player
         if findArm():
             # Pause the track
-            if player.can_pause():
-                player.pause()
+            player.action(16)
+            # if player.can_pause():
+            #     player.pause()
             
             return jsonify("Pause successful!") 
         return jsonify("(Pausing) You don't seem to be on a media_warrior...")
