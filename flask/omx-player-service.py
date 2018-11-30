@@ -5,31 +5,37 @@ from json import dumps
 from flask_jsonpify import jsonify
 from flask_restful import reqparse
 
-# from omxplayer.player import OMXPlayer
-# from pathlib import Path
-# from time import sleep
-
 import os
 import sys
 import time
 import subprocess
 import json
+import random
 
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
+player = None
 
 TRACK_BASE_PATH = "/media/usb/demo/"
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 
 TEST_TRACK = TRACK_BASE_PATH + AUDIO_PATH_TEST_MP4
-
-CORS(app)
-
 NEW_TRACK_ARRAY = []
 paused = None
 
-# player = OMXPlayer(AUDIO_PATH_MLP, args=['--layout', '5.1', '-w', '-o', 'hdmi'])
+CORS(app)
 
+def findArm():
+    if os.uname().machine == 'armv7l':
+        return True
+    return False
+
+if findArm():
+    from omxplayer.player import OMXPlayer
+    from pathlib import Path
+    from time import sleep
+
+# player = OMXPlayer(AUDIO_PATH_MLP, args=['--layout', '5.1', '-w', '-o', 'hdmi'])
 
 # serve the angular app
 
@@ -46,16 +52,6 @@ def getIdInput():
     parser.add_argument('id', help='error with id')
     args = parser.parse_args()
     return args
-
-def findArm():
-    if os.uname().machine == 'armv7l':
-        return True
-    return False
-
-if findArm():
-    from omxplayer.player import OMXPlayer
-    from pathlib import Path
-    from time import sleep
 
 class GetTrackList(Resource): 
     def get(self): 
@@ -82,8 +78,8 @@ class GetSingleTrack(Resource):
 
 def posEvent(a, b):
     global player
-    print('Position event!')
-    print('Position: ' + str(player.position()) + "s")
+    print('Position event!' + str(a) + " " + str(b))
+    # print('Position: ' + str(player.position()) + "s")
     return
             
 class PlaySingleTrack(Resource):
@@ -105,12 +101,14 @@ class PlaySingleTrack(Resource):
                 player.action(16)
                 paused = False
             else:
-                player = OMXPlayer(pathToTrack, args=['-w'])
+                player = OMXPlayer(pathToTrack, args=['-w']) 
                 player.pause()
                 sleep(2.5)
                 player.positionEvent += posEvent 
                 player.set_position(0)
                 player.play()
+
+            return jsonify("Playing track: " + track["Name"] + " length: " + str(player.metadata()['mpris:length']))
            
             while (player.playback_status() == 'Playing'):
                 sleep(1)
@@ -123,8 +121,6 @@ class PlaySingleTrack(Resource):
             sleep(5)
             
             print("Dur after 5: " + str(player.duration()))
-            
-            return jsonify("Playing track: " + track["Name"] + " length: " + str(player.metadata()['mpris:length']/1000/1000))
         
         return jsonify("(Playing) You don't seem to be on a media_warrior...")
 
@@ -133,7 +129,7 @@ class ScrubFoward(Resource):
         global player
         if findArm():
             # scrub the track
-            player.set_position(int(player.position() + 5))
+            player.seek(float(5.0))
             return jsonify("Scrub successful!") 
         return jsonify("(Scrub) You don't seem to be on a media_warrior...")
 
