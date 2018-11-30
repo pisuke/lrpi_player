@@ -1,3 +1,8 @@
+# Clearing omxplayer temporary files sometimes solves the issue,
+# sometimes it doesnt...
+# sudo rm -rf /tmp/omxplayerdbus*
+# 
+
 from flask import Flask, request, send_from_directory, render_template
 from flask_cors import CORS, cross_origin
 from flask_restful import Resource, Api
@@ -6,6 +11,7 @@ from flask_jsonpify import jsonify
 from flask_restful import reqparse
 
 import os
+import os.path
 import sys
 import time
 import subprocess
@@ -53,18 +59,26 @@ def getIdInput():
     args = parser.parse_args()
     return args
 
+def printOmxVars():
+    print("OMXPLAYER_LIB" in os.environ)
+    print("LD_LIBRARY_PATH" in os.environ)
+    print("OMXPLAYER_BIN" in os.environ)
+
 class GetTrackList(Resource): 
     def get(self): 
         global NEW_TRACK_ARRAY
         global paused
+        global player
         paused = None
-        os.system("killall omxplayer.bin")
-        print('omxplayer processes killed!')
+        # printOmxVars()
+        if player:
+            player.quit()
+            print('Player exists and was quit!')
         with open('../tracks.json') as data:
             NEW_TRACK_ARRAY = json.load(data)
             for track in NEW_TRACK_ARRAY:
                 track['Length'] = '5:00'
-            print(NEW_TRACK_ARRAY)
+            # print(NEW_TRACK_ARRAY)
             return jsonify(NEW_TRACK_ARRAY)
  
 class GetSingleTrack(Resource):
@@ -94,13 +108,18 @@ class PlaySingleTrack(Resource):
                 if track["ID"] == args["id"]:
                     thisTrack = track
                     pathToTrack = TRACK_BASE_PATH + track["Name"]
+            if os.path.isfile(pathToTrack) == False:
+                print('Bad file path, will not attempt to play...')
+                return jsonify("(Playing) File not found!")
             print("Playing: " + pathToTrack)
             
             print('Spawning player')
             if (paused == True and paused is not None):
-                player.action(16)
+                player.action(16) # emulated pause key
+                sleep(2.5)
                 paused = False
             else:
+                # fixed to headphone port for testing
                 player = OMXPlayer(pathToTrack, args=['-w']) 
                 player.pause()
                 sleep(2.5)
@@ -110,27 +129,37 @@ class PlaySingleTrack(Resource):
 
             return jsonify("Playing track: " + track["Name"] + " length: " + str(player.metadata()['mpris:length']))
            
-            while (player.playback_status() == 'Playing'):
-                sleep(1)
-                print(player.position())
-            
-                
-            print("metadata: " + str(player.metadata()))
-            print("Duration: " + str(player.metadata()['mpris:length']/1000/1000))
-
-            sleep(5)
-            
-            print("Dur after 5: " + str(player.duration()))
-        
+            # while (player.playback_status() == 'Playing'):
+            #     sleep(1)
+            #     print(player.position())
+                    
         return jsonify("(Playing) You don't seem to be on a media_warrior...")
 
+# Currently seeks foward 10 seconds, works a few times but then comes back
+# with something similar to:
+#
+# /usr/bin/omxplayer: line 67:  2225 Aborted                 LD_LIBRARY_PATH="$OMXPLAYER_LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" $OMXPLAYER_BIN "$@"
+#
+# or something even more worrying like:
+# 
+# *** Error in `/usr/bin/omxplayer.bin': corrupted double-linked list: 0x00d5ed78 ***
+# /usr/bin/omxplayer: line 67:  2582 Segmentation fault      LD_LIBRARY_PATH="$OMXPLAYER_LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" $OMXPLAYER_BIN "$@"
+#
+# I've tried with as little at 1 second too, the problem remains. Could be
+# because the files are so large?
 class ScrubFoward(Resource):
     def get(self):
         global player
+        # printOmxVars()
         if findArm():
             # scrub the track
-            player.seek(float(5.0))
-            return jsonify("Scrub successful!") 
+            # can_control() always seems to return false...
+            #if player.can_control():
+            if player.can_seek():
+                player.seek(10.0)
+                sleep(2.5)
+                return jsonify("Scrub successful!")
+            return jsonify("Must wait for scrub...")
         return jsonify("(Scrub) You don't seem to be on a media_warrior...")
 
 class PauseTrack(Resource):
@@ -140,17 +169,21 @@ class PauseTrack(Resource):
         if findArm():
             # Pause the track
             player.action(16)
+            sleep(2.5)
             paused = True            
             return jsonify("Pause successful!") 
         return jsonify("(Pausing) You don't seem to be on a media_warrior...")
         
 class StopAll(Resource):
+    global player
     def get(self):
         if findArm():
             # For the moment, kill every omxplayer process
             os.system("killall omxplayer.bin")
             print('omxplayer processes killed!')
-            
+            sleep(2.5)
+            #if player.can_control():
+            #    player.exit()
             return jsonify("omxplayer processes killed")
         return jsonify("(Killing omxplayer proc) You don't seem to be on a media_warrior...")
 
