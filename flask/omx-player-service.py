@@ -120,7 +120,7 @@ class PlaySingleTrack(Resource):
                 paused = False
             else:
                 # fixed to headphone port for testing
-                player = OMXPlayer(pathToTrack, args=['-w']) 
+                player = OMXPlayer(pathToTrack, args=['--layout', '5.1', '-w', '-o', 'hdmi']) 
                 player.pause()
                 sleep(2.5)
                 player.positionEvent += posEvent 
