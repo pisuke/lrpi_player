@@ -64,7 +64,7 @@ def printOmxVars():
     print("LD_LIBRARY_PATH" in os.environ)
     print("OMXPLAYER_BIN" in os.environ)
 
-class GetTrackList(Resource): 
+class GetFolderList(Resource): 
     def get(self): 
         global NEW_TRACK_ARRAY
         global paused
@@ -124,7 +124,7 @@ class PlaySingleTrack(Resource):
                 player.pause()
                 sleep(2.5)
                 player.positionEvent += posEvent 
-                player.set_position(0)
+                player.set_position(54)
                 player.play()
 
             return jsonify("Playing track: " + track["Name"] + " length: " + str(player.metadata()['mpris:length']))
@@ -187,7 +187,7 @@ class StopAll(Resource):
             return jsonify("omxplayer processes killed")
         return jsonify("(Killing omxplayer proc) You don't seem to be on a media_warrior...")
 
-api.add_resource(GetTrackList, '/get-track-list')
+api.add_resource(GetFolderList, '/get-track-list')
 api.add_resource(GetSingleTrack, '/get-single-track')
 api.add_resource(PlaySingleTrack, '/play-single-track')
 api.add_resource(ScrubFoward, '/scrub-forward')
