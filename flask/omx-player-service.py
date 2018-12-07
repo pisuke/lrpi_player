@@ -121,7 +121,7 @@ class PlaySingleTrack(Resource):
             else:
                 # fixed to headphone port for testing
                 print('path: ' + str(pathToTrack))
-                player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both']) 
+                player = OMXPlayer(pathToTrack, args=['-w', '-o', 'local'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True) 
                 player.pause()
                 sleep(2.5)
                 player.positionEvent += posEvent 
