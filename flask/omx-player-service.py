@@ -170,9 +170,9 @@ class ScrubFoward(Resource):
             # can_control() always seems to return false...
             #if player.can_control():
             if player.can_seek():
-                player.seek(20.0)
+                player.set_position(player.duration()/2.0)
                 sleep(0.5)
-                return jsonify("Scrub successful! : " + " length: " + str(int(player.metadata()['mpris:length'])/1000/1000))
+                return jsonify(player.position())
             return jsonify("Must wait for scrub...")
         return jsonify("(Scrub) You don't seem to be on a media_warrior...")
 
