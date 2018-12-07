@@ -128,7 +128,7 @@ class PlaySingleTrack(Resource):
                 player.set_position(0)
                 player.play()
 
-            return jsonify("Playing track: " + track["Name"] + " length: " + str(player.metadata()['mpris:length']))
+            return jsonify("Playing track: " + track["Name"] + " length: " + str(int(player.metadata()['mpris:length'])/1000/1000))
             #return jsonify("Playing track...")
             
             # while (player.playback_status() == 'Playing'):
