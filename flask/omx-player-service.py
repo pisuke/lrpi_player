@@ -73,6 +73,7 @@ class GetFolderList(Resource):
         # printOmxVars()
         if player:
             player.quit()
+            player = None
             print('Player exists and was quit!')
         with open(TRACK_BASE_PATH + 'tracks.json') as data:
             NEW_TRACK_ARRAY = json.load(data)
@@ -95,6 +96,11 @@ def posEvent(a, b):
     print('Position event!' + str(a) + " " + str(b))
     # print('Position: ' + str(player.position()) + "s")
     return
+
+def seekEvent(a, b):
+    global player
+    print('seek event! ' + str(b))
+    return
             
 class PlaySingleTrack(Resource):
     def get(self):
@@ -115,20 +121,24 @@ class PlaySingleTrack(Resource):
             
             print('Spawning player')
             if (paused == True and paused is not None):
-                player.pause() # emulated pause key
-                sleep(2.5)
+                player.action(16) # emulated pause key
+                sleep(2.0)
                 paused = False
             else:
                 # fixed to headphone port for testing
                 print('path: ' + str(pathToTrack))
-                player = OMXPlayer(pathToTrack, args=['-w', '-o', 'local'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True) 
-                player.pause()
-                sleep(2.5)
-                player.positionEvent += posEvent 
-                player.set_position(0)
-                player.play()
-
-            return jsonify("Playing track: " + track["Name"] + " length: " + str(int(player.metadata()['mpris:length'])/1000/1000))
+                if player:
+                    player.action(16) # emulated play/pause 
+                else:
+                    player = OMXPlayer(pathToTrack, args=['-w', '-o', 'local'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True) 
+                    player.pause()
+                    sleep(2.5)
+                    player.positionEvent += posEvent
+                    player.seekEvent += seekEvent
+                    player.set_position(0)
+                    player.play()
+            print("Length in Python: " + str(player.duration()))
+            return jsonify("Playing track: " + str(player.get_filename()) + " length: " + str(player.duration()))
             #return jsonify("Playing track...")
             
             # while (player.playback_status() == 'Playing'):
@@ -161,8 +171,8 @@ class ScrubFoward(Resource):
             #if player.can_control():
             if player.can_seek():
                 player.seek(20.0)
-                sleep(2.5)
-                return jsonify("Scrub successful!")
+                sleep(0.5)
+                return jsonify("Scrub successful! : " + " length: " + str(int(player.metadata()['mpris:length'])/1000/1000))
             return jsonify("Must wait for scrub...")
         return jsonify("(Scrub) You don't seem to be on a media_warrior...")
 
@@ -173,7 +183,7 @@ class PauseTrack(Resource):
         if findArm():
             # Pause the track
             player.action(16)
-            sleep(2.5)
+            sleep(2.0)
             paused = True            
             return jsonify("Pause successful!") 
         return jsonify("(Pausing) You don't seem to be on a media_warrior...")
