@@ -137,8 +137,8 @@ class PlaySingleTrack(Resource):
                     player.seekEvent += seekEvent
                     player.set_position(0)
                     player.play()
-            print("Length in Python: " + str(player.duration()))
-            return jsonify("Playing track: " + str(player.get_filename()) + " length: " + str(player.duration()))
+            print(str(player.duration()))
+            return jsonify(str(player.duration()))
             #return jsonify("Playing track...")
             
             # while (player.playback_status() == 'Playing'):
