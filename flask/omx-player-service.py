@@ -74,7 +74,7 @@ class GetFolderList(Resource):
         if player:
             player.quit()
             print('Player exists and was quit!')
-        with open('../tracks.json') as data:
+        with open(TRACK_BASE_PATH + 'tracks.json') as data:
             NEW_TRACK_ARRAY = json.load(data)
             for track in NEW_TRACK_ARRAY:
                 track['Length'] = '5:00'
@@ -107,7 +107,7 @@ class PlaySingleTrack(Resource):
             for track in NEW_TRACK_ARRAY:
                 if track["ID"] == args["id"]:
                     thisTrack = track
-                    pathToTrack = TRACK_BASE_PATH + track["Name"]
+                    pathToTrack = TRACK_BASE_PATH + track["Path"]
             if os.path.isfile(pathToTrack) == False:
                 print('Bad file path, will not attempt to play...')
                 return jsonify("(Playing) File not found!")
@@ -115,20 +115,22 @@ class PlaySingleTrack(Resource):
             
             print('Spawning player')
             if (paused == True and paused is not None):
-                player.action(16) # emulated pause key
+                player.pause() # emulated pause key
                 sleep(2.5)
                 paused = False
             else:
                 # fixed to headphone port for testing
-                player = OMXPlayer(pathToTrack, args=['--layout', '5.1', '-w', '-o', 'hdmi']) 
+                print('path: ' + str(pathToTrack))
+                player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both']) 
                 player.pause()
                 sleep(2.5)
                 player.positionEvent += posEvent 
-                player.set_position(54)
+                player.set_position(0)
                 player.play()
 
             return jsonify("Playing track: " + track["Name"] + " length: " + str(player.metadata()['mpris:length']))
-           
+            #return jsonify("Playing track...")
+            
             # while (player.playback_status() == 'Playing'):
             #     sleep(1)
             #     print(player.position())
@@ -147,6 +149,8 @@ class PlaySingleTrack(Resource):
 #
 # I've tried with as little at 1 second too, the problem remains. Could be
 # because the files are so large?
+# update, mp4s work a LOT better!
+# There seems to be an intermittent issue where dbus loses connection to omxplayer though...
 class ScrubFoward(Resource):
     def get(self):
         global player
@@ -156,7 +160,7 @@ class ScrubFoward(Resource):
             # can_control() always seems to return false...
             #if player.can_control():
             if player.can_seek():
-                player.seek(10.0)
+                player.seek(20.0)
                 sleep(2.5)
                 return jsonify("Scrub successful!")
             return jsonify("Must wait for scrub...")
