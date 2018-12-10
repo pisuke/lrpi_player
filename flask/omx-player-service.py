@@ -22,10 +22,12 @@ app = Flask(__name__,  static_folder='static')
 api = Api(app)
 player = None
 
-TRACK_BASE_PATH = "/media/usb/demo/"
+MEDIA_BASE_PATH = "/media/usb/tracks/"
+BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
+JSON_LIST_FILE = "content.json"
 
-TEST_TRACK = TRACK_BASE_PATH + AUDIO_PATH_TEST_MP4
+TEST_TRACK = MEDIA_BASE_PATH + AUDIO_PATH_TEST_MP4
 NEW_TRACK_ARRAY = []
 paused = None
 
@@ -62,24 +64,36 @@ def printOmxVars():
     print("LD_LIBRARY_PATH" in os.environ)
     print("OMXPLAYER_BIN" in os.environ)
 
-class GetFolderList(Resource): 
+class GetTrackList(Resource): 
     def get(self): 
         global NEW_TRACK_ARRAY
+        global BUILT_PATH
         global paused
         global player
+        
+        BUILT_PATH = MEDIA_BASE_PATH
+        args = getIdInput()
         paused = None
+        print("track list id: " +  str(args['id']))
+        
+        if args['id']:
+            if NEW_TRACK_ARRAY:
+                BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
+                print(BUILT_PATH[0]) 
+
+        print('BUILT_PATH: ' + str(BUILT_PATH))
         
         if player:
             player.quit()
             player = None
             print('Player exists and was quit!')
             
-        with open(TRACK_BASE_PATH + 'tracks.json') as data:
-            NEW_TRACK_ARRAY = json.load(data)
-            for track in NEW_TRACK_ARRAY:
-                track['Length'] = '5:00'
+        with open(BUILT_PATH + JSON_LIST_FILE) as data:
+            TRACK_ARRAY_WITH_CONTENTS = json.load(data)
+            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if x['Name'] != JSON_LIST_FILE]
             # print(NEW_TRACK_ARRAY)
             return jsonify(NEW_TRACK_ARRAY)
+        
  
 class GetSingleTrack(Resource):
     def get(self):
@@ -105,6 +119,7 @@ class PlaySingleTrack(Resource):
     def get(self):
         global player
         global paused
+        global BUILT_PATH
         if findArm():
             args = getIdInput()
             thisTrack = None
@@ -112,7 +127,7 @@ class PlaySingleTrack(Resource):
             for track in NEW_TRACK_ARRAY:
                 if track["ID"] == args["id"]:
                     thisTrack = track
-                    pathToTrack = TRACK_BASE_PATH + track["Path"]
+                    pathToTrack = BUILT_PATH + track["Path"]
             if os.path.isfile(pathToTrack) == False:
                 print('Bad file path, will not attempt to play...')
                 return jsonify("(Playing) File not found!")
@@ -129,6 +144,7 @@ class PlaySingleTrack(Resource):
                 if player:
                     player.action(16) # emulated play/pause 
                 else:
+                    # player doesn't exist, spawn a new player
                     player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True) 
                     player.pause()
                     # omxplayer apparently takes about 2.5 seconds to 'warm up'
@@ -194,6 +210,7 @@ class PauseTrack(Resource):
 class StopAll(Resource):
     global player
     def get(self):
+        global player
         if findArm():
             # For the moment, kill every omxplayer process
             os.system("killall omxplayer.bin")
@@ -204,7 +221,7 @@ class StopAll(Resource):
             return jsonify("omxplayer processes killed")
         return jsonify("(Killing omxplayer proc) You don't seem to be on a media_warrior...")
 
-api.add_resource(GetFolderList, '/get-track-list')
+api.add_resource(GetTrackList, '/get-track-list')
 api.add_resource(GetSingleTrack, '/get-single-track')
 api.add_resource(PlaySingleTrack, '/play-single-track')
 api.add_resource(ScrubFoward, '/scrub-forward')
