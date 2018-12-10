@@ -1,4 +1,7 @@
 *.pyc
 __pycache__/
-output.mp3
+*.mp3
+*.m4a
+*.mp4
+.DS_Store
 
