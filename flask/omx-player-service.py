@@ -32,9 +32,7 @@ paused = None
 CORS(app)
 
 def findArm():
-    if os.uname().machine == 'armv7l':
-        return True
-    return False
+    return os.uname().machine == 'armv7l'
 
 if findArm():
     from omxplayer.player import OMXPlayer
@@ -70,11 +68,12 @@ class GetFolderList(Resource):
         global paused
         global player
         paused = None
-        # printOmxVars()
+        
         if player:
             player.quit()
             player = None
             print('Player exists and was quit!')
+            
         with open(TRACK_BASE_PATH + 'tracks.json') as data:
             NEW_TRACK_ARRAY = json.load(data)
             for track in NEW_TRACK_ARRAY:
@@ -120,7 +119,7 @@ class PlaySingleTrack(Resource):
             print("Playing: " + pathToTrack)
             
             print('Spawning player')
-            if (paused == True and paused is not None):
+            if (paused == True and paused is not None and player):
                 player.action(16) # emulated pause key
                 sleep(2.0)
                 paused = False
@@ -130,16 +129,18 @@ class PlaySingleTrack(Resource):
                 if player:
                     player.action(16) # emulated play/pause 
                 else:
-                    player = OMXPlayer(pathToTrack, args=['-w', '-o', 'local'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True) 
+                    player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True) 
                     player.pause()
+                    # omxplayer apparently takes about 2.5 seconds to 'warm up'
                     sleep(2.5)
                     player.positionEvent += posEvent
                     player.seekEvent += seekEvent
                     player.set_position(0)
                     player.play()
+                    
             print(str(player.duration()))
             return jsonify(str(player.duration()))
-            #return jsonify("Playing track...")
+            
             
             # while (player.playback_status() == 'Playing'):
             #     sleep(1)
@@ -160,7 +161,9 @@ class PlaySingleTrack(Resource):
 # I've tried with as little at 1 second too, the problem remains. Could be
 # because the files are so large?
 # update, mp4s work a LOT better!
-# There seems to be an intermittent issue where dbus loses connection to omxplayer though...
+# There seems to be an intermittent issue where dbus loses connection to omxplayer though
+# This issue seems to be fixed by including the dbus_name argument when instantiating OMXPlayer, but watch out!
+
 class ScrubFoward(Resource):
     def get(self):
         global player
@@ -171,7 +174,7 @@ class ScrubFoward(Resource):
             #if player.can_control():
             if player.can_seek():
                 player.set_position(player.duration()/2.0)
-                sleep(0.5)
+                sleep(0.3)
                 return jsonify(player.position())
             return jsonify("Must wait for scrub...")
         return jsonify("(Scrub) You don't seem to be on a media_warrior...")
@@ -182,8 +185,8 @@ class PauseTrack(Resource):
         global paused
         if findArm():
             # Pause the track
+            # Seems to work more robustly than player.pause()
             player.action(16)
-            sleep(2.0)
             paused = True            
             return jsonify("Pause successful!") 
         return jsonify("(Pausing) You don't seem to be on a media_warrior...")

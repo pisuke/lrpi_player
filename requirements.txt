@@ -1,0 +1,4 @@
+tinkerforge
+pysrt
+numpy
+
