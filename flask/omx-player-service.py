@@ -23,6 +23,7 @@ api = Api(app)
 player = None
 
 MEDIA_BASE_PATH = "/media/usb/tracks/"
+BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
 
@@ -66,18 +67,28 @@ def printOmxVars():
 class GetTrackList(Resource): 
     def get(self): 
         global NEW_TRACK_ARRAY
+        global BUILT_PATH
         global paused
         global player
+        
+        BUILT_PATH = MEDIA_BASE_PATH
         args = getIdInput()
         paused = None
         print("track list id: " +  str(args['id']))
+        
+        if args['id']:
+            if NEW_TRACK_ARRAY:
+                BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
+                print(BUILT_PATH[0]) 
+
+        print('BUILT_PATH: ' + str(BUILT_PATH))
         
         if player:
             player.quit()
             player = None
             print('Player exists and was quit!')
             
-        with open(MEDIA_BASE_PATH + JSON_LIST_FILE) as data:
+        with open(BUILT_PATH + JSON_LIST_FILE) as data:
             TRACK_ARRAY_WITH_CONTENTS = json.load(data)
             NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if x['Name'] != JSON_LIST_FILE]
             # print(NEW_TRACK_ARRAY)
@@ -108,6 +119,7 @@ class PlaySingleTrack(Resource):
     def get(self):
         global player
         global paused
+        global BUILT_PATH
         if findArm():
             args = getIdInput()
             thisTrack = None
@@ -115,7 +127,7 @@ class PlaySingleTrack(Resource):
             for track in NEW_TRACK_ARRAY:
                 if track["ID"] == args["id"]:
                     thisTrack = track
-                    pathToTrack = MEDIA_BASE_PATH + track["Path"]
+                    pathToTrack = BUILT_PATH + track["Path"]
             if os.path.isfile(pathToTrack) == False:
                 print('Bad file path, will not attempt to play...')
                 return jsonify("(Playing) File not found!")
