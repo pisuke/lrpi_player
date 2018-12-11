@@ -9,7 +9,7 @@ from pysrt import open as srtopen
 from threading import Timer
 
 sleep_time = 0.1 # seconds
-max_brightness = 20
+# max_brightness = 200
 transitiontime = 10 # milliseconds
 # srt_filename = "output.srt"
 srtFilename = "Surround_Test_Audio.srt"

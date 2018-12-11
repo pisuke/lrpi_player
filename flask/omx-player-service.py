@@ -10,6 +10,7 @@ from json import dumps
 from flask_jsonpify import jsonify
 from flask_restful import reqparse
 
+from os.path import splitext
 import os
 import os.path
 import sys
@@ -29,6 +30,7 @@ JSON_LIST_FILE = "content.json"
 
 TEST_TRACK = MEDIA_BASE_PATH + AUDIO_PATH_TEST_MP4
 NEW_TRACK_ARRAY = []
+NEW_SRT_ARRAY = []
 paused = None
 
 CORS(app)
@@ -67,6 +69,7 @@ def printOmxVars():
 class GetTrackList(Resource): 
     def get(self): 
         global NEW_TRACK_ARRAY
+        global NEW_SRT_ARRAY
         global BUILT_PATH
         global paused
         global player
@@ -90,14 +93,18 @@ class GetTrackList(Resource):
             
         with open(BUILT_PATH + JSON_LIST_FILE) as data:
             TRACK_ARRAY_WITH_CONTENTS = json.load(data)
-            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if x['Name'] != JSON_LIST_FILE]
-            # print(NEW_TRACK_ARRAY)
+            NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
+            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
+            NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
+            #print(NEW_TRACK_ARRAY)
+            #print( NEW_SRT_ARRAY)
             return jsonify(NEW_TRACK_ARRAY)
         
  
 class GetSingleTrack(Resource):
     def get(self):
         global NEW_TRACK_ARRAY
+        global NEW_SRT_ARRAY
         args = getIdInput()
         print(args['id'])
         for track in NEW_TRACK_ARRAY:
@@ -127,6 +134,9 @@ class PlaySingleTrack(Resource):
             for track in NEW_TRACK_ARRAY:
                 if track["ID"] == args["id"]:
                     thisTrack = track
+                    srtFileName = splitext(track["Path"])[0]+".srt"
+                    if os.path.isfile(BUILT_PATH + srtFileName):
+                        print(srtFileName)
                     pathToTrack = BUILT_PATH + track["Path"]
             if os.path.isfile(pathToTrack) == False:
                 print('Bad file path, will not attempt to play...')
