@@ -1,2 +1,2 @@
-# media_warrior
+# LushRoom Pi player
 Cloud connected sound and light player
