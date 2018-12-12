@@ -1,0 +1,6 @@
+tinkerforge
+pysrt
+numpy
+apscheduler
+keyboard
+python-vlc

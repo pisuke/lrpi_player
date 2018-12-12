@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Workspace>
+<Workspace xmlns="http://www.qlcplus.org/Workspace" CurrentWindow="FunctionManager">
+ <Creator>
+  <Name>Q Light Controller Plus</Name>
+  <Version>4.11.1</Version>
+  <Author>Francesco Anselmo</Author>
+ </Creator>
+ <Engine>
+  <InputOutputMap>
+   <Universe Name="Universe 1" ID="0">
+    <Output Plugin="DMX USB" Line="0">
+     <PluginParameters UniverseChannels="4"/>
+    </Output>
+   </Universe>
+   <Universe Name="Universe 2" ID="1"/>
+   <Universe Name="Universe 3" ID="2"/>
+   <Universe Name="Universe 4" ID="3"/>
+  </InputOutputMap>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Generic</Model>
+   <Mode>1 Channel</Mode>
+   <ID>0</ID>
+   <Name>Dimmers #1</Name>
+   <Universe>0</Universe>
+   <Address>0</Address>
+   <Channels>1</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Generic</Model>
+   <Mode>1 Channel</Mode>
+   <ID>1</ID>
+   <Name>Dimmers #2</Name>
+   <Universe>0</Universe>
+   <Address>1</Address>
+   <Channels>1</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Generic</Model>
+   <Mode>1 Channel</Mode>
+   <ID>2</ID>
+   <Name>Dimmers #3</Name>
+   <Universe>0</Universe>
+   <Address>2</Address>
+   <Channels>1</Channels>
+  </Fixture>
+  <Fixture>
+   <Manufacturer>Generic</Manufacturer>
+   <Model>Generic</Model>
+   <Mode>1 Channel</Mode>
+   <ID>3</ID>
+   <Name>Dimmers #4</Name>
+   <Universe>0</Universe>
+   <Address>3</Address>
+   <Channels>1</Channels>
+  </Fixture>
+  <FixtureGroup ID="0">
+   <Name>Four</Name>
+   <Size X="2" Y="2"/>
+   <Head X="0" Y="0" Fixture="0">0</Head>
+   <Head X="1" Y="0" Fixture="1">0</Head>
+   <Head X="0" Y="1" Fixture="2">0</Head>
+   <Head X="1" Y="1" Fixture="3">0</Head>
+  </FixtureGroup>
+  <ChannelsGroup ID="0" Name="New Group" Value="0">0,0,1,0,2,0,3,0</ChannelsGroup>
+  <Function ID="0" Type="Chaser" Name="New Chaser 0">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">3</Step>
+  </Function>
+  <Function ID="1" Type="Scene" Name="New Scene" Hidden="True">
+   <Speed FadeIn="1000" FadeOut="1000" Duration="0"/>
+   <ChannelGroupsVal>0,255</ChannelGroupsVal>
+   <FixtureVal ID="0">0,0</FixtureVal>
+   <FixtureVal ID="1">0,0</FixtureVal>
+   <FixtureVal ID="2">0,0</FixtureVal>
+   <FixtureVal ID="3">0,0</FixtureVal>
+  </Function>
+  <Function ID="2" Type="Sequence" Name="New Sequence 2" BoundScene="1">
+   <Speed FadeIn="1000" FadeOut="1000" Duration="3000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Random</RunOrder>
+   <SpeedModes FadeIn="PerStep" FadeOut="PerStep" Duration="PerStep"/>
+   <Step Number="0" FadeIn="1000" Hold="1000" FadeOut="1000" Values="4">0:0,168:1:0,212:2:0,156:3:0,214</Step>
+   <Step Number="1" FadeIn="1000" Hold="1000" FadeOut="1000" Values="4">0:0,255:2:0,72:3:0,203</Step>
+   <Step Number="2" FadeIn="1000" Hold="1000" FadeOut="1000" Values="4">0:0,252:1:0,165:2:0,52:3:0,203</Step>
+   <Step Number="3" FadeIn="1000" Hold="1000" FadeOut="1000" Values="4">0:0,130:1:0,78:2:0,81:3:0,145</Step>
+  </Function>
+  <Function ID="3" Type="Scene" Name="New Chaser 0 - 1" Hidden="True">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <ChannelGroupsVal>0,255</ChannelGroupsVal>
+   <FixtureVal ID="0">0,0</FixtureVal>
+   <FixtureVal ID="1">0,0</FixtureVal>
+   <FixtureVal ID="2">0,0</FixtureVal>
+   <FixtureVal ID="3">0,0</FixtureVal>
+  </Function>
+  <Function ID="4" Type="Scene" Name="New Scene" Hidden="True">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <ChannelGroupsVal>0,0</ChannelGroupsVal>
+   <FixtureVal ID="0">0,0</FixtureVal>
+   <FixtureVal ID="1">0,0</FixtureVal>
+   <FixtureVal ID="2">0,0</FixtureVal>
+   <FixtureVal ID="3">0,0</FixtureVal>
+  </Function>
+  <Function ID="5" Type="Sequence" Name="New Sequence 5" BoundScene="4">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="PerStep" FadeOut="PerStep" Duration="PerStep"/>
+   <Step Number="0" FadeIn="0" Hold="1000" FadeOut="0" Values="4">0:0,255</Step>
+   <Step Number="1" FadeIn="0" Hold="1000" FadeOut="0" Values="4">1:0,255</Step>
+   <Step Number="2" FadeIn="0" Hold="1000" FadeOut="0" Values="4">2:0,255</Step>
+   <Step Number="3" FadeIn="0" Hold="1000" FadeOut="0" Values="4">3:0,255</Step>
+  </Function>
+ </Engine>
+ <VirtualConsole>
+  <Frame Caption="">
+   <Appearance>
+    <FrameStyle>None</FrameStyle>
+    <ForegroundColor>Default</ForegroundColor>
+    <BackgroundColor>Default</BackgroundColor>
+    <BackgroundImage>None</BackgroundImage>
+    <Font>Default</Font>
+   </Appearance>
+  </Frame>
+  <Properties>
+   <Size Width="1920" Height="1080"/>
+   <GrandMaster ChannelMode="Intensity" ValueMode="Reduce" SliderMode="Normal"/>
+  </Properties>
+ </VirtualConsole>
+ <SimpleDesk>
+  <Engine>
+   <CueStack ID="0">
+    <Speed FadeIn="0" FadeOut="0" Duration="4294967295"/>
+    <Cue Name="Cue 1">
+     <Value Channel="3">137</Value>
+     <Value Channel="0">193</Value>
+     <Value Channel="1">135</Value>
+     <Value Channel="2">193</Value>
+     <Speed FadeIn="1000" FadeOut="1000" Duration="1000"/>
+    </Cue>
+    <Cue Name="Cue 2">
+     <Value Channel="3">0</Value>
+     <Value Channel="0">0</Value>
+     <Value Channel="1">0</Value>
+     <Value Channel="2">0</Value>
+     <Speed FadeIn="1000" FadeOut="1000" Duration="1000"/>
+    </Cue>
+    <Cue Name="Cue 3">
+     <Value Channel="3">0</Value>
+     <Value Channel="0">0</Value>
+     <Value Channel="1">219</Value>
+     <Value Channel="2">217</Value>
+     <Speed FadeIn="1000" FadeOut="1000" Duration="1000"/>
+    </Cue>
+    <Cue Name="Cue 4">
+     <Value Channel="3">217</Value>
+     <Value Channel="0">255</Value>
+     <Value Channel="1">8</Value>
+     <Value Channel="2">0</Value>
+     <Speed FadeIn="1000" FadeOut="1000" Duration="1000"/>
+    </Cue>
+   </CueStack>
+  </Engine>
+ </SimpleDesk>
+</Workspace>
