@@ -1,7 +1,10 @@
+#
+#
 # Clearing omxplayer temporary files sometimes solves the issue,
 # sometimes it doesnt...
 # sudo rm -rf /tmp/omxplayerdbus*
 # 
+#
 
 from flask import Flask, request, send_from_directory, render_template
 from flask_cors import CORS, cross_origin
@@ -18,6 +21,8 @@ import time
 import subprocess
 import json
 import random
+from pathlib import Path
+from time import sleep      
 
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
@@ -40,11 +45,9 @@ def findArm():
 
 if findArm():
     from omxplayer.player import OMXPlayer
-    from pathlib import Path
-    from time import sleep
-
-# player = OMXPlayer(AUDIO_PATH_MLP, args=['--layout', '5.1', '-w', '-o', 'hdmi'])
-
+else: 
+    import vlc
+    
 # serve the angular app
 
 @app.route('/', defaults={'path': ''})
@@ -127,23 +130,25 @@ class PlaySingleTrack(Resource):
         global player
         global paused
         global BUILT_PATH
+
+        args = getIdInput()
+        thisTrack = None
+        print('argsid: ', args["id"])
+        for track in NEW_TRACK_ARRAY:
+            if track["ID"] == args["id"]:
+                thisTrack = track
+                srtFileName = splitext(track["Path"])[0]+".srt"
+                if os.path.isfile(BUILT_PATH + srtFileName):
+                    print(srtFileName)
+                pathToTrack = BUILT_PATH + track["Path"]
+        if os.path.isfile(pathToTrack) == False:
+            print('Bad file path, will not attempt to play...')
+            return jsonify("(Playing) File not found!")
+        print("Playing: " + pathToTrack)
+
         if findArm():
-            args = getIdInput()
-            thisTrack = None
-            print('argsid: ', args["id"])
-            for track in NEW_TRACK_ARRAY:
-                if track["ID"] == args["id"]:
-                    thisTrack = track
-                    srtFileName = splitext(track["Path"])[0]+".srt"
-                    if os.path.isfile(BUILT_PATH + srtFileName):
-                        print(srtFileName)
-                    pathToTrack = BUILT_PATH + track["Path"]
-            if os.path.isfile(pathToTrack) == False:
-                print('Bad file path, will not attempt to play...')
-                return jsonify("(Playing) File not found!")
-            print("Playing: " + pathToTrack)
             
-            print('Spawning player')
+            print('Spawning omx player')
             if (paused == True and paused is not None and player):
                 player.action(16) # emulated pause key
                 sleep(2.0)
@@ -171,6 +176,11 @@ class PlaySingleTrack(Resource):
             # while (player.playback_status() == 'Playing'):
             #     sleep(1)
             #     print(player.position())
+        else:
+            # just plays the track at the moment. Needs all of the play/pause functionality etc
+            print('Spawning vlc player')
+            p=vlc.MediaPlayer('file://' + pathToTrack)
+            p.play()
                     
         return jsonify("(Playing) You don't seem to be on a media_warrior...")
 
