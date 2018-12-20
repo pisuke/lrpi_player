@@ -88,11 +88,16 @@ class GetTrackList(Resource):
                 print(BUILT_PATH[0]) 
 
         print('BUILT_PATH: ' + str(BUILT_PATH))
+
         
-        if player:
+        if player and findArm():
             player.quit()
             player = None
-            print('Player exists and was quit!')
+            print('(omx) Player exists and was quit!')
+        elif player and not findArm():
+            player.stop()
+            player = None
+            print('(vlc) Player exists and was quit!')
             
         with open(BUILT_PATH + JSON_LIST_FILE) as data:
             TRACK_ARRAY_WITH_CONTENTS = json.load(data)
