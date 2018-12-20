@@ -182,7 +182,7 @@ class PlaySingleTrack(Resource):
             p=vlc.MediaPlayer('file://' + pathToTrack)
             p.play()
                     
-        return jsonify("(Playing) You don't seem to be on a media_warrior...")
+        return jsonify("(Playing) You don't seem to be on a LushRoom Pi, playing on vlc instead...")
 
 # Currently seeks foward 10 seconds, works a few times but then comes back
 # with something similar to:
