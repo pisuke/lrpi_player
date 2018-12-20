@@ -179,10 +179,23 @@ class PlaySingleTrack(Resource):
         else:
             # just plays the track at the moment. Needs all of the play/pause functionality etc
             print('Spawning vlc player')
-            p=vlc.MediaPlayer('file://' + pathToTrack)
-            p.play()
-                    
-        return jsonify("(Playing) You don't seem to be on a LushRoom Pi, playing on vlc instead...")
+
+            if (paused == True and paused is not None and player):
+                player.pause() # emulated pause key
+                paused = False
+                 
+            else:
+                vlc_instance = vlc.Instance()
+                player = vlc_instance.media_player_new()
+                media = vlc_instance.media_new('file://' + pathToTrack)
+                player.set_media(media)
+                player.play()
+                time.sleep(1.5)
+
+            duration = player.get_length() / 1000
+            return jsonify(duration)
+                       
+        return jsonify("(Playing) Neither omxplayer nor vlc have been able to play your track. This needs looking into...")
 
 # Currently seeks foward 10 seconds, works a few times but then comes back
 # with something similar to:
@@ -224,8 +237,13 @@ class PauseTrack(Resource):
             # Seems to work more robustly than player.pause()
             player.action(16)
             paused = True            
-            return jsonify("Pause successful!") 
-        return jsonify("(Pausing) You don't seem to be on a media_warrior...")
+            return jsonify("(omx) Pause successful!")
+        else: 
+            player.pause() # emulated pause key
+            paused = True 
+            return jsonify("(vlc) Pause successful!")
+
+        return jsonify("(Pausing error!) You don't seem to be on a LushRoom Pi or a machine with vlc installed...")
         
 class StopAll(Resource):
     global player
