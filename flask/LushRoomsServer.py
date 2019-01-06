@@ -22,11 +22,16 @@ import subprocess
 import json
 import random
 from pathlib import Path
-from time import sleep      
+from time import sleep 
+
+from LushRoomPlayer import LushRoomPlayer
+
+mpegOnly = True
+mlpOnly = False
+allFormats = False
 
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
-player = None
 
 MEDIA_BASE_PATH = "/media/usb/tracks/"
 BUILT_PATH = None
@@ -36,27 +41,14 @@ JSON_LIST_FILE = "content.json"
 TEST_TRACK = MEDIA_BASE_PATH + AUDIO_PATH_TEST_MP4
 NEW_TRACK_ARRAY = []
 NEW_SRT_ARRAY = []
+
+
+player = None
 paused = None
 
 CORS(app)
 
-def findArm():
-    return os.uname().machine == 'armv7l'
-
-if findArm():
-    from omxplayer.player import OMXPlayer
-else: 
-    import vlc
-    
-# serve the angular app
-
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve(path):
-    if path != "" and os.path.exists("static/" + path):
-        return send_from_directory('static/', path)
-    else:
-        return send_from_directory('static/', 'index.html')
+# utils
 
 def getIdInput():
     parser = reqparse.RequestParser()
@@ -68,6 +60,31 @@ def printOmxVars():
     print("OMXPLAYER_LIB" in os.environ)
     print("LD_LIBRARY_PATH" in os.environ)
     print("OMXPLAYER_BIN" in os.environ)
+    
+# serve the angular app
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path != "" and os.path.exists("static/" + path):
+        return send_from_directory('static/', path)
+    else:
+        return send_from_directory('static/', 'index.html')
+
+# omxplayer callbacks
+
+def posEvent(a, b):
+    global player
+    print('Position event!' + str(a) + " " + str(b))
+    # print('Position: ' + str(player.position()) + "s")
+    return
+
+def seekEvent(a, b):
+    global player
+    print('seek event! ' + str(b))
+    return
+
+# API endpoints
 
 class GetTrackList(Resource): 
     def get(self): 
@@ -102,10 +119,20 @@ class GetTrackList(Resource):
         with open(BUILT_PATH + JSON_LIST_FILE) as data:
             TRACK_ARRAY_WITH_CONTENTS = json.load(data)
             NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
-            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
+
+            if mpegOnly: 
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
+            elif mlpOnly:
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
+            elif allFormats:
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
+
+
             NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
             #print(NEW_TRACK_ARRAY)
             #print( NEW_SRT_ARRAY)
+            player = LushRoomPlayer(NEW_TRACK_ARRAY)
+
             return jsonify(NEW_TRACK_ARRAY)
         
  
@@ -118,17 +145,6 @@ class GetSingleTrack(Resource):
         for track in NEW_TRACK_ARRAY:
             if track['ID'] == args['id']:
                 return jsonify(track["Name"])
-
-def posEvent(a, b):
-    global player
-    print('Position event!' + str(a) + " " + str(b))
-    # print('Position: ' + str(player.position()) + "s")
-    return
-
-def seekEvent(a, b):
-    global player
-    print('seek event! ' + str(b))
-    return
             
 class PlaySingleTrack(Resource):
     def get(self):
