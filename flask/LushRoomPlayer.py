@@ -9,8 +9,8 @@ else:
     import vlc
 
 class VlcPlayer():
-    def __init__(self, player):
-        self.player = player
+    def __init__(self):
+        self.player = None
 
     def play(self):
         print("Playing on vlc...")
@@ -35,8 +35,8 @@ class VlcPlayer():
 
 
 class OmxPlayer():
-    def __init__(self, player):
-        self.player = player
+    def __init__(self):
+        self.player = None
 
     def play(self):
         print("Playing on vlc...")
@@ -60,15 +60,16 @@ class OmxPlayer():
         print("OMX died")
 
 class LushRoomPlayer:
-    def __init__(self, playlist):
+    def __init__(self, content, basePath):
         if uname().machine:
             self.playerType = "OMX"
-            self.player = None
+            self.player = OmxPlayer()
         else:
             self.playerType = "VLC"
-            self.player = None
+            self.player = VlcPlayer()
 
-        self.playlist = playlist
+        self.content = content
+        self.basePath = basePath
         self.paused = None 
         
 

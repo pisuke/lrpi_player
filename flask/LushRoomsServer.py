@@ -106,15 +106,8 @@ class GetTrackList(Resource):
 
         print('BUILT_PATH: ' + str(BUILT_PATH))
 
-        
-        if player and findArm():
-            player.quit()
-            player = None
-            print('(omx) Player exists and was quit!')
-        elif player and not findArm():
-            player.stop()
-            player = None
-            print('(vlc) Player exists and was quit!')
+        if player:
+            player.__del__()
             
         with open(BUILT_PATH + JSON_LIST_FILE) as data:
             TRACK_ARRAY_WITH_CONTENTS = json.load(data)
@@ -131,7 +124,7 @@ class GetTrackList(Resource):
             NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
             #print(NEW_TRACK_ARRAY)
             #print( NEW_SRT_ARRAY)
-            player = LushRoomPlayer(NEW_TRACK_ARRAY)
+            player = LushRoomPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
 
             return jsonify(NEW_TRACK_ARRAY)
         
