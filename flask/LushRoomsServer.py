@@ -26,9 +26,9 @@ from time import sleep
 
 from LushRoomsPlayer import LushRoomsPlayer
 
-mpegOnly = False
+mpegOnly = True
 mlpOnly = False
-allFormats = True
+allFormats = False
 
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
