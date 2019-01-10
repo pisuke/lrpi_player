@@ -1,5 +1,5 @@
 from os import uname
-import time
+from time import sleep
 
 def findArm():
     return uname().machine == 'armv7l'
@@ -27,8 +27,9 @@ class OmxPlayer():
 
     def start(self, pathToTrack):
         print("Playing on omx...")
-        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
-        time.sleep(2.5)
+        print(pathToTrack)
+        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+        sleep(2.5)
         self.player.positionEvent += self.posEvent
         self.player.seekEvent += self.seekEvent
         self.player.set_position(0)
@@ -39,7 +40,7 @@ class OmxPlayer():
     def playPause(self):
         print("Playpausing...")
         self.player.action(16)
-        return 0
+        return str(self.player.duration())
 
     def getPosition(self):
         print("0:00")
@@ -50,6 +51,9 @@ class OmxPlayer():
     def stop(self):
         print("Stopping...")
 
+    def crossfade(self, nextTrack):
+        print("Crossfading...")
+
     def next(self):
         print("Skipping forward...")
 
@@ -57,7 +61,10 @@ class OmxPlayer():
         print("Skipping back...")
 
     def exit(self):
-        self.player.exit()
+        if self.player:
+            self.player.quit()
+        else:
+            return 1
 
     def __del__(self):
         print("OMX died")
@@ -68,15 +75,15 @@ class VlcPlayer():
         self.vlc_instance = vlc.Instance()
         self.player = self.vlc_instance.media_player_new()
 
-    def play(self, pathToTrack):
+    def start(self, pathToTrack):
         self.media = self.vlc_instance.media_new('file://' + pathToTrack)
         self.player.set_media(self.media)
         self.player.play()
         self.player.pause()
-        time.sleep(1.5)
+        sleep(1.5)
         self.player.play()
         print("Playing on vlc...", self.player.get_length() / 1000)
-        return self.player.get_length() / 1000      
+        return self.player.get_length() / 1000     
 
     def playPause(self):
         print("Playpausing...", self.player.get_length() / 1000)
@@ -91,6 +98,9 @@ class VlcPlayer():
 
     def stop(self):
         print("Stopping...")
+
+    def crossfade(self, nextTrack):
+        print("Crossfading...") 
 
     def next(self):
         print("Skipping forward...")
@@ -124,8 +134,9 @@ class LushRoomsPlayer():
     def getPlayerType(self):
         return self.playerType
 
+    # Returns the current position in seconds
     def start(self, path):
-        return self.player.play(path)
+        return self.player.start(path)
 
     def playPause(self):
         return self.player.playPause()
