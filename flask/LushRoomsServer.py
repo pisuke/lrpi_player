@@ -139,11 +139,11 @@ class PlaySingleTrack(Resource):
 
         for track in NEW_TRACK_ARRAY:
             if track["ID"] == args["id"]:
-                thisTrack = track
                 srtFileName = splitext(track["Path"])[0]+".srt"
                 if os.path.isfile(BUILT_PATH + srtFileName):
                     print(srtFileName)
                 pathToTrack = BUILT_PATH + track["Path"]
+
         if os.path.isfile(pathToTrack) == False:
             print('Bad file path, will not attempt to play...')
             return jsonify("(Playing) File not found!")
@@ -160,12 +160,37 @@ class PlayPause(Resource):
         duration = player.playPause()
         return jsonify(duration)
 
+class Crossfade(Resource):
+    def get(self):
+        global player
+        global paused
+        global BUILT_PATH
+
+        args = getIdInput()
+        print('argsid: ', args["id"])
+
+        for track in NEW_TRACK_ARRAY:
+            if track["ID"] == args["id"]:
+                srtFileName = splitext(track["Path"])[0]+".srt"
+                if os.path.isfile(BUILT_PATH + srtFileName):
+                    print(srtFileName)
+                pathToTrack = BUILT_PATH + track["Path"]
+
+        if os.path.isfile(pathToTrack) == False:
+            print('Bad file path, will not attempt to play...')
+            return jsonify(1)
+
+        response = player.crossfade(pathToTrack)
+
+        return jsonify(response)
+
 # URLs are defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
 api.add_resource(GetSingleTrack, '/get-single-track')
 api.add_resource(PlaySingleTrack, '/play-single-track')
 api.add_resource(PlayPause, '/play-pause')
+api.add_resource(Crossfade, '/crossfade')
 
 if __name__ == '__main__':
    app.run(debug=True, port=80, host='0.0.0.0')
