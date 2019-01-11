@@ -25,10 +25,10 @@ class OmxPlayer():
         print('seek event! ' + str(b))
         return
 
-    def start(self, pathToTrack):
+    def start(self, pathToTrack, dbusId):
         print("Playing on omx...")
         print(pathToTrack)
-        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer' + str(dbusId), pause=True)
         sleep(2.5)
         self.player.positionEvent += self.posEvent
         self.player.seekEvent += self.seekEvent
@@ -45,6 +45,9 @@ class OmxPlayer():
     def getPosition(self):
         print("0:00")
 
+    def getDuration(self):
+        return str(self.player.duration())
+
     def pause(self):
         print("Pausing...")
 
@@ -60,6 +63,18 @@ class OmxPlayer():
     def previous(self):
         print("Skipping back...")
 
+    def mute(self):
+        print(self.player.volume())
+        self.player.mute()
+
+    def volumeUp(self):
+        print("upper: ", self.player.volume())
+        self.player.set_volume(self.player.volume() + 0.1)
+
+    def volumeDown(self):
+        print("downer: ", self.player.volume())
+        self.player.set_volume(self.player.volume() - 0.25)
+
     def exit(self):
         if self.player:
             self.player.quit()
@@ -67,6 +82,8 @@ class OmxPlayer():
             return 1
 
     def __del__(self):
+        if self.player:
+            self.player.quit()
         print("OMX died")
 
 class VlcPlayer():
@@ -108,8 +125,18 @@ class VlcPlayer():
     def previous(self):
         print("Skipping back...")
 
+    def mute(self):
+        print(self.player.audio_get_volume())
+        self.player.audio_set_volume(0)
+
+    def volumeUp(self):
+        self.player.audio_set_volume(self.player.audio_get_volume() + 10)
+
     def exit(self):
-        self.player.stop()
+        if self.player:
+            self.player.stop()
+        else:
+            return 1
 
     def __del__(self):
         print("VLC died")
@@ -121,14 +148,17 @@ class LushRoomsPlayer():
             self.playerType = "OMX"
             print('Spawning omxplayer')
             self.player = OmxPlayer()
+            self.crossfadePlayer = OmxPlayer()
         else:
             # we're likely on a desktop
             print('Spawning vlc player')
             self.playerType = "VLC"
             self.player = VlcPlayer()
+            self.crossfadePlayer = VlcPlayer()
 
         self.basePath = basePath
         self.paused = None 
+        self.started = False
         self.playlist = playlist
 
     def getPlayerType(self):
@@ -136,7 +166,8 @@ class LushRoomsPlayer():
 
     # Returns the current position in seconds
     def start(self, path):
-        return self.player.start(path)
+        self.started = True
+        return self.player.start(path, 0)
 
     def playPause(self):
         return self.player.playPause()
@@ -157,7 +188,14 @@ class LushRoomsPlayer():
         print("Skipping forward...")
 
     def previous(self):
-        print("Skipping back...") 
+        print("Skipping back...")
+
+    def fadeDown(self, path, interval):
+        for i in range(interval):
+            sleep(1)
+            self.player.volumeDown()
+        self.player.exit()
+        return self.player.start(path, 0) 
 
     def exit(self):
         self.player.exit()

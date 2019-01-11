@@ -33,7 +33,7 @@ allFormats = False
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
 
-MEDIA_BASE_PATH = "/media/usb/tracks/"
+MEDIA_BASE_PATH = "/media/usb/tracks/" 
 BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
@@ -139,11 +139,11 @@ class PlaySingleTrack(Resource):
 
         for track in NEW_TRACK_ARRAY:
             if track["ID"] == args["id"]:
-                thisTrack = track
                 srtFileName = splitext(track["Path"])[0]+".srt"
                 if os.path.isfile(BUILT_PATH + srtFileName):
                     print(srtFileName)
                 pathToTrack = BUILT_PATH + track["Path"]
+
         if os.path.isfile(pathToTrack) == False:
             print('Bad file path, will not attempt to play...')
             return jsonify("(Playing) File not found!")
@@ -160,12 +160,38 @@ class PlayPause(Resource):
         duration = player.playPause()
         return jsonify(duration)
 
+class FadeDown(Resource):
+    def get(self):
+        global player
+        global paused
+        global BUILT_PATH
+
+        args = getIdInput()
+        print('argsid: ', args["id"])
+        # print('argsinterval: ', args["interval"])
+
+        for track in NEW_TRACK_ARRAY:
+            if track["ID"] == args["id"]:
+                srtFileName = splitext(track["Path"])[0]+".srt"
+                if os.path.isfile(BUILT_PATH + srtFileName):
+                    print(srtFileName)
+                pathToTrack = BUILT_PATH + track["Path"]
+
+        if os.path.isfile(pathToTrack) == False:
+            print('Bad file path, will not attempt to play...')
+            return jsonify(1)
+
+        response = player.fadeDown(pathToTrack, 4)
+
+        return jsonify(response)
+
 # URLs are defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
 api.add_resource(GetSingleTrack, '/get-single-track')
 api.add_resource(PlaySingleTrack, '/play-single-track')
 api.add_resource(PlayPause, '/play-pause')
+api.add_resource(FadeDown, '/crossfade')
 
 if __name__ == '__main__':
    app.run(debug=True, port=80, host='0.0.0.0')
