@@ -4,5 +4,5 @@ flask-cors
 Flask-RESTful
 Flask-Jsonpify
 flask-inputs
-python-vlc
+python-vlc 
 omxplayer-wrapper

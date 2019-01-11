@@ -157,7 +157,6 @@ class LushRoomsPlayer():
             self.crossfadePlayer = VlcPlayer()
 
         self.basePath = basePath
-        self.paused = None 
         self.started = False
         self.playlist = playlist
 
@@ -192,6 +191,7 @@ class LushRoomsPlayer():
 
     def fadeDown(self, path, interval):
         for i in range(interval):
+            print ("Fading: ", i)
             sleep(1)
             self.player.volumeDown()
         self.player.exit()

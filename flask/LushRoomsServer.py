@@ -50,9 +50,10 @@ CORS(app)
 
 # utils
 
-def getIdInput():
+def getInput():
     parser = reqparse.RequestParser()
     parser.add_argument('id', help='error with id')
+    parser.add_argument('interval', help='error with interval')
     args = parser.parse_args()
     return args
 
@@ -81,7 +82,7 @@ class GetTrackList(Resource):
         global player
         
         BUILT_PATH = MEDIA_BASE_PATH
-        args = getIdInput()
+        args = getInput()
     
         print("track list id: " +  str(args['id']))
         
@@ -116,17 +117,6 @@ class GetTrackList(Resource):
                 player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
 
             return jsonify(NEW_TRACK_ARRAY)
-        
- 
-class GetSingleTrack(Resource):
-    def get(self):
-        global NEW_TRACK_ARRAY
-        global NEW_SRT_ARRAY
-        args = getIdInput()
-        print(args['id'])
-        for track in NEW_TRACK_ARRAY:
-            if track['ID'] == args['id']:
-                return jsonify(track["Name"])
             
 class PlaySingleTrack(Resource):
     def get(self):
@@ -134,8 +124,7 @@ class PlaySingleTrack(Resource):
         global paused
         global BUILT_PATH
 
-        args = getIdInput()
-        print('argsid: ', args["id"])
+        args = getInput()
 
         for track in NEW_TRACK_ARRAY:
             if track["ID"] == args["id"]:
@@ -158,15 +147,14 @@ class PlayPause(Resource):
     def get(self):
         global player 
         duration = player.playPause()
-        return jsonify(duration)
+        return jsonify(duration) 
 
 class FadeDown(Resource):
     def get(self):
-        global player
-        global paused
+        global player 
         global BUILT_PATH
 
-        args = getIdInput()
+        args = getInput()
         print('argsid: ', args["id"])
         # print('argsinterval: ', args["interval"])
 
@@ -181,14 +169,13 @@ class FadeDown(Resource):
             print('Bad file path, will not attempt to play...')
             return jsonify(1)
 
-        response = player.fadeDown(pathToTrack, 4)
+        response = player.fadeDown(pathToTrack, int(args["interval"]))
 
         return jsonify(response)
 
 # URLs are defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
-api.add_resource(GetSingleTrack, '/get-single-track')
 api.add_resource(PlaySingleTrack, '/play-single-track')
 api.add_resource(PlayPause, '/play-pause')
 api.add_resource(FadeDown, '/crossfade')
