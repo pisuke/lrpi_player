@@ -71,9 +71,13 @@ class OmxPlayer():
         print("upper: ", self.player.volume())
         self.player.set_volume(self.player.volume() + 0.1)
 
-    def volumeDown(self):
+    def volumeDown(self, interval):
         print("downer: ", self.player.volume())
-        self.player.set_volume(self.player.volume() - 0.25)
+        if (self.player.volume() <= 0.07):
+            return False
+        else:
+            self.player.set_volume(self.player.volume() - self.player.volume()/interval)
+            return True  
 
     def exit(self):
         if self.player:
@@ -176,7 +180,7 @@ class LushRoomsPlayer():
 
     def setPlaylist(self, playlist):
         self.playlist = playlist
-
+ 
     def getPlaylist(self):
         if len(self.playlist):
             return self.playlist
@@ -190,10 +194,8 @@ class LushRoomsPlayer():
         print("Skipping back...")
 
     def fadeDown(self, path, interval):
-        for i in range(interval):
-            print ("Fading: ", i)
-            sleep(1)
-            self.player.volumeDown()
+        while self.player.volumeDown(interval):
+            sleep(interval/5)
         self.player.exit()
         return self.player.start(path, 0) 
 
