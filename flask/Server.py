@@ -24,7 +24,7 @@ import random
 from pathlib import Path
 from time import sleep 
 
-from LushRoomsPlayer import LushRoomsPlayer
+from Player import LushRoomsPlayer
 
 mpegOnly = True
 mlpOnly = False
