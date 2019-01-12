@@ -25,10 +25,10 @@ class OmxPlayer():
         print('seek event! ' + str(b))
         return
 
-    def start(self, pathToTrack, dbusId):
+    def start(self, pathToTrack):
         print("Playing on omx...")
         print(pathToTrack)
-        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer' + str(dbusId), pause=True)
+        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0            ', pause=True)
         sleep(2.5)
         self.player.positionEvent += self.posEvent
         self.player.seekEvent += self.seekEvent
@@ -72,12 +72,12 @@ class OmxPlayer():
         self.player.set_volume(self.player.volume() + 0.1)
 
     def volumeDown(self, interval):
-        print("downer: ", self.player.volume())
-        if (self.player.volume() <= 0.07):
+        print("omx downer: ", self.player.volume())
+        if (self.player.volume() <= 0.07 or interval == 0):
             return False
         else:
             self.player.set_volume(self.player.volume() - self.player.volume()/interval)
-            return True  
+            return True 
 
     def exit(self):
         if self.player:
@@ -102,6 +102,7 @@ class VlcPlayer():
         self.player.play()
         self.player.pause()
         sleep(1.5)
+        self.player.audio_set_volume(50)
         self.player.play()
         print("Playing on vlc...", self.player.get_length() / 1000)
         return self.player.get_length() / 1000     
@@ -135,6 +136,14 @@ class VlcPlayer():
 
     def volumeUp(self):
         self.player.audio_set_volume(self.player.audio_get_volume() + 10)
+
+    def volumeDown(self, interval):
+        print("vlc downer: ", self.player.audio_get_volume())
+        if (self.player.audio_get_volume() <= 10 or interval == 0):
+            return False
+        else:
+            self.player.audio_set_volume(self.player.audio_get_volume() - 10)
+            return True  
 
     def exit(self):
         if self.player:
@@ -170,7 +179,7 @@ class LushRoomsPlayer():
     # Returns the current position in seconds
     def start(self, path):
         self.started = True
-        return self.player.start(path, 0)
+        return self.player.start(path)
 
     def playPause(self):
         return self.player.playPause()
@@ -197,7 +206,7 @@ class LushRoomsPlayer():
         while self.player.volumeDown(interval):
             sleep(interval/5)
         self.player.exit()
-        return self.player.start(path, 0) 
+        return self.player.start(path) 
 
     def exit(self):
         self.player.exit()
