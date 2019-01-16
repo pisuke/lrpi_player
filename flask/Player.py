@@ -2,7 +2,7 @@ from os import uname
 from time import sleep
 
 def findArm():
-    return uname().machine == 'armv7l'
+    return uname().machine == 'armv7l' 
 
 if findArm():
     from omxplayer.player import OMXPlayer
@@ -28,7 +28,7 @@ class OmxPlayer():
     def start(self, pathToTrack):
         print("Playing on omx...")
         print(pathToTrack)
-        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0            ', pause=True)
+        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
         sleep(2.5)
         self.player.positionEvent += self.posEvent
         self.player.seekEvent += self.seekEvent
@@ -76,7 +76,7 @@ class OmxPlayer():
         if (self.player.volume() <= 0.07 or interval == 0):
             return False
         else:
-            self.player.set_volume(self.player.volume() - self.player.volume()/interval)
+            self.player.set_volume(self.player.volume() - ((1.0/interval)/4.0))
             return True 
 
     def exit(self):
@@ -142,7 +142,7 @@ class VlcPlayer():
         if (self.player.audio_get_volume() <= 10 or interval == 0):
             return False
         else:
-            self.player.audio_set_volume(self.player.audio_get_volume() - 10)
+            self.player.audio_set_volume(self.player.audio_get_volume() - 100/interval)
             return True  
 
     def exit(self):
@@ -203,8 +203,9 @@ class LushRoomsPlayer():
         print("Skipping back...")
 
     def fadeDown(self, path, interval):
-        while self.player.volumeDown(interval):
-            sleep(interval/5)
+        if interval > 0: 
+            while self.player.volumeDown(interval):
+                sleep(0.25)
         self.player.exit()
         return self.player.start(path) 
 
