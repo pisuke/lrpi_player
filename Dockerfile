@@ -1,47 +1,30 @@
-# sample build command: sudo docker build -t media-warrior-base .
-# sample run command: sudo docker run -d -p 80:80 arupiot/media_warrior_base:develop
+# sample build command: sudo docker build -t lrpi_player .
 # running resin.io rpi image on ubuntu with qemu
 # (but) resin images have qemu built in anyway...
 # sudo docker run -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static --rm -ti resin/rpi-raspbian
+# Sample run command with kernel/usb stick links
+# docker run -it --rm -v /opt/vc:/opt/vc -v /media/usb:/media/usb --device /dev/vchiq:/dev/vchiq --device /dev/fb0:/dev/fb0 lrpi_player
 
-# get resin.io rpi image. Has QEMU built in
-FROM lrpi_rpi_base:local
+# get base image (based itself on a resin image). Has QEMU built in
+FROM lushdigital/lushroom-base:latest
 
-RUN [ "cross-build-start" ]
+RUN [ "cross-build-start" ] 
 
 # make dirs
 
 RUN mkdir /opt/code
-RUN mkdir -p /media/usb/tracks
-# ADD media-warrior-07dec249ae7a.json /opt/GCP
-# ADD rclone1.43.1_expect.sh /
+RUN mkdir -p /media/usb
 
-# copy mw_serve repo
+# copy lrpi_player repo
 
-RUN pip3 install dbus-python && \
-    pip3 install flask && \
-    pip3 install -U flask-cors && \
-    pip3 install Flask-RESTful && \
-    pip3 install Flask-Jsonpify && \
-    pip3 install flask-inputs && \
-    pip3 install omxplayer-wrapper && \     
-    git clone --single-branch -b develop https://github.com/LUSHDigital/lrpi_player.git /opt/code 
-
-# expect rclone1.43.1_expect.sh
-# rclone sync arupiot-expect:mlp_samples_test /opt/usb -v -P
-
-# TODO:
-# set up rclone cron job
-# set up rclone chronjob (updated every evening?)
-
-# don't build angular app on the pi, it takes too long
-# we serve the dist from the flask app
+RUN git clone --single-branch -b lplay-2 --depth 5 https://github.com/LUSHDigital/lrpi_player.git /opt/code && \
+    pip3 install -r /opt/code/requirements.txt
 
 # serve Flask from 80
 WORKDIR /opt/code/flask
 
 ENTRYPOINT ["python3"]
-CMD ["omx-player-service.py"]
+CMD ["Server.py"]
 
 EXPOSE 80
 
