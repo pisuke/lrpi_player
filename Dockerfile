@@ -24,7 +24,7 @@ RUN mkdir -p /media/usb
 
 # copy lrpi_player repo
 
-RUN git clone --single-branch -b lplay-2 --depth 5 https://github.com/LUSHDigital/lrpi_player.git /opt/code && \
+RUN git clone --single-branch -b develop --depth 5 https://github.com/LUSHDigital/lrpi_player.git /opt/code && \
     pip3 install -r /opt/code/requirements.txt
 
 # serve Flask from 80
