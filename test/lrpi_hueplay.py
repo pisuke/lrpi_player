@@ -26,13 +26,18 @@ SRT_FILENAME = "Surround_Test_Audio.srt"
 AUDIO_FILENAME = "Surround_Test_Audio.m4a"
 HUE_IP_ADDRESS = "10.0.0.2"
 TICK_TIME = 0.2 # seconds
+PLAY_HUE = False
+PLAY_AUDIO = True
 
 subs = []
+last_played = 0
 player = None
+b = None
 
 def find_subtitle(subtitle, from_t, to_t, lo=0):
     i = lo
     while (i < len(subtitle)):
+        # print(subtitle[i])
         if (subtitle[i].start >= to_t):
             break
         if (subtitle[i].start <= from_t) & (to_t  <= subtitle[i].end):
@@ -48,6 +53,7 @@ def end_callback(event):
 def trigger_light_hue(subs):
     # print(perf_counter(), subs)
     commands = str(subs).split(";")
+    global bridge
     for command in commands:
         try:
             # print(command)
@@ -55,10 +61,12 @@ def trigger_light_hue(subs):
             # print(scope,items)
             if scope[0:3] == "HUE":
                 l = int(scope[3:])
-                hue, sat, bri, transitionime = items.split(',')
+                hue, sat, bri, TRANSITION_TIME = items.split(',')
                 print(perf_counter(), l, hue, sat, bri, TRANSITION_TIME)
                 cmd =  {'TRANSITION_TIME' : int(TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
-                b.set_light(l, cmd)
+                if PLAY_HUE:
+                    b.set_light(l, cmd)
+                print("Trigger light",l,cmd)
         except:
             pass
     print(30*'-')
@@ -68,6 +76,9 @@ def trigger_light_hue(subs):
 def tick():
     global subs
     global player
+    global last_played
+    global TICK_TIME
+    # print(subs[0])
     t = perf_counter()
     # ts = str(timedelta(seconds=t)).replace('.',',')
     # tsd = str(timedelta(seconds=t+10*TICK_TIME)).replace('.',',')
@@ -76,30 +87,17 @@ def tick():
     # print(dir(player))
     pp = player.get_position()
     ptms = player.get_time()/1000.0
-    pt = SubRipTime(seconds=player.get_time()/1000.0)
-    ptd = SubRipTime(seconds=player.get_time()/1000.0+1*TICK_TIME)
+    pt = SubRipTime(seconds=(player.get_time()/1000.0))
+    ptd = SubRipTime(seconds=(player.get_time()/1000.0+1*TICK_TIME))
     print('Time: %s | %s | %s - %s | %s - %s | %s | %s' % (datetime.now(),t,ts,tsd,pt,ptd,pp,ptms))
     # sub, i = find_subtitle(subs, ts, tsd)
     sub, i = find_subtitle(subs, pt, ptd)
     # hours, minutes, seconds, milliseconds = time_convert(sub.start)
     # t = seconds + minutes*60 + hours*60*60 + milliseconds/1000.0
-    print(sub)
-    if sub!='':
+    print("Subtitle:", sub, i)
+    if sub!="" and i > last_played:
         trigger_light_hue(sub)
-
-
-# >>> def print_some_times():
-# ...     print time.time()
-# ...     Timer(5, print_time, ()).start()
-# ...     Timer(10, print_time, ()).start()
-# ...     time.sleep(11)  # sleep while time-delay events execute
-# ...     print time.time()
-# ...
-# >>> print_some_times()
-# 930343690.257
-# From print_time 930343695.274
-# From print_time 930343700.273
-# 930343701.301
+        last_played=i
 
 def time_convert(t):
     block, milliseconds = str(t).split(",")
@@ -110,10 +108,12 @@ def time_convert(t):
 def main():
     global subs
     global player
+    global bridge
+    global SRT_FILENAME, AUDIO_FILENAME, MAX_BRIGHTNESS, TICK_TIME, HUE_IP_ADDRESS
     parser = argparse.ArgumentParser(description="LushRoom sound and light command-line player")
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("-v", "--verbose", action="store_true")
-    group.add_argument("-q", "--quiet", action="store_true")
+    # group = parser.add_mutually_exclusive_group()
+    # group.add_argument("-v", "--verbose", action="store_true")
+    # group.add_argument("-q", "--quiet", action="store_true")
     parser.add_argument("-s","--srt", default=SRT_FILENAME, help=".srt file name for lighting events")
     parser.add_argument("-a","--audio", default=AUDIO_FILENAME, help="audio file for sound stream")
     parser.add_argument("-b","--brightness", default=MAX_BRIGHTNESS, help="maximum brightness")
@@ -124,33 +124,30 @@ def main():
 
     print(args)
 
-    player = vlc.MediaPlayer(AUDIO_FILENAME)
-    event_manager = player.event_manager()
-    event_manager.event_attach(vlc.EventType.MediaPlayerEndReached, end_callback)
+    if PLAY_AUDIO:
+        player = vlc.MediaPlayer(AUDIO_FILENAME)
+        event_manager = player.event_manager()
+        event_manager.event_attach(vlc.EventType.MediaPlayerEndReached, end_callback)
 
-    # b = Bridge('lushroom-hue.local')
-    b = Bridge(HUE_IP_ADDRESS)
+    if PLAY_HUE:
+        # b = Bridge('lushroom-hue.local')
+        bridge = Bridge(HUE_IP_ADDRESS)
+        # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
+        bridge.connect()
+        # Get the bridge state (This returns the full dictionary that you can explore)
+        bridge.get_api()
+        lights = bridge.lights
+        # Print light names
+        for l in lights:
+            print(l.name)
+            #print(dir(l))
+        # Set brightness of each light to 10
+        for l in lights:
+            l.brightness = 1
 
-    # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
-    b.connect()
-
-    # Get the bridge state (This returns the full dictionary that you can explore)
-    b.get_api()
-
-    lights = b.lights
-
-    # Print light names
-    for l in lights:
-        print(l.name)
-        print(dir(l))
-
-    # Set brightness of each light to 10
-    for l in lights:
-        l.brightness = 10
-
-    # Get a dictionary with the light name as the key
-    light_names = b.get_light_objects('name')
-    print("Light names:", light_names)
+        # Get a dictionary with the light name as the key
+        light_names = bridge.get_light_objects('name')
+        print("Light names:", light_names)
 
     subs = srtopen(SRT_FILENAME)
 
@@ -159,7 +156,8 @@ def main():
     scheduler = BackgroundScheduler()
     scheduler.add_job(tick, 'interval', seconds=TICK_TIME)
     # scheduler.start(paused=True)
-    player.play()
+    if PLAY_AUDIO:
+        player.play()
     scheduler.start(paused=False)
 
     try:
@@ -173,10 +171,10 @@ def main():
                 elif keyboard.is_pressed('r'): # resume
                     scheduler.resume()
                     player.play()
-                elif keyboard.is_pressed('s'): # stop
-                    scheduler.shutdown()
-                    player.stop()
-                    exit(0)
+                # elif keyboard.is_pressed('s'): # stop
+                #     scheduler.shutdown()
+                #     player.stop()
+                #     exit(0)
             except:
                 pass
     except (KeyboardInterrupt, SystemExit):
@@ -266,3 +264,16 @@ if __name__ == "__main__":
 # print("Running event scheduler ...")
 
 # s = scheduler(time, sleep)
+
+# >>> def print_some_times():
+# ...     print time.time()
+# ...     Timer(5, print_time, ()).start()
+# ...     Timer(10, print_time, ()).start()
+# ...     time.sleep(11)  # sleep while time-delay events execute
+# ...     print time.time()
+# ...
+# >>> print_some_times()
+# 930343690.257
+# From print_time 930343695.274
+# From print_time 930343700.273
+# 930343701.301
