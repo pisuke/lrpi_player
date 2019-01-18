@@ -72,12 +72,18 @@ class OmxPlayer():
         self.player.set_volume(self.player.volume() + 0.1)
 
     def volumeDown(self, interval):
-        print("omx downer: ", self.player.volume())
-        if (self.player.volume() <= 0.07 or interval == 0):
-            return False
-        else:
-            self.player.set_volume(self.player.volume() - ((1.0/interval)/4.0))
-            return True 
+        # If we're right at the end of the track, don't try to 
+        # lower the volume or else dbus will disconnect and
+        # the server will look at though it's crashed
+        
+        if self.player.duration() - self.player.position() > 1:
+            print("omx downer: ", self.player.volume())
+            if (self.player.volume() <= 0.07 or interval == 0):
+                return False
+            else:
+                self.player.set_volume(self.player.volume() - ((1.0/interval)/4.0))
+                return True 
+        return False
 
     def exit(self):
         if self.player:
@@ -206,7 +212,7 @@ class LushRoomsPlayer():
         if interval > 0: 
             while self.player.volumeDown(interval):
                 sleep(0.25)
-        self.player.exit()
+        self.player.exit() 
         return self.player.start(path) 
 
     def exit(self):
