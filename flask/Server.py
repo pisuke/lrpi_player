@@ -80,6 +80,10 @@ class GetTrackList(Resource):
         global NEW_SRT_ARRAY
         global BUILT_PATH
         global player
+
+        # return a graceful error if the usb stick isn't mounted
+        if os.path.isdir(MEDIA_BASE_PATH) == False:
+            return jsonify(1)
         
         BUILT_PATH = MEDIA_BASE_PATH
         args = getInput()
