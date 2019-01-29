@@ -100,6 +100,9 @@ class OmxPlayer():
     def __del__(self):
         if self.player:
             self.player.quit()
+            # Kill every omxplayer process anyway
+            os.system("killall omxplayer.bin")
+            print('omxplayer processes killed!')
         print("OMX died")
 
 class VlcPlayer():
