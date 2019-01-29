@@ -29,10 +29,12 @@ class OmxPlayer():
         print("Playing on omx...")
         print(pathToTrack)
         self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
+        self.player.set_volume(0)
         sleep(2.5)
         self.player.positionEvent += self.posEvent
         self.player.seekEvent += self.seekEvent
         self.player.set_position(0)
+        self.player.set_volume(1.0)
         self.player.play() 
         return str(self.player.duration())
 
@@ -84,6 +86,10 @@ class OmxPlayer():
                 self.player.set_volume(self.player.volume() - ((1.0/interval)/4.0))
                 return True 
         return False
+
+    def seek(self, position):
+        self.player.set_position(self.player.duration()*(position/100.0))
+        return self.player.position()
 
     def exit(self):
         if self.player:
@@ -214,6 +220,11 @@ class LushRoomsPlayer():
                 sleep(0.25)
         self.player.exit() 
         return self.player.start(path) 
+
+    def seek(self, position):
+        if self.started:
+            return self.player.seek(position)
+
 
     def exit(self):
         self.player.exit()

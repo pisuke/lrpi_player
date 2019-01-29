@@ -54,6 +54,7 @@ def getInput():
     parser = reqparse.RequestParser()
     parser.add_argument('id', help='error with id')
     parser.add_argument('interval', help='error with interval')
+    parser.add_argument('position', help='error with position')
     args = parser.parse_args()
     return args
 
@@ -80,7 +81,7 @@ class GetTrackList(Resource):
         global NEW_SRT_ARRAY
         global BUILT_PATH
         global player
-
+ 
         # return a graceful error if the usb stick isn't mounted
         if os.path.isdir(MEDIA_BASE_PATH) == False:
             return jsonify(1)
@@ -99,6 +100,10 @@ class GetTrackList(Resource):
 
         if player:
             player.exit() 
+
+        # return a graceful error if contents.json can't be found
+        if os.path.isfile(BUILT_PATH + JSON_LIST_FILE) == False: 
+            return jsonify(2)   
             
         with open(BUILT_PATH + JSON_LIST_FILE) as data:
             TRACK_ARRAY_WITH_CONTENTS = json.load(data)
@@ -177,12 +182,27 @@ class FadeDown(Resource):
 
         return jsonify(response)
 
+class Seek(Resource):
+    def get(self):
+        global player 
+        global BUILT_PATH
+
+        args = getInput()
+        print('position to seek (%%): ', args["position"])
+        # print('argsinterval: ', args["interval"])
+
+        response = player.seek(int(args["position"]))
+        print('pos: ', response)
+
+        return jsonify(response)
+
 # URLs are defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
 api.add_resource(PlaySingleTrack, '/play-single-track')
 api.add_resource(PlayPause, '/play-pause')
 api.add_resource(FadeDown, '/crossfade')
+api.add_resource(Seek, '/seek')
 
 if __name__ == '__main__':
    app.run(debug=True, port=80, host='0.0.0.0')
