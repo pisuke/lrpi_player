@@ -29,10 +29,12 @@ class OmxPlayer():
         print("Playing on omx...")
         print(pathToTrack)
         self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
+        self.player.set_volume(0)
         sleep(2.5)
         self.player.positionEvent += self.posEvent
         self.player.seekEvent += self.seekEvent
         self.player.set_position(0)
+        self.player.set_volume(1.0)
         self.player.play() 
         return str(self.player.duration())
 
@@ -72,12 +74,22 @@ class OmxPlayer():
         self.player.set_volume(self.player.volume() + 0.1)
 
     def volumeDown(self, interval):
-        print("omx downer: ", self.player.volume())
-        if (self.player.volume() <= 0.07 or interval == 0):
-            return False
-        else:
-            self.player.set_volume(self.player.volume() - ((1.0/interval)/4.0))
-            return True 
+        # If we're right at the end of the track, don't try to 
+        # lower the volume or else dbus will disconnect and
+        # the server will look at though it's crashed
+        
+        if self.player.duration() - self.player.position() > 1:
+            print("omx downer: ", self.player.volume())
+            if (self.player.volume() <= 0.07 or interval == 0):
+                return False
+            else:
+                self.player.set_volume(self.player.volume() - ((1.0/interval)/4.0))
+                return True 
+        return False
+
+    def seek(self, position):
+        self.player.set_position(self.player.duration()*(position/100.0))
+        return self.player.position()
 
     def exit(self):
         if self.player:
@@ -88,6 +100,9 @@ class OmxPlayer():
     def __del__(self):
         if self.player:
             self.player.quit()
+            # Kill every omxplayer process anyway
+            os.system("killall omxplayer.bin")
+            print('omxplayer processes killed!')
         print("OMX died")
 
 class VlcPlayer():
@@ -206,8 +221,13 @@ class LushRoomsPlayer():
         if interval > 0: 
             while self.player.volumeDown(interval):
                 sleep(0.25)
-        self.player.exit()
+        self.player.exit() 
         return self.player.start(path) 
+
+    def seek(self, position):
+        if self.started:
+            return self.player.seek(position)
+
 
     def exit(self):
         self.player.exit()
