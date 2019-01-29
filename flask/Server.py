@@ -100,6 +100,10 @@ class GetTrackList(Resource):
 
         if player:
             player.exit() 
+
+        # return a graceful error if contents.json can't be found
+        if os.path.isfile(BUILT_PATH + JSON_LIST_FILE) == False: 
+            return jsonify(2)   
             
         with open(BUILT_PATH + JSON_LIST_FILE) as data:
             TRACK_ARRAY_WITH_CONTENTS = json.load(data)
