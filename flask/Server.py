@@ -37,11 +37,17 @@ MEDIA_BASE_PATH = "/media/usb/tracks/"
 BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
+SETTINGS_FILE = "settings.json"
 
 TEST_TRACK = MEDIA_BASE_PATH + AUDIO_PATH_TEST_MP4
 NEW_TRACK_ARRAY = []
 NEW_SRT_ARRAY = []
 
+DEFAULT_SETTINGS = {
+    "fadeInterval" : "4",
+    "roomName" : "?",
+    "format" : "mp4"
+}
 
 player = None
 paused = None
@@ -74,6 +80,27 @@ def serve(path):
         return send_from_directory('static/', 'index.html')
 
 # API endpoints
+
+def loadSettings():
+    # return a graceful error if contents.json can't be found
+    
+    settingsPath = MEDIA_BASE_PATH + SETTINGS_FILE
+
+    # If no settings.json exists, either rclone hasn't
+    # finished yet or something else is wrong...
+    if os.path.isfile(settingsPath) == False: 
+        return DEFAULT_SETTINGS  
+        
+    with open(settingsPath) as data:
+        settings = json.load(data)
+
+    print("Room name: ", settings["roomName"])
+       
+    return settings
+
+class GetSettings(Resource):
+    def get(self):
+        return jsonify(loadSettings())
 
 class GetTrackList(Resource): 
     def get(self): 
@@ -203,6 +230,7 @@ api.add_resource(PlaySingleTrack, '/play-single-track')
 api.add_resource(PlayPause, '/play-pause')
 api.add_resource(FadeDown, '/crossfade')
 api.add_resource(Seek, '/seek')
+api.add_resource(GetSettings, '/settings')
 
 if __name__ == '__main__':
    app.run(debug=True, port=80, host='0.0.0.0')

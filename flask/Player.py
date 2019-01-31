@@ -26,7 +26,7 @@ class OmxPlayer():
         return
 
     def start(self, pathToTrack):
-        print("Playing on omx...")
+        print("Playing on omx...") 
         print(pathToTrack)
         self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
         self.player.set_volume(0)
