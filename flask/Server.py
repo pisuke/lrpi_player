@@ -17,14 +17,16 @@ from os.path import splitext
 import os
 import os.path
 import sys
-import time
+import time 
 import subprocess
 import json
 import random
 from pathlib import Path
 from time import sleep 
+import signal
 
 from Player import LushRoomsPlayer
+from Player import killOmx
 
 mpegOnly = True
 mlpOnly = False
@@ -53,8 +55,16 @@ player = None
 paused = None
 
 CORS(app)
+# killOmx as soon as the server starts...
+killOmx()
 
 # utils
+
+def sigint_handler(signum, frame):
+    killOmx()
+    exit()
+ 
+signal.signal(signal.SIGINT, sigint_handler)
 
 def getInput():
     parser = reqparse.RequestParser()
@@ -68,6 +78,23 @@ def printOmxVars():
     print("OMXPLAYER_LIB" in os.environ)
     print("LD_LIBRARY_PATH" in os.environ)
     print("OMXPLAYER_BIN" in os.environ)
+
+def loadSettings():
+    # return a graceful error if contents.json can't be found
+    
+    settingsPath = MEDIA_BASE_PATH + SETTINGS_FILE
+
+    # If no settings.json exists, either rclone hasn't
+    # finished yet or something else is wrong...
+    if os.path.isfile(settingsPath) == False: 
+        return DEFAULT_SETTINGS  
+         
+    with open(settingsPath) as data:
+        settings = json.load(data)
+
+    print("Room name: ", settings["roomName"])
+       
+    return settings
     
 # serve the angular app
 
@@ -80,23 +107,6 @@ def serve(path):
         return send_from_directory('static/', 'index.html')
 
 # API endpoints
-
-def loadSettings():
-    # return a graceful error if contents.json can't be found
-    
-    settingsPath = MEDIA_BASE_PATH + SETTINGS_FILE
-
-    # If no settings.json exists, either rclone hasn't
-    # finished yet or something else is wrong...
-    if os.path.isfile(settingsPath) == False: 
-        return DEFAULT_SETTINGS  
-        
-    with open(settingsPath) as data:
-        settings = json.load(data)
-
-    print("Room name: ", settings["roomName"])
-       
-    return settings
 
 class GetSettings(Resource):
     def get(self):
@@ -125,8 +135,18 @@ class GetTrackList(Resource):
 
         print('BUILT_PATH: ' + str(BUILT_PATH))
 
-        if player:
-            player.exit() 
+        try:
+            if player:
+                status = player.getStatus()
+                print('Player error: ', status["error"])
+                if not status["playerState"]:
+                    player.exit()
+                else:
+                    return jsonify(player.getPlaylist())
+
+        except:
+            print('EXCEPTION! killing omx...' )
+            killOmx()
 
         # return a graceful error if contents.json can't be found
         if os.path.isfile(BUILT_PATH + JSON_LIST_FILE) == False: 
@@ -223,6 +243,17 @@ class Seek(Resource):
 
         return jsonify(response)
 
+class PlayerStatus(Resource):
+    def get(self):
+        global player 
+
+        try:
+            response = player.getStatus() 
+        except: 
+            response = 1
+
+        return jsonify(response)
+
 # URLs are defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
@@ -231,6 +262,7 @@ api.add_resource(PlayPause, '/play-pause')
 api.add_resource(FadeDown, '/crossfade')
 api.add_resource(Seek, '/seek')
 api.add_resource(GetSettings, '/settings')
+api.add_resource(PlayerStatus, '/status')
 
 if __name__ == '__main__':
    app.run(debug=True, port=80, host='0.0.0.0')

@@ -1,11 +1,17 @@
-from os import uname
+from os import uname, system
 from time import sleep
+
+def killOmx():
+    # This will only work on Unix-like systems...
+    system("killall omxplayer.bin")
+    print('omxplayer processes killed!')
+
 
 def findArm():
     return uname().machine == 'armv7l' 
 
 if findArm():
-    from omxplayer.player import OMXPlayer
+    from omxplayer.player import OMXPlayer # pylint: disable=import-error
 else: 
     import vlc
 
@@ -13,6 +19,7 @@ else:
 class OmxPlayer():
     def __init__(self):
         self.player = None
+        self.paired = False
 
     # omxplayer callbacks
 
@@ -50,21 +57,6 @@ class OmxPlayer():
     def getDuration(self):
         return str(self.player.duration())
 
-    def pause(self):
-        print("Pausing...")
-
-    def stop(self):
-        print("Stopping...")
-
-    def crossfade(self, nextTrack):
-        print("Crossfading...")
-
-    def next(self):
-        print("Skipping forward...")
-
-    def previous(self):
-        print("Skipping back...")
-
     def mute(self):
         print(self.player.volume())
         self.player.mute()
@@ -88,21 +80,37 @@ class OmxPlayer():
         return False
 
     def seek(self, position):
-        self.player.set_position(self.player.duration()*(position/100.0))
+        if self.player.can_seek():
+            self.player.set_position(self.player.duration()*(position/100.0))
         return self.player.position()
+
+    def status(self, status):
+        if self.player != None:
+            print('status requested!')
+            status["source"] = self.player.get_source()
+            status["playerState"] = self.player.playback_status()
+            status["canControl"] = self.player.can_control()
+            status["paired"] = self.paired
+            status["position"] = self.player.position()
+            status["trackDuration"] = self.player.duration()
+            status["error"] = ""
+        else: 
+            status["error"] = "error: player is not initialized!"
+            
+        return status
+
 
     def exit(self):
         if self.player:
             self.player.quit()
-        else:
+            killOmx()
+        else: 
             return 1
 
     def __del__(self):
         if self.player:
             self.player.quit()
-            # Kill every omxplayer process anyway
-            os.system("killall omxplayer.bin")
-            print('omxplayer processes killed!')
+            killOmx()
         print("OMX died")
 
 class VlcPlayer():
@@ -176,22 +184,31 @@ class LushRoomsPlayer():
             self.playerType = "OMX"
             print('Spawning omxplayer')
             self.player = OmxPlayer()
-            self.crossfadePlayer = OmxPlayer()
         else:
             # we're likely on a desktop
             print('Spawning vlc player')
             self.playerType = "VLC"
             self.player = VlcPlayer()
-            self.crossfadePlayer = VlcPlayer()
 
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
+        self.status = {
+            "source" : "",
+            "playerState" : "",
+            "canControl" : "",
+            "paired" : "",
+            "position" : "",
+            "trackDuration" : "",
+            "playerType": self.playerType,
+            "playlist": self.playlist,
+            "error" : ""
+        }
 
     def getPlayerType(self):
         return self.playerType
 
-    # Returns the current position in seconds
+    # Returns the current position in secoends
     def start(self, path):
         self.started = True
         return self.player.start(path)
@@ -204,6 +221,7 @@ class LushRoomsPlayer():
 
     def setPlaylist(self, playlist):
         self.playlist = playlist
+        self.status["playlist"] = playlist
  
     def getPlaylist(self):
         if len(self.playlist):
@@ -220,7 +238,7 @@ class LushRoomsPlayer():
     def fadeDown(self, path, interval):
         if interval > 0: 
             while self.player.volumeDown(interval):
-                sleep(0.25)
+                sleep(1.0/interval)
         self.player.exit() 
         return self.player.start(path) 
 
@@ -228,6 +246,8 @@ class LushRoomsPlayer():
         if self.started:
             return self.player.seek(position)
 
+    def getStatus(self):
+        return self.player.status(self.status)
 
     def exit(self):
         self.player.exit()
