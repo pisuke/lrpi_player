@@ -135,18 +135,11 @@ class GetTrackList(Resource):
 
         print('BUILT_PATH: ' + str(BUILT_PATH))
 
-        try:
-            if player:
-                status = player.getStatus()
-                print('Player error: ', status["error"])
-                if not status["playerState"]:
-                    player.exit()
-                else:
-                    return jsonify(player.getPlaylist())
-
-        except:
-            print('EXCEPTION! killing omx...' )
+      
+        if player:
+            player.exit()
             killOmx()
+            
 
         # return a graceful error if contents.json can't be found
         if os.path.isfile(BUILT_PATH + JSON_LIST_FILE) == False: 
