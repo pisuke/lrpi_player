@@ -128,17 +128,15 @@ class GetTrackList(Resource):
     
         print("track list id: " +  str(args['id']))
         
-        if args['id']:
-            if NEW_TRACK_ARRAY:
-                BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
-                print(BUILT_PATH[0]) 
+        try:
+            if args['id']:
+                if NEW_TRACK_ARRAY:
+                    BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
+                    print(BUILT_PATH[0])
+        except:
+            return jsonify(2)     
 
         print('BUILT_PATH: ' + str(BUILT_PATH))
-
-      
-        if player:
-            player.exit()
-            killOmx()
             
 
         # return a graceful error if contents.json can't be found
@@ -247,6 +245,17 @@ class PlayerStatus(Resource):
 
         return jsonify(response)
 
+class Stop(Resource):
+    def get(self):
+        global player 
+
+        try:
+            response = player.stop()  
+        except: 
+            response = 1
+
+        return jsonify(response)
+
 # URLs are defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
@@ -256,6 +265,7 @@ api.add_resource(FadeDown, '/crossfade')
 api.add_resource(Seek, '/seek')
 api.add_resource(GetSettings, '/settings')
 api.add_resource(PlayerStatus, '/status')
+api.add_resource(Stop, '/stop')
 
 if __name__ == '__main__':
    app.run(debug=True, port=80, host='0.0.0.0')

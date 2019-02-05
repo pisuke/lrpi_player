@@ -217,7 +217,12 @@ class LushRoomsPlayer():
         return self.player.playPause()
 
     def stop(self):
-        self.player.stop()
+        try:
+            print('Stopping...')
+            self.player.exit()
+            return 0
+        except:
+            return 1
 
     def setPlaylist(self, playlist):
         self.playlist = playlist
