@@ -96,7 +96,7 @@ def loadSettings():
     with open(settingsPath) as data: 
         settings = json.load(data)
 
-    print("Room name: ", settings["roomName"])
+    print("Room name: ", settings["roomName"]) 
        
     return settings
     
