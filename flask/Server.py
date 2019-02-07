@@ -60,6 +60,10 @@ killOmx()
 
 # utils
 
+# Kill omx processes on a ctrl+c/program closure
+# to mirror the behaviour of vlc and, in turn, to
+# be more graceful
+
 def sigint_handler(signum, frame):
     killOmx()
     exit()
@@ -89,7 +93,7 @@ def loadSettings():
     if os.path.isfile(settingsPath) == False: 
         return DEFAULT_SETTINGS  
          
-    with open(settingsPath) as data:
+    with open(settingsPath) as data: 
         settings = json.load(data)
 
     print("Room name: ", settings["roomName"])

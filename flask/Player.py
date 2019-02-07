@@ -99,7 +99,7 @@ class OmxPlayer():
             
         return status
 
-
+ 
     def exit(self):
         if self.player:
             self.player.quit()
@@ -262,5 +262,4 @@ class LushRoomsPlayer():
     def __del__(self):
         self.player.__del__()
         print("LRPlayer died")
-
 
