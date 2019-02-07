@@ -84,6 +84,15 @@ class OmxPlayer():
             self.player.set_position(self.player.duration()*(position/100.0))
         return self.player.position()
 
+    def pair(self, hostname, status):
+        if self.player != None:
+            print('pairing with', hostname, ' requested!')
+            self.paired = True
+        else: 
+            status["error"] = "error: player is not initialized!"
+            
+        return status    
+
     def status(self, status):
         if self.player != None:
             print('status requested!')
@@ -197,7 +206,7 @@ class LushRoomsPlayer():
             "source" : "",
             "playerState" : "",
             "canControl" : "",
-            "paired" : "",
+            "paired" : False,
             "position" : "",
             "trackDuration" : "",
             "playerType": self.playerType,
@@ -253,6 +262,9 @@ class LushRoomsPlayer():
 
     def getStatus(self):
         return self.player.status(self.status)
+
+    def pair(self, hostname):
+        return self.player.pair(hostname, self.status)
 
     def exit(self):
         self.player.exit()
