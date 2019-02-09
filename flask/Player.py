@@ -25,7 +25,7 @@ class LushRoomsPlayer():
             self.playerType = "VLC"
             self.player = VlcPlayer()
 
-        self.Lighting = LushRoomsLighting()
+        self.lighting = LushRoomsLighting()
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
@@ -47,7 +47,14 @@ class LushRoomsPlayer():
     # Returns the current position in secoends
     def start(self, path):
         self.started = True
-        return self.player.start(path)
+        response = self.player.start(path)
+        try:
+            print('In Player: ', id(self.player))
+            self.lighting.start(self.player) 
+        except Exception as e:
+            print('Lighting failed: ', e)
+
+        return response
 
     def playPause(self):
         return self.player.playPause()

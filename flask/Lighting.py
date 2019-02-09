@@ -53,6 +53,7 @@ class LushRoomsLighting():
         self.SETTINGS_BASE_PATH = "/media/usb/"
         self.JSON_SETTINGS_FILE = "settings.json"
         self.hue_list = [[]]
+        self.player = None
 
 
         self.initDMX()
@@ -250,7 +251,6 @@ class LushRoomsLighting():
 
     def tick(self):
         global subs
-        global player
         global last_played
         global TICK_TIME, DEBUG
         #try:
@@ -262,7 +262,9 @@ class LushRoomsLighting():
             ts = SubRipTime(seconds = t)
             tsd = SubRipTime(seconds = t+1*TICK_TIME)
             # print(dir(player))
-            pp = player.getPosition()
+            print('in tick, player: ', id(self.player))
+            print('in tick, playerDur: ', self.player.getPosition())
+            pp = self.player.getPosition()
             #ptms = player.get_time()/1000.0
             #pt = SubRipTime(seconds=(player.get_time()/1000.0))
             #ptd = SubRipTime(seconds=(player.get_time()/1000.0+1*TICK_TIME))
@@ -290,11 +292,13 @@ class LushRoomsLighting():
         hours, minutes, seconds = block.split(":")
         return(int(hours),int(minutes),int(seconds), int(milliseconds))
 
-    def start(self):
+    def start(self, audioPlayer):
         global subs, bridge, scheduler, ipcon, dmx, last_played
         global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
+        self.player = audioPlayer
 
         print("Lighting: Start!")
+        print('AudioPlayer: ', self.player)
 
         # start lighting player/scheduler
         last_played = 0
@@ -308,11 +312,6 @@ class LushRoomsLighting():
         global subs, bridge, scheduler, ipcon, dmx
         global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
 
-        print("-------------")
-        print("Lighting: PlayPause")
-        duration = player.playPause()
-
-        status = player.getStatus()
         print(status)
         if status=="Paused":
             scheduler.pause()
@@ -327,7 +326,7 @@ class LushRoomsLighting():
         print("Lighting: fadeDown")
         # scheduler.shutdown()
         last_played = 0
-        status = player.getStatus()
+        
         if status=="Paused":
             scheduler.pause()
         elif status=="Playing":
