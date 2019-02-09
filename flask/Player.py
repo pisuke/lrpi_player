@@ -96,4 +96,3 @@ class LushRoomsPlayer():
     def __del__(self):
         self.player.__del__()
         print("LRPlayer died")
-

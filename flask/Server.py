@@ -26,7 +26,7 @@ from time import sleep
 import signal
 
 from Player import LushRoomsPlayer
-from Player import killOmx
+from OmxPlayer import killOmx
 
 mpegOnly = True
 mlpOnly = False
