@@ -1,9 +1,10 @@
 from os import uname, system
 from time import sleep
+from Lighting import LushRoomsLighting
 
 # utils
 
-def findArm():
+def findArm(): 
     return uname().machine == 'armv7l' 
 
 if findArm():
@@ -24,6 +25,7 @@ class LushRoomsPlayer():
             self.playerType = "VLC"
             self.player = VlcPlayer()
 
+        self.Lighting = LushRoomsLighting()
         self.basePath = basePath
         self.started = False
         self.playlist = playlist

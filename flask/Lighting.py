@@ -9,16 +9,13 @@ from pytz import utc
 from apscheduler.schedulers.background import BackgroundScheduler
 from tinkerforge.ip_connection import IPConnection
 from tinkerforge.bricklet_dmx import BrickletDMX
-from tf_device_ids import deviceIdentifiersList
+from tf_device_ids import deviceIdentifiersList 
 from numpy import array, ones
 import os
 import json
 # lighting related imports - end
 
 # vars
-
-SETTINGS_BASE_PATH = "/media/usb/"
-JSON_SETTINGS_FILE = "settings.json"
 
 HOST = "127.0.0.1"
 PORT = 4223
@@ -47,155 +44,300 @@ tfConnect = True
 ipcon = IPConnection()
 deviceIDs = [i[0] for i in deviceIdentifiersList]
 
-hue_list = [[]]
-
 # utils
 
-def getIdentifier(ID):
-    deviceType = ""
-    for t in range(len(deviceIDs)):
-        if ID[1]==deviceIdentifiersList[t][0]:
-            deviceType = deviceIdentifiersList[t][1]
-    return(deviceType)
+class LushRoomsLighting(): 
 
-# Tinkerforge sensors enumeration
-def cb_enumerate(uid, connected_uid, position, hardware_version, firmware_version,
-                 device_identifier, enumeration_type):
-    tfIDs.append([uid, device_identifier])
-
-def find_subtitle(subtitle, from_t, to_t, lo=0):
-    i = lo
-    while (i < len(subtitle)):
-        # print(subtitle[i])
-        if (subtitle[i].start >= to_t):
-            break
-        if (subtitle[i].start <= from_t) & (to_t  <= subtitle[i].end):
-            # print(subtitle[i].start, from_t, to_t)
-            return subtitle[i].text, i
-        i += 1
-    return "", i
-
-def end_callback(event):
-    print('End of media stream (event %s)' % event.type)
-    exit(0)
-
-def hue_build_lookup_table(lights):
-    #print(lights)
-    hue_l = [[]]
-    i = 1
-    for j in range(len(lights)):
-        for l in lights:
-            #print(dir(l))
-            #lname = "lamp   "+l.name+"   "
-            lname = str(l.name)
-            #print(lname)
-            #print("testing", str(j), lname.find(str(i)), len(hue), l.name.find(str(i)), l.light_id, l.name, l.bridge.ip, l.bridge.name, str(i+1))
-            if lname.find(str(j))>=0:
-                #if str(i) in lname:
-                print(j, lname.find(str(j)), l.light_id, l.name, l.bridge.ip, l.bridge.name)
-                if len(hue_l)<=j:
-                   hue_l.append([l.light_id])
-                else:
-                   hue_l[j].append(l.light_id)
-        i += 1
-    return(hue_l)
+    def __init__(self):
+        print('LRLighting init!')
+        self.SETTINGS_BASE_PATH = "/media/usb/"
+        self.JSON_SETTINGS_FILE = "settings.json"
+        self.hue_list = [[]]
 
 
-def trigger_light(subs):
-    # print(perf_counter(), subs)
-    commands = str(subs).split(";")
-    global bridge, dmx, MAX_BRIGHTNESS, DEBUG, hue_list
-    print("Trigger light", hue_list)
-    for command in commands:
+        self.initDMX()
+        # self.initHUE()
+
+         # Tinkerforge sensors enumeration
+    def cb_enumerate(self, uid, connected_uid, position, hardware_version, firmware_version,
+                    device_identifier, enumeration_type):
+        tfIDs.append([uid, device_identifier])
+
+    def initDMX(self):
+        # configure Tinkerforge DMX
+        ipcon.connect(HOST, PORT)
+
+        # Register Enumerate Callback
+        ipcon.register_callback(IPConnection.CALLBACK_ENUMERATE, self.cb_enumerate)
+
+        # Trigger Enumerate
+        ipcon.enumerate()
+
+        sleep(2)
+
+        if DEBUG:
+            print("Tinkerforge enumerated IDs", tfIDs)
+
+        dmxcount = 0
+        for tf in tfIDs:
+            # try:
+            if True:
+                # print(len(tf[0]))
+
+                if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
+                    if tf[1] in deviceIDs:
+                        if VERBOSE:
+                            print(tf[0],tf[1], self.getIdentifier(tf)) 
+                    if tf[1] == 285: # DMX Bricklet
+                        if dmxcount == 0:
+                            print("Registering %s as slave DMX device for playing DMX frames" % tf[0])
+                            dmx = BrickletDMX(tf[0], ipcon)
+                            dmx.set_dmx_mode(dmx.DMX_MODE_MASTER)
+                            # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512,)*255)
+                            # dmx.write_frame([255,255])
+                            sleep(1)
+                            # channels = int((int(MAX_BRIGHTNESS)/255.0)*zeros(512,)*255)
+                            # dmx.write_frame(channels)
+                        dmxcount += 1
+
+        if dmxcount < 1:
+            print("No DMX devices found.")
+
+    def initHUE(self):
+        settings_path = os.path.join(self.SETTINGS_BASE_PATH, self.JSON_SETTINGS_FILE)
+        if os.path.exists(settings_path):
+            with open(settings_path) as f:
+                settings_json = json.loads(f.read())
+                print(json.dumps(settings_json))
+                HUE1_IP_ADDRESS = settings_json["hue1_ip"]
+                HUE2_IP_ADDRESS = settings_json["hue2_ip"]
+
+        if PLAY_HUE:
+            #global hue_list
+            #try:
+            if True:
+                # b = Bridge('lushroom-hue.local')
+                bridge = Bridge(HUE1_IP_ADDRESS)
+                # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
+                bridge.connect()
+                # Get the bridge state (This returns the full dictionary that you can explore)
+                bridge.get_api()
+                lights = bridge.lights
+                for l in lights:
+                    # print(dir(l))
+                    l.on = False
+                sleep(1)
+                for l in lights:
+                    # print(dir(l))
+                    l.on = True
+                # Print light names
+                # Set brightness of each light to 10
+                for l in lights:
+                    print(l.name)
+                    l.brightness = 255
+                for l in lights:
+                    # print(l.name)
+                    l.brightness = 100
+                    l.saturation = 0
+
+
+                # Get a dictionary with the light name as the key
+                light_names = bridge.get_light_objects('name')
+                print("Light names:", light_names)
+                self.hue_list = self.hue_build_lookup_table(lights)
+                print(self.hue_list)
+            #except PhueRegistrationException:
+            #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
+
+    def getIdentifier(self, ID):
+        deviceType = ""
+        for t in range(len(deviceIDs)):
+            if ID[1]==deviceIdentifiersList[t][0]:
+                deviceType = deviceIdentifiersList[t][1]
+        return(deviceType)
+
+    def find_subtitle(self, subtitle, from_t, to_t, lo=0):
+        i = lo
+        while (i < len(subtitle)):
+            # print(subtitle[i])
+            if (subtitle[i].start >= to_t):
+                break
+            if (subtitle[i].start <= from_t) & (to_t  <= subtitle[i].end):
+                # print(subtitle[i].start, from_t, to_t)
+                return subtitle[i].text, i
+            i += 1
+        return "", i
+
+    def end_callback(self, event):
+        print('End of media stream (event %s)' % event.type)
+        exit(0)
+
+    def hue_build_lookup_table(self, lights):
+        #print(lights)
+        hue_l = [[]]
+        i = 1
+        for j in range(len(lights)):
+            for l in lights:
+                #print(dir(l))
+                #lname = "lamp   "+l.name+"   "
+                lname = str(l.name)
+                #print(lname)
+                #print("testing", str(j), lname.find(str(i)), len(hue), l.name.find(str(i)), l.light_id, l.name, l.bridge.ip, l.bridge.name, str(i+1))
+                if lname.find(str(j))>=0:
+                    #if str(i) in lname:
+                    print(j, lname.find(str(j)), l.light_id, l.name, l.bridge.ip, l.bridge.name)
+                    if len(hue_l)<=j:
+                        hue_l.append([l.light_id])
+                    else:
+                        hue_l[j].append(l.light_id)
+            i += 1
+        return(hue_l)
+
+
+    def trigger_light(self, subs):
+        # print(perf_counter(), subs)
+        commands = str(subs).split(";")
+        global bridge, dmx, MAX_BRIGHTNESS, DEBUG
+        print("Trigger light", self.hue_list)
+        for command in commands:
+            #try:
+            if True:
+                # print(command)
+                scope,items = command[0:len(command)-1].split("(")
+                # print(scope,items)
+                if scope[0:3] == "HUE":
+                    l = int(scope[3:])
+                    print(l)
+                    # There seems to be something wrong with the lookup table
+                    # so if we can't find the current light in the table (or it doesn't exist)
+                    # skip to the next light
+                    try:
+                        print(self.hue_list[l])
+                    except:
+                        continue
+                    hue, sat, bri, TRANSITION_TIME = items.split(',')
+                    # print(perf_counter(), l, items, hue, sat, bri, TRANSITION_TIME)
+                    bri = int((float(bri)/255.0)*int(MAX_BRIGHTNESS))
+                    # print(bri)
+                    cmd =  {'transitiontime' : int(TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
+                    if DEBUG:
+                        print("Trigger HUE",l,cmd)
+                    if PLAY_HUE:
+                        #lights = bridge.lights
+                        #for light in lights:
+                        #   print(light.name)
+                        #   if light.name.find(str(l)):
+                        #       light.brightness = bri
+                        #       light.hue = hue
+                        #lights[l].brightness = bri
+                        #lights[l].saturation = sat
+                        #lights[l].hue = hue
+                        for hl in self.hue_list[l]:
+                            print(hl)
+                            bridge.set_light(hl, cmd)
+                if scope[0:3] == "DMX":
+                    l = int(scope[3:])
+                    # channels = int(int(MAX_BRIGHTNESS)/255.0*(array(items.split(",")).astype(int)))
+                    channels = array(items.split(",")).astype(int)
+                    # channels = array(map(lambda i: int(MAX_BRIGHTNESS)*i, channels))
+                    if DEBUG:
+                        print("Trigger DMX:", l, channels)
+                    if PLAY_DMX:
+                        dmx.write_frame(channels)
+            #except:
+            #    pass
+        print(30*'-')
+
+    def tick(self):
+        global subs
+        global player
+        global last_played
+        global TICK_TIME, DEBUG
         #try:
         if True:
-            # print(command)
-            scope,items = command[0:len(command)-1].split("(")
-            # print(scope,items)
-            if scope[0:3] == "HUE":
-                l = int(scope[3:])
-                print(l)
-                # There seems to be something wrong with the lookup table
-                # so if we can't find the current light in the table (or it doesn't exist)
-                # skip to the next light
-                try:
-                    print(hue_list[l])
-                except:
-                    continue
-                hue, sat, bri, TRANSITION_TIME = items.split(',')
-                # print(perf_counter(), l, items, hue, sat, bri, TRANSITION_TIME)
-                bri = int((float(bri)/255.0)*int(MAX_BRIGHTNESS))
-                # print(bri)
-                cmd =  {'transitiontime' : int(TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
-                if DEBUG:
-                    print("Trigger HUE",l,cmd)
-                if PLAY_HUE:
-                    #lights = bridge.lights
-                    #for light in lights:
-                    #   print(light.name)
-                    #   if light.name.find(str(l)):
-                    #       light.brightness = bri
-                    #       light.hue = hue
-                    #lights[l].brightness = bri
-                    #lights[l].saturation = sat
-                    #lights[l].hue = hue
-                    for hl in hue_list[l]:
-                        print(hl)
-                        bridge.set_light(hl, cmd)
-            if scope[0:3] == "DMX":
-                l = int(scope[3:])
-                # channels = int(int(MAX_BRIGHTNESS)/255.0*(array(items.split(",")).astype(int)))
-                channels = array(items.split(",")).astype(int)
-                # channels = array(map(lambda i: int(MAX_BRIGHTNESS)*i, channels))
-                if DEBUG:
-                    print("Trigger DMX:", l, channels)
-                if PLAY_DMX:
-                    dmx.write_frame(channels)
+            # print(subs[0])
+            t = perf_counter()
+            # ts = str(timedelta(seconds=t)).replace('.',',')
+            # tsd = str(timedelta(seconds=t+10*TICK_TIME)).replace('.',',')
+            ts = SubRipTime(seconds = t)
+            tsd = SubRipTime(seconds = t+1*TICK_TIME)
+            # print(dir(player))
+            pp = player.getPosition()
+            #ptms = player.get_time()/1000.0
+            #pt = SubRipTime(seconds=(player.get_time()/1000.0))
+            #ptd = SubRipTime(seconds=(player.get_time()/1000.0+1*TICK_TIME))
+            pt = SubRipTime(seconds=pp)
+            ptd = SubRipTime(seconds=(pp+1*TICK_TIME))
+            if DEBUG:
+                #print('Time: %s | %s | %s - %s | %s - %s | %s | %s' % (datetime.now(),t,ts,tsd,pt,ptd,pp,ptms))
+                print('Time: %s | %s | %s | %s | %s ' % (datetime.now(),t,ts,tsd,pp))
+                pass
+            ## sub, i = find_subtitle(subs, ts, tsd)
+            sub, i = self.find_subtitle(subs, pt, ptd)
+            ## hours, minutes, seconds, milliseconds = time_convert(sub.start)
+            ## t = seconds + minutes*60 + hours*60*60 + milliseconds/1000.0
+            if sub!="" and i > last_played:
+                print(i, "Light event:", sub)
+                # print("Trigger light event %s" % i)
+                self.trigger_light(sub)
+                last_played=i
         #except:
         #    pass
-    print(30*'-')
-
-def tick():
-    global subs
-    global player
-    global last_played
-    global TICK_TIME, DEBUG
-    #try:
-    if True:
-        # print(subs[0])
-        t = perf_counter()
-        # ts = str(timedelta(seconds=t)).replace('.',',')
-        # tsd = str(timedelta(seconds=t+10*TICK_TIME)).replace('.',',')
-        ts = SubRipTime(seconds = t)
-        tsd = SubRipTime(seconds = t+1*TICK_TIME)
-        # print(dir(player))
-        pp = player.getPosition()
-        #ptms = player.get_time()/1000.0
-        #pt = SubRipTime(seconds=(player.get_time()/1000.0))
-        #ptd = SubRipTime(seconds=(player.get_time()/1000.0+1*TICK_TIME))
-        pt = SubRipTime(seconds=pp)
-        ptd = SubRipTime(seconds=(pp+1*TICK_TIME))
-        if DEBUG:
-            #print('Time: %s | %s | %s - %s | %s - %s | %s | %s' % (datetime.now(),t,ts,tsd,pt,ptd,pp,ptms))
-            print('Time: %s | %s | %s | %s | %s ' % (datetime.now(),t,ts,tsd,pp))
-            pass
-        ## sub, i = find_subtitle(subs, ts, tsd)
-        sub, i = find_subtitle(subs, pt, ptd)
-        ## hours, minutes, seconds, milliseconds = time_convert(sub.start)
-        ## t = seconds + minutes*60 + hours*60*60 + milliseconds/1000.0
-        if sub!="" and i > last_played:
-            print(i, "Light event:", sub)
-            # print("Trigger light event %s" % i)
-            trigger_light(sub)
-            last_played=i
-    #except:
-    #    pass
 
 
-def time_convert(t):
-    block, milliseconds = str(t).split(",")
-    hours, minutes, seconds = block.split(":")
-    return(int(hours),int(minutes),int(seconds), int(milliseconds))
+    def time_convert(self, t):
+        block, milliseconds = str(t).split(",")
+        hours, minutes, seconds = block.split(":")
+        return(int(hours),int(minutes),int(seconds), int(milliseconds))
+
+    def start(self):
+        global subs, bridge, scheduler, ipcon, dmx, last_played
+        global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
+
+        print("Lighting: Start!")
+
+        # start lighting player/scheduler
+        last_played = 0
+        #if scheduler !
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME)
+        scheduler.start(paused=False)
+        print("-------------")
+
+    def playPause(self, status):
+        global subs, bridge, scheduler, ipcon, dmx
+        global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
+
+        print("-------------")
+        print("Lighting: PlayPause")
+        duration = player.playPause()
+
+        status = player.getStatus()
+        print(status)
+        if status=="Paused":
+            scheduler.pause()
+        elif status=="Playing":
+            scheduler.resume()
+        print("-------------")
+
+    def fadeDown(self, status):
+        global subs, bridge, scheduler, ipcon, dmx, last_played
+        global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
+
+        print("Lighting: fadeDown")
+        # scheduler.shutdown()
+        last_played = 0
+        status = player.getStatus()
+        if status=="Paused":
+            scheduler.pause()
+        elif status=="Playing":
+            scheduler.resume()
+        print("-------------")
+
+    def __del__(self):
+        scheduler.shutdown()
+        print("Lighting died")
+
 
 class ExitException(Exception):
     def __init__(self, key):
@@ -205,144 +347,5 @@ class ExitException(Exception):
         if tfConnect:
             ipcon.disconnect()
         exit(0)
-
-################################################### INIT ####################################################
-
-
-# configure Tinkerforge DMX
-ipcon.connect(HOST, PORT)
-
-# Register Enumerate Callback
-ipcon.register_callback(IPConnection.CALLBACK_ENUMERATE, cb_enumerate)
-
-# Trigger Enumerate
-ipcon.enumerate()
-
-sleep(2)
-
-if DEBUG:
-    print("Tinkerforge enumerated IDs", tfIDs)
-
-dmxcount = 0
-for tf in tfIDs:
-    # try:
-    if True:
-        # print(len(tf[0]))
-
-        if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
-            if tf[1] in deviceIDs:
-                if VERBOSE:
-                    print(tf[0],tf[1], getIdentifier(tf))
-            if tf[1] == 285: # DMX Bricklet
-                if dmxcount == 0:
-                    print("Registering %s as slave DMX device for playing DMX frames" % tf[0])
-                    dmx = BrickletDMX(tf[0], ipcon)
-                    dmx.set_dmx_mode(dmx.DMX_MODE_MASTER)
-                    # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512,)*255)
-                    # dmx.write_frame([255,255])
-                    sleep(1)
-                    # channels = int((int(MAX_BRIGHTNESS)/255.0)*zeros(512,)*255)
-                    # dmx.write_frame(channels)
-                dmxcount += 1
-
-if dmxcount < 1:
-    print("No DMX devices found.")
-
-settings_path = os.path.join(SETTINGS_BASE_PATH, JSON_SETTINGS_FILE)
-if os.path.exists(settings_path):
-    with open(settings_path) as f:
-        settings_json = json.loads(f.read())
-        print(json.dumps(settings_json))
-        HUE1_IP_ADDRESS = settings_json["hue1_ip"]
-        HUE2_IP_ADDRESS = settings_json["hue2_ip"]
-
-if PLAY_HUE:
-    #global hue_list
-    #try:
-    if True:
-        # b = Bridge('lushroom-hue.local')
-        bridge = Bridge(HUE1_IP_ADDRESS)
-        # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
-        bridge.connect()
-        # Get the bridge state (This returns the full dictionary that you can explore)
-        bridge.get_api()
-        lights = bridge.lights
-        for l in lights:
-            # print(dir(l))
-            l.on = False
-        sleep(1)
-        for l in lights:
-            # print(dir(l))
-            l.on = True
-        # Print light names
-        # Set brightness of each light to 10
-        for l in lights:
-            print(l.name)
-            l.brightness = 255
-        for l in lights:
-            # print(l.name)
-            l.brightness = 100
-            l.saturation = 0
-
-
-        # Get a dictionary with the light name as the key
-        light_names = bridge.get_light_objects('name')
-        print("Light names:", light_names)
-        hue_list = hue_build_lookup_table(lights)
-        print(hue_list)
-    #except PhueRegistrationException:
-    #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
-
-
-##################################################### METHODS ################################################
-
-################################## PLAYING
-
-global subs, bridge, scheduler, ipcon, dmx, last_played
-global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
-
- # start lighting player/scheduler
-last_played = 0
-#if scheduler !
-scheduler = BackgroundScheduler()
-scheduler.add_job(tick, 'interval', seconds=TICK_TIME)
-scheduler.start(paused=False)
-print("-------------")
-
-
-
-################################## PLAYPAUSING
-
-global subs, bridge, scheduler, ipcon, dmx
-global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
-
-print("-------------")
-print("PlayPause")
-duration = player.playPause()
-
-status = player.getStatus()
-print(status)
-if status=="Paused":
-    scheduler.pause()
-elif status=="Playing":
-    scheduler.resume()
-print("-------------")
-
-
-################################## FADEDOWN
-
-global subs, bridge, scheduler, ipcon, dmx, last_played
-global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
-
-# scheduler.shutdown()
-last_played = 0
-status = player.getStatus()
-if status=="Paused":
-    scheduler.pause()
-elif status=="Playing":
-    scheduler.resume()
-print("-------------")
-
-
 
 
