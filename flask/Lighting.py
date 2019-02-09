@@ -12,6 +12,7 @@ from tinkerforge.bricklet_dmx import BrickletDMX
 from tf_device_ids import deviceIdentifiersList
 from numpy import array, ones
 import os
+import json
 # lighting related imports - end
 
 # vars
