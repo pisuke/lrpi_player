@@ -1,27 +1,27 @@
-# lighting related imports - begin
-from phue import Bridge, PhueRegistrationException
+from phue import Bridge, PhueRegistrationException # pylint: disable=import-error
 from random import random
 from time import sleep, time, perf_counter
-from pysrt import SubRipFile, SubRipItem, SubRipTime
-from pysrt import open as srtopen
+from pysrt import SubRipFile, SubRipItem, SubRipTime # pylint: disable=import-error
+from pysrt import open as srtopen # pylint: disable=import-error
 from datetime import datetime, timedelta
 from pytz import utc
-from apscheduler.schedulers.background import BackgroundScheduler
-from tinkerforge.ip_connection import IPConnection
-from tinkerforge.bricklet_dmx import BrickletDMX
+from apscheduler.schedulers.background import BackgroundScheduler # pylint: disable=import-error
+from tinkerforge.ip_connection import IPConnection # pylint: disable=import-error
+from tinkerforge.bricklet_dmx import BrickletDMX # pylint: disable=import-error
 from tf_device_ids import deviceIdentifiersList 
-from numpy import array, ones
+from numpy import array, ones # pylint: disable=import-error
 import os
 import json
-# lighting related imports - end
 
-# vars
-
-HOST = "127.0.0.1"
-PORT = 4223
+# dev
 
 DEBUG = True
 VERBOSE = True
+
+# dmx
+
+HOST = "127.0.0.1"
+PORT = 4223
 
 MAX_BRIGHTNESS = 200
 SRT_FILENAME = "Surround_Test_Audio.srt"
@@ -50,10 +50,13 @@ class LushRoomsLighting():
         print('LRLighting init!')
         self.SETTINGS_BASE_PATH = "/media/usb/"
         self.JSON_SETTINGS_FILE = "settings.json"
+        self.TRANSITION_TIME = 5 # milliseconds
         self.hue_list = [[]]
         self.player = None
+        self.scheduler = None
 
-
+        # 'last_played' seems to be the last numbered lighting event
+        # in the SRT file
         self.last_played = 0
         self.subs = ""
 
@@ -123,7 +126,6 @@ class LushRoomsLighting():
                 settings_json = json.loads(f.read())
                 print(json.dumps(settings_json))
                 HUE1_IP_ADDRESS = settings_json["hue1_ip"]
-                HUE2_IP_ADDRESS = settings_json["hue2_ip"]
 
         if PLAY_HUE:
             #global hue_list
@@ -232,10 +234,10 @@ class LushRoomsLighting():
                     # print(perf_counter(), l, items, hue, sat, bri, TRANSITION_TIME)
                     bri = int((float(bri)/255.0)*int(MAX_BRIGHTNESS))
                     # print(bri)
-                    cmd =  {'transitiontime' : int(TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
+                    cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
                     if DEBUG:
                         print("Trigger HUE",l,cmd)
-                    if PLAY_HUE:
+                    if PLAY_HUE: 
                         #lights = bridge.lights
                         #for light in lights:
                         #   print(light.name)
@@ -262,7 +264,6 @@ class LushRoomsLighting():
         print(30*'-')
 
     def tick(self):
-        global TICK_TIME, DEBUG
         #try:
         if True:
             # print(subs[0])
@@ -293,6 +294,7 @@ class LushRoomsLighting():
                 # print("Trigger light event %s" % i)
                 self.trigger_light(sub)
                 self.last_played = i
+                print('last_played: ', i)
         #except:
         #    pass
 
@@ -303,8 +305,6 @@ class LushRoomsLighting():
         return(int(hours),int(minutes),int(seconds), int(milliseconds))
 
     def start(self, audioPlayer, subs):
-        global bridge, scheduler, ipcon, dmx, last_played
-        global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
         self.player = audioPlayer
         self.subs = subs
 
@@ -312,47 +312,48 @@ class LushRoomsLighting():
         print('AudioPlayer: ', self.player)
         print("Number of lighting events",len(self.subs))
 
-        # start lighting player/scheduler
+        # start lighting player/self.scheduler
         self.last_played = 0
-        #if scheduler !
-        scheduler = BackgroundScheduler()
-        scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME)
-        scheduler.start(paused=False)
+        #if self.scheduler !
+        self.scheduler = BackgroundScheduler()
+        self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME)
+        self.scheduler.start(paused=False)
         print("-------------")
 
     def playPause(self, status):
-        global subs, bridge, scheduler, ipcon, dmx
-        global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
 
-        print(status)
+        print('Lighting pp: ', status)
         if status=="Paused":
-            scheduler.pause()
+            self.scheduler.pause()
         elif status=="Playing":
-            scheduler.resume()
+            self.scheduler.resume()
         print("-------------")
 
     def fadeDown(self, status):
-        global subs, bridge, scheduler, ipcon, dmx, last_played
-        global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
 
         print("Lighting: fadeDown")
-        # scheduler.shutdown()
-        last_played = 0
+        # self.scheduler.shutdown()
+        self.last_played = 0
         
         if status=="Paused":
-            scheduler.pause()
+            self.scheduler.pause()
         elif status=="Playing":
-            scheduler.resume()
+            self.scheduler.resume()
         print("-------------")
 
+    def exit(self):
+        self.__del__()
+
+    def seek(self):
+        self.last_played = 0
+
     def __del__(self):
-        scheduler.shutdown()
-        print("Lighting died")
+        self.scheduler.shutdown()
+        print("Lighting died!")
 
 
 class ExitException(Exception):
-    def __init__(self, key):
-        global scheduler, player, ipcon, tfConnect
+    def __init__(self, key, scheduler, ipcon):
         scheduler.shutdown()
         #player.stop()
         if tfConnect:

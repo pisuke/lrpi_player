@@ -31,6 +31,7 @@ class LushRoomsPlayer():
         self.playlist = playlist
         self.status = {
             "source" : "",
+            "srtSource" : "",
             "playerState" : "",
             "canControl" : "",
             "paired" : "",
@@ -41,28 +42,36 @@ class LushRoomsPlayer():
             "error" : ""
         }
         self.subs = None
-
+ 
     def getPlayerType(self):
         return self.playerType
 
     # Returns the current position in secoends
-    def start(self, path, subs):
+    def start(self, path, subs, subsPath):
         self.started = True
         response = self.player.start(path)
+        self.status["subsPath"] = subsPath
         try:
             print('In Player: ', id(self.player))
             self.lighting.start(self.player, subs) 
         except Exception as e:
-            print('Lighting failed: ', e)
+            print('Lighting failed: ', e)  
 
         return response
 
     def playPause(self):
-        return self.player.playPause()
+        response = self.player.playPause()
+        try:
+            print('In Player: ', id(self.player))
+            self.lighting.playPause(self.getStatus()["playerState"]) 
+        except Exception as e:
+            print('Lighting failed: ', e)
+        return response
 
     def stop(self):
         try:
             print('Stopping...')
+            self.lighting.exit()
             self.player.exit()
             return 0
         except:
@@ -93,6 +102,7 @@ class LushRoomsPlayer():
 
     def seek(self, position):
         if self.started:
+            self.lighting.seek()
             return self.player.seek(position)
 
     def getStatus(self):
