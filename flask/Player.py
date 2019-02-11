@@ -102,6 +102,7 @@ class LushRoomsPlayer():
 
     def seek(self, position):
         if self.started:
+            self.lighting.seek()
             return self.player.seek(position)
 
     def getStatus(self):

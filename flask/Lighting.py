@@ -50,11 +50,13 @@ class LushRoomsLighting():
         print('LRLighting init!')
         self.SETTINGS_BASE_PATH = "/media/usb/"
         self.JSON_SETTINGS_FILE = "settings.json"
+        self.TRANSITION_TIME = 5 # milliseconds
         self.hue_list = [[]]
         self.player = None
         self.scheduler = None
 
-
+        # 'last_played' seems to be the last numbered lighting event
+        # in the SRT file
         self.last_played = 0
         self.subs = ""
 
@@ -232,7 +234,7 @@ class LushRoomsLighting():
                     # print(perf_counter(), l, items, hue, sat, bri, TRANSITION_TIME)
                     bri = int((float(bri)/255.0)*int(MAX_BRIGHTNESS))
                     # print(bri)
-                    cmd =  {'transitiontime' : int(TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
+                    cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
                     if DEBUG:
                         print("Trigger HUE",l,cmd)
                     if PLAY_HUE: 
@@ -292,6 +294,7 @@ class LushRoomsLighting():
                 # print("Trigger light event %s" % i)
                 self.trigger_light(sub)
                 self.last_played = i
+                print('last_played: ', i)
         #except:
         #    pass
 
@@ -340,6 +343,9 @@ class LushRoomsLighting():
 
     def exit(self):
         self.__del__()
+
+    def seek(self):
+        self.last_played = 0
 
     def __del__(self):
         self.scheduler.shutdown()
