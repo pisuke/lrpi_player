@@ -12,6 +12,8 @@ from flask_restful import Resource, Api
 from json import dumps
 from flask_jsonpify import jsonify
 from flask_restful import reqparse
+import ntplib
+from time import ctime
 
 from os.path import splitext
 import os
@@ -125,6 +127,10 @@ class GetTrackList(Resource):
         global NEW_SRT_ARRAY
         global BUILT_PATH
         global player
+
+        c = ntplib.NTPClient()
+        response = c.request('pool.ntp.org')
+        print('ntp time: ', ctime(response.tx_time))
  
         # return a graceful error if the usb stick isn't mounted
         if os.path.isdir(MEDIA_BASE_PATH) == False:
