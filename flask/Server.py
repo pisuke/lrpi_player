@@ -192,7 +192,7 @@ class PlaySingleTrack(Resource):
  
         print("Playing: " + pathToTrack)
             
-        duration = player.start(pathToTrack, subs)
+        duration = player.start(pathToTrack, subs, BUILT_PATH + srtFileName)
             
         return jsonify(duration)
 
