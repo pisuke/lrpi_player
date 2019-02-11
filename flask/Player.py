@@ -41,7 +41,7 @@ class LushRoomsPlayer():
             "error" : ""
         }
         self.subs = None
-
+ 
     def getPlayerType(self):
         return self.playerType
 
@@ -53,16 +53,23 @@ class LushRoomsPlayer():
             print('In Player: ', id(self.player))
             self.lighting.start(self.player, subs) 
         except Exception as e:
-            print('Lighting failed: ', e)
+            print('Lighting failed: ', e) 
 
         return response
 
     def playPause(self):
-        return self.player.playPause()
+        response = self.player.playPause()
+        try:
+            print('In Player: ', id(self.player))
+            self.lighting.playPause(self.getStatus()["playerState"]) 
+        except Exception as e:
+            print('Lighting failed: ', e)
+        return response
 
     def stop(self):
         try:
             print('Stopping...')
+            self.lighting.exit()
             self.player.exit()
             return 0
         except:
