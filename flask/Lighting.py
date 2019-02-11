@@ -312,7 +312,7 @@ class LushRoomsLighting():
         print('AudioPlayer: ', self.player)
         print("Number of lighting events",len(self.subs))
 
-        # start lighting player/self.scheduler
+        # start lighting scheduler
         self.last_played = 0
         #if self.scheduler !
         self.scheduler = BackgroundScheduler()

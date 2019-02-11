@@ -216,13 +216,14 @@ class FadeDown(Resource):
                 srtFileName = splitext(track["Path"])[0]+".srt"
                 if os.path.isfile(BUILT_PATH + srtFileName):
                     print(srtFileName)
+                    subs = srtopen(BUILT_PATH + srtFileName)
                 pathToTrack = BUILT_PATH + track["Path"]
 
         if os.path.isfile(pathToTrack) == False:
             print('Bad file path, will not attempt to play...')
-            return jsonify(1)
+            return jsonify(1) 
 
-        response = player.fadeDown(pathToTrack, int(args["interval"]))
+        response = player.fadeDown(pathToTrack, int(args["interval"]),  subs, BUILT_PATH + srtFileName)
 
         return jsonify(response)
 
