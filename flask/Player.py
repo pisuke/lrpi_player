@@ -93,12 +93,21 @@ class LushRoomsPlayer():
     def previous(self):
         print("Skipping back...")
 
-    def fadeDown(self, path, interval):
+    def fadeDown(self, path, interval, subs, subsPath):
         if interval > 0: 
             while self.player.volumeDown(interval):
                 sleep(1.0/interval)
         self.player.exit() 
-        return self.player.start(path) 
+        self.lighting.exit() 
+        response = self.player.start(path)
+        self.status["subsPath"] = subsPath
+        try:
+            print('In Player: ', id(self.player))
+            self.lighting.start(self.player, subs) 
+        except Exception as e:
+            print('Lighting failed: ', e) 
+
+        return response
 
     def seek(self, position):
         if self.started:
