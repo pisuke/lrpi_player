@@ -29,7 +29,7 @@ HUE1_IP_ADDRESS = ""
 HUE2_IP_ADDRESS = ""
 TICK_TIME = 0.1 # seconds
 PLAY_HUE = True
-PLAY_DMX = False
+PLAY_DMX = True
 # SLEEP_TIME = 0.1 # seconds
 # TRANSITION_TIME = 10 # milliseconds
 
@@ -39,10 +39,8 @@ bridge = None
 dmx = None
 scheduler = None
 last_played = 0
-tfIDs = []
+
 tfConnect = True
-ipcon = IPConnection()
-deviceIDs = [i[0] for i in deviceIdentifiersList]
 
 # utils
 
@@ -54,10 +52,21 @@ class LushRoomsLighting():
         self.JSON_SETTINGS_FILE = "settings.json"
         self.hue_list = [[]]
         self.player = None
+
+
         self.last_played = 0
         self.subs = ""
+
+        # Hue
         self.bridge = None
 
+        # DMX
+        self.dmx = None
+        self.tfIDs = []
+        self.ipcon = IPConnection()
+        self.deviceIDs = [i[0] for i in deviceIdentifiersList]
+
+        # init methods
 
         self.initDMX()
         self.initHUE()
@@ -65,38 +74,38 @@ class LushRoomsLighting():
          # Tinkerforge sensors enumeration
     def cb_enumerate(self, uid, connected_uid, position, hardware_version, firmware_version,
                     device_identifier, enumeration_type):
-        tfIDs.append([uid, device_identifier])
+        self.tfIDs.append([uid, device_identifier])
 
     def initDMX(self):
         # configure Tinkerforge DMX
-        ipcon.connect(HOST, PORT)
+        self.ipcon.connect(HOST, PORT)
 
         # Register Enumerate Callback
-        ipcon.register_callback(IPConnection.CALLBACK_ENUMERATE, self.cb_enumerate)
+        self.ipcon.register_callback(IPConnection.CALLBACK_ENUMERATE, self.cb_enumerate)
 
         # Trigger Enumerate
-        ipcon.enumerate()
+        self.ipcon.enumerate()
 
         sleep(2)
 
         if DEBUG:
-            print("Tinkerforge enumerated IDs", tfIDs)
+            print("Tinkerforge enumerated IDs", self.tfIDs)
 
         dmxcount = 0
-        for tf in tfIDs:
+        for tf in self.tfIDs:
             # try:
             if True:
                 # print(len(tf[0]))
 
                 if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
-                    if tf[1] in deviceIDs:
+                    if tf[1] in self.deviceIDs:
                         if VERBOSE:
                             print(tf[0],tf[1], self.getIdentifier(tf)) 
                     if tf[1] == 285: # DMX Bricklet
                         if dmxcount == 0:
                             print("Registering %s as slave DMX device for playing DMX frames" % tf[0])
-                            dmx = BrickletDMX(tf[0], ipcon)
-                            dmx.set_dmx_mode(dmx.DMX_MODE_MASTER)
+                            self.dmx = BrickletDMX(tf[0], self.ipcon)
+                            self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
                             # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512,)*255)
                             # dmx.write_frame([255,255])
                             sleep(1)
@@ -155,7 +164,7 @@ class LushRoomsLighting():
 
     def getIdentifier(self, ID):
         deviceType = ""
-        for t in range(len(deviceIDs)):
+        for t in range(len(self.deviceIDs)):
             if ID[1]==deviceIdentifiersList[t][0]:
                 deviceType = deviceIdentifiersList[t][1]
         return(deviceType)
@@ -201,7 +210,7 @@ class LushRoomsLighting():
     def trigger_light(self, subs):
         # print(perf_counter(), subs)
         commands = str(subs).split(";")
-        global bridge, dmx, MAX_BRIGHTNESS, DEBUG
+        global MAX_BRIGHTNESS, DEBUG
         print("Trigger light", self.hue_list)
         for command in commands:
             #try:
@@ -247,7 +256,7 @@ class LushRoomsLighting():
                     if DEBUG:
                         print("Trigger DMX:", l, channels)
                     if PLAY_DMX:
-                        dmx.write_frame(channels)
+                        self.dmx.write_frame(channels)
             #except:
             #    pass
         print(30*'-')
