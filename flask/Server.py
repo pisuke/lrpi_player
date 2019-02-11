@@ -24,6 +24,7 @@ import random
 from pathlib import Path
 from time import sleep 
 import signal
+from pysrt import open as srtopen
 
 from Player import LushRoomsPlayer
 from OmxPlayer import killOmx
@@ -182,15 +183,16 @@ class PlaySingleTrack(Resource):
                 srtFileName = splitext(track["Path"])[0]+".srt"
                 if os.path.isfile(BUILT_PATH + srtFileName):
                     print(srtFileName)
+                    subs = srtopen(BUILT_PATH + srtFileName)
                 pathToTrack = BUILT_PATH + track["Path"]
 
         if os.path.isfile(pathToTrack) == False:
             print('Bad file path, will not attempt to play...')
             return jsonify("(Playing) File not found!")
-
+ 
         print("Playing: " + pathToTrack)
             
-        duration = player.start(pathToTrack)
+        duration = player.start(pathToTrack, subs)
             
         return jsonify(duration)
 

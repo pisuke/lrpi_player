@@ -29,7 +29,7 @@ HUE1_IP_ADDRESS = ""
 HUE2_IP_ADDRESS = ""
 TICK_TIME = 0.1 # seconds
 PLAY_HUE = True
-PLAY_DMX = True
+PLAY_DMX = False
 # SLEEP_TIME = 0.1 # seconds
 # TRANSITION_TIME = 10 # milliseconds
 
@@ -54,10 +54,13 @@ class LushRoomsLighting():
         self.JSON_SETTINGS_FILE = "settings.json"
         self.hue_list = [[]]
         self.player = None
+        self.last_played = 0
+        self.subs = ""
+        self.bridge = None
 
 
         self.initDMX()
-        # self.initHUE()
+        self.initHUE()
 
          # Tinkerforge sensors enumeration
     def cb_enumerate(self, uid, connected_uid, position, hardware_version, firmware_version,
@@ -118,12 +121,12 @@ class LushRoomsLighting():
             #try:
             if True:
                 # b = Bridge('lushroom-hue.local')
-                bridge = Bridge(HUE1_IP_ADDRESS)
+                self.bridge = Bridge(HUE1_IP_ADDRESS)
                 # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
-                bridge.connect()
+                self.bridge.connect()
                 # Get the bridge state (This returns the full dictionary that you can explore)
-                bridge.get_api()
-                lights = bridge.lights
+                self.bridge.get_api()
+                lights = self.bridge.lights
                 for l in lights:
                     # print(dir(l))
                     l.on = False
@@ -143,7 +146,7 @@ class LushRoomsLighting():
 
 
                 # Get a dictionary with the light name as the key
-                light_names = bridge.get_light_objects('name')
+                light_names = self.bridge.get_light_objects('name')
                 print("Light names:", light_names)
                 self.hue_list = self.hue_build_lookup_table(lights)
                 print(self.hue_list)
@@ -235,7 +238,7 @@ class LushRoomsLighting():
                         #lights[l].hue = hue
                         for hl in self.hue_list[l]:
                             print(hl)
-                            bridge.set_light(hl, cmd)
+                            self.bridge.set_light(hl, cmd)
                 if scope[0:3] == "DMX":
                     l = int(scope[3:])
                     # channels = int(int(MAX_BRIGHTNESS)/255.0*(array(items.split(",")).astype(int)))
@@ -250,8 +253,6 @@ class LushRoomsLighting():
         print(30*'-')
 
     def tick(self):
-        global subs
-        global last_played
         global TICK_TIME, DEBUG
         #try:
         if True:
@@ -275,14 +276,14 @@ class LushRoomsLighting():
                 print('Time: %s | %s | %s | %s | %s ' % (datetime.now(),t,ts,tsd,pp))
                 pass
             ## sub, i = find_subtitle(subs, ts, tsd)
-            sub, i = self.find_subtitle(subs, pt, ptd)
+            sub, i = self.find_subtitle(self.subs, pt, ptd)
             ## hours, minutes, seconds, milliseconds = time_convert(sub.start)
             ## t = seconds + minutes*60 + hours*60*60 + milliseconds/1000.0
-            if sub!="" and i > last_played:
+            if sub!="" and i > self.last_played:
                 print(i, "Light event:", sub)
                 # print("Trigger light event %s" % i)
                 self.trigger_light(sub)
-                last_played=i
+                self.last_played = i
         #except:
         #    pass
 
@@ -292,16 +293,18 @@ class LushRoomsLighting():
         hours, minutes, seconds = block.split(":")
         return(int(hours),int(minutes),int(seconds), int(milliseconds))
 
-    def start(self, audioPlayer):
-        global subs, bridge, scheduler, ipcon, dmx, last_played
+    def start(self, audioPlayer, subs):
+        global bridge, scheduler, ipcon, dmx, last_played
         global SRT_FILENAME, MAX_BRIGHTNESS, TICK_TIME, DEBUG, VERBOSE
         self.player = audioPlayer
+        self.subs = subs
 
         print("Lighting: Start!")
         print('AudioPlayer: ', self.player)
+        print("Number of lighting events",len(self.subs))
 
         # start lighting player/scheduler
-        last_played = 0
+        self.last_played = 0
         #if scheduler !
         scheduler = BackgroundScheduler()
         scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME)

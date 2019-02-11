@@ -40,17 +40,18 @@ class LushRoomsPlayer():
             "playlist": self.playlist,
             "error" : ""
         }
+        self.subs = None
 
     def getPlayerType(self):
         return self.playerType
 
     # Returns the current position in secoends
-    def start(self, path):
+    def start(self, path, subs):
         self.started = True
         response = self.player.start(path)
         try:
             print('In Player: ', id(self.player))
-            self.lighting.start(self.player) 
+            self.lighting.start(self.player, subs) 
         except Exception as e:
             print('Lighting failed: ', e)
 

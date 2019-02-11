@@ -47,7 +47,7 @@ class OmxPlayer():
         return str(self.player.duration())
 
     def getPosition(self):
-        return self.player.position()
+        return self.player.position() 
 
     def getDuration(self):
         return str(self.player.duration())
