@@ -74,7 +74,8 @@ class LushRoomsPlayer():
             self.lighting.exit()
             self.player.exit()
             return 0
-        except:
+        except Exception as e:
+            print("stop e: ", e)
             return 1
 
     def setPlaylist(self, playlist):
@@ -117,7 +118,7 @@ class LushRoomsPlayer():
     def getStatus(self):
         return self.player.status(self.status)
 
-    def pair(self, hostname):
+    def pair(self, hostname):  
         return self.player.pair(hostname, self.status)
 
     def exit(self):

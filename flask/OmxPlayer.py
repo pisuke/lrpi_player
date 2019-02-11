@@ -79,6 +79,9 @@ class OmxPlayer():
             self.player.set_position(self.player.duration()*(position/100.0))
         return self.player.position()
 
+    def pair(self, hostname, status):
+        return 0
+
     def status(self, status):
         if self.player != None:
             print('status requested!')
