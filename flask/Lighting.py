@@ -132,7 +132,7 @@ class LushRoomsLighting():
             #try:
             if True:
                 # b = Bridge('lushroom-hue.local')
-                self.bridge = Bridge(HUE1_IP_ADDRESS)
+                self.bridge = Bridge(HUE1_IP_ADDRESS, config_file_path="/media/usb/python_hue")
                 # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
                 self.bridge.connect()
                 # Get the bridge state (This returns the full dictionary that you can explore)
