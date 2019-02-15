@@ -127,12 +127,14 @@ class LushRoomsPlayer():
         response = os.system("ping -c 1 " + hostname)
         if response == 0:
             print(hostname, 'is up!')
-            requestUrl = "http://" + hostname
-            print("reqUrl: ", requestUrl)
-            contents = urllib.request.urlopen(requestUrl + "/status").read()
-            print("status: ", contents)
-            if contents:
+            slaveUrl = "http://" + hostname
+            print("slaveUrl: ", slaveUrl)
+            statusRes = urllib.request.urlopen(slaveUrl + "/status").read()
+            print("status: ", statusRes)
+            if statusRes:
                 print('Attempting to enslave: ' + hostname)
+                enslaveRes = urllib.request.urlopen(slaveUrl + "/enslave").read()
+                print('res from enslave: ', enslaveRes)
 
         else:
             print(hostname, 'is down!')

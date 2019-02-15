@@ -205,10 +205,10 @@ class LushRoomsLighting():
                 # print(dir(l))
                 l.on = True
             # Print light names
-            # Set brightness of each light to 10
+            # Set brightness of each light to 7
             for l in lights:
                 print(l.name)
-                l.brightness = 5
+                l.brightness = 7
                 l.saturation = 0
                 l.hue = 10
 

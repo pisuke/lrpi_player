@@ -278,12 +278,12 @@ class Pair(Resource):
         print('Pair with: ', args["pairhostname"])
 
         try:
-            response = player.pair(args["pairhostname"]) 
+            pairRes = player.pair(args["pairhostname"]) 
         except Exception as e:
             print('Exception: ', e)
-            response = 1
+            pairRes = 1
 
-        return jsonify(response)
+        return jsonify(pairRes)
 
 class Enslave(Resource):
     def get(self):
