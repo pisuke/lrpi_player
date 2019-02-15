@@ -296,10 +296,12 @@ class Enslave(Resource):
             player = LushRoomsPlayer(None, None)
 
         print('Enslaving, player stopped and exited')
+        print('Enslaved by: ', request.environ.get('HTTP_X_REAL_IP', request.remote_addr) )
 
         # set paired to true
+        masterIp = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
 
-        player.setPaired(True)
+        player.setPaired(True, masterIp)
 
         return 0
 

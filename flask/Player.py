@@ -140,14 +140,14 @@ class LushRoomsPlayer():
         else:
             print(hostname, 'is down!')
 
-        self.player.setPaired(True)
+        self.player.setPaired(True, None)
 
         return 0
 
     # Method called by the slave
 
-    def setPaired(self, val): 
-        self.player.setPaired(val)
+    def setPaired(self, val, masterIp): 
+        self.player.setPaired(val, masterIp)
 
     # When this player is enslaved, map the status of the 
     # master to a method

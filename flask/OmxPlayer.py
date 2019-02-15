@@ -85,17 +85,21 @@ class OmxPlayer():
             status["source"] = self.player.get_source()
             status["playerState"] = self.player.playback_status()
             status["canControl"] = self.player.can_control()
-            status["paired"] = self.paired
             status["position"] = self.player.position()
             status["trackDuration"] = self.player.duration()
             status["error"] = ""
         else: 
             status["error"] = "error: player is not initialized!"
+        
+        status["paired"] = self.paired
+        status["masterIp"] = self.masterIp
             
         return status
 
-    def setPaired(self, val):
+    def setPaired(self, val, masterIp):
         self.paired = val
+        self.masterIp = masterIp
+        print('paired set to: ', val)
 
  
     def exit(self):
