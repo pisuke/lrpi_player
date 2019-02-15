@@ -129,6 +129,8 @@ class LushRoomsPlayer():
             print("reqUrl: ", requestUrl)
             contents = urllib.request.urlopen(requestUrl + "/status").read()
             print("status: ", contents)
+            if response == 1:
+                print('Attempting to enslave: ' + hostname)
         else:
             print(hostname, 'is down!')
         return 0

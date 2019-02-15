@@ -144,66 +144,73 @@ class LushRoomsLighting():
 
 
     def initHUE(self):
+        global PLAY_HUE
         settings_path = os.path.join(self.SETTINGS_BASE_PATH, self.JSON_SETTINGS_FILE)
         if os.path.exists(settings_path):
             with open(settings_path) as f:
                 settings_json = json.loads(f.read())
-                # print(json.dumps(settings_json))
+                print(json.dumps(settings_json))
                 HUE1_IP_ADDRESS = settings_json["hue_ip"]
 
-        if PLAY_HUE:
-            #global hue_list
-            #try:
-            if True:
-                # b = Bridge('lushroom-hue.local')
-                self.bridge = Bridge(HUE1_IP_ADDRESS, config_file_path="/media/usb/python_hue")
-                # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
-                self.bridge.connect()
-                # Get the bridge state (This returns the full dictionary that you can explore)
-                self.bridge.get_api()
-                lights = self.bridge.lights
-                for l in lights:
-                    # print(dir(l))
-                    l.on = False
-                sleep(1)
-                for l in lights:
-                    # print(dir(l))
-                    l.on = True
-                # Print light names
-                # Set brightness of each light to 10
-                for l in lights:
-                    print(l.name)
-                    l.brightness = 255
-                for l in lights:
-                    # print(l.name)
-                    l.brightness = 100
-                    l.saturation = 0
+        try:
+            if PLAY_HUE:
+                #global hue_list
+                #try:
+                if True:
+                    # b = Bridge('lushroom-hue.local')
+                    self.bridge = Bridge(HUE1_IP_ADDRESS)
+                    # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
+                    self.bridge.connect()
+                    # Get the bridge state (This returns the full dictionary that you can explore)
+                    self.bridge.get_api()
+                    lights = self.bridge.lights
+                    for l in lights:
+                        # print(dir(l))
+                        l.on = False
+                    sleep(1)
+                    for l in lights:
+                        # print(dir(l))
+                        l.on = True
+                    # Print light names
+                    # Set brightness of each light to 10
+                    for l in lights:
+                        print(l.name)
+                        l.brightness = 255
+                    for l in lights:
+                        # print(l.name)
+                        l.brightness = 100
+                        l.saturation = 0
 
 
-                # Get a dictionary with the light name as the key
-                light_names = self.bridge.get_light_objects('name')
-                print("Light names:", light_names)
-                self.hue_list = self.hue_build_lookup_table(lights)
-                print(self.hue_list)
-            #except PhueRegistrationException:
-            #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
+                    # Get a dictionary with the light name as the key
+                    light_names = self.bridge.get_light_objects('name')
+                    print("Light names:", light_names)
+                    self.hue_list = self.hue_build_lookup_table(lights)
+                    print(self.hue_list)
+                #except PhueRegistrationException:
+                #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
+        except:
+            print("Could not create connection to Hue. Hue lighting is now disabled")
+            PLAY_HUE = False
 
     def resetHUE(self):
-        lights = self.bridge.lights
-        for l in lights:
-            # print(dir(l))
-            l.on = False
-        sleep(1)
-        for l in lights:
-            # print(dir(l))
-            l.on = True
-        # Print light names
-        # Set brightness of each light to 10
-        for l in lights:
-            print(l.name)
-            l.brightness = 5
-            l.saturation = 0
-            l.hue = 10
+        global PLAY_HUE
+        if PLAY_HUE:
+            lights = self.bridge.lights
+            for l in lights:
+                # print(dir(l))
+                l.on = False
+            sleep(1)
+            for l in lights:
+                # print(dir(l))
+                l.on = True
+            # Print light names
+            # Set brightness of each light to 10
+            for l in lights:
+                print(l.name)
+                l.brightness = 5
+                l.saturation = 0
+                l.hue = 10
 
 
     def getIdentifier(self, ID):
@@ -254,7 +261,7 @@ class LushRoomsLighting():
     def trigger_light(self, subs):
         # print(perf_counter(), subs)
         commands = str(subs).split(";")
-        global MAX_BRIGHTNESS, DEBUG
+        global MAX_BRIGHTNESS, DEBUG, PLAY_HUE
         print("Trigger light", self.hue_list)
         for command in commands:
             #try:
@@ -262,7 +269,7 @@ class LushRoomsLighting():
                 # print(command)
                 scope,items = command[0:len(command)-1].split("(")
                 # print(scope,items)
-                if scope[0:3] == "HUE":
+                if scope[0:3] == "HUE" and PLAY_HUE:
                     l = int(scope[3:])
                     print(l)
                     # There seems to be something wrong with the lookup table
