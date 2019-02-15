@@ -1,6 +1,9 @@
+import os
 from os import uname, system
 from time import sleep
+import urllib.request
 from Lighting import LushRoomsLighting
+
 
 # utils
 
@@ -118,8 +121,17 @@ class LushRoomsPlayer():
     def getStatus(self):
         return self.player.status(self.status)
 
-    def pair(self, hostname):  
-        return self.player.pair(hostname, self.status)
+    def pair(self, hostname): 
+        response = os.system("ping -c 1 " + hostname)
+        if response == 0:
+            print(hostname, 'is up!')
+            requestUrl = "http://" + hostname
+            print("reqUrl: ", requestUrl)
+            contents = urllib.request.urlopen(requestUrl + "/status").read()
+            print("status: ", contents)
+        else:
+            print(hostname, 'is down!')
+        return 0
 
     def exit(self):
         self.player.exit()

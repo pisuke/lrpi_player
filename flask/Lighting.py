@@ -148,7 +148,7 @@ class LushRoomsLighting():
         if os.path.exists(settings_path):
             with open(settings_path) as f:
                 settings_json = json.loads(f.read())
-                print(json.dumps(settings_json))
+                # print(json.dumps(settings_json))
                 HUE1_IP_ADDRESS = settings_json["hue_ip"]
 
         if PLAY_HUE:
