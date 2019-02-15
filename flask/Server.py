@@ -12,6 +12,8 @@ from flask_restful import Resource, Api
 from json import dumps
 from flask_jsonpify import jsonify
 from flask_restful import reqparse
+import ntplib # pylint: disable=import-error
+from time import ctime
 
 from os.path import splitext
 import os
@@ -24,7 +26,7 @@ import random
 from pathlib import Path
 from time import sleep 
 import signal
-from pysrt import open as srtopen
+from pysrt import open as srtopen # pylint: disable=import-error
 
 from Player import LushRoomsPlayer
 from OmxPlayer import killOmx
@@ -36,7 +38,10 @@ allFormats = False
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
 
-MEDIA_BASE_PATH = "/media/usb/tracks/" 
+
+NTP_SERVER = 'ns1.luns.net.uk'
+BASE_PATH = "/media/usb/"
+MEDIA_BASE_PATH = BASE_PATH + "tracks/" 
 BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
@@ -49,6 +54,7 @@ NEW_SRT_ARRAY = []
 DEFAULT_SETTINGS = {
     "fadeInterval" : "4",
     "roomName" : "?",
+    "canPair" : True,
     "format" : "mp4"
 }
 
@@ -76,6 +82,7 @@ def getInput():
     parser.add_argument('id', help='error with id')
     parser.add_argument('interval', help='error with interval')
     parser.add_argument('position', help='error with position')
+    parser.add_argument('pairhostname', help='error with pairHostname')
     args = parser.parse_args()
     return args
 
@@ -87,7 +94,7 @@ def printOmxVars():
 def loadSettings():
     # return a graceful error if contents.json can't be found
     
-    settingsPath = MEDIA_BASE_PATH + SETTINGS_FILE
+    settingsPath = BASE_PATH + SETTINGS_FILE
 
     # If no settings.json exists, either rclone hasn't
     # finished yet or something else is wrong...
@@ -97,7 +104,9 @@ def loadSettings():
     with open(settingsPath) as data: 
         settings = json.load(data)
 
-    print("Room name: ", settings["roomName"]) 
+    settings["roomName"] = settings["name"]
+
+    print("Room name: ", settings["name"]) 
        
     return settings
     
@@ -123,6 +132,15 @@ class GetTrackList(Resource):
         global NEW_SRT_ARRAY
         global BUILT_PATH
         global player
+
+        c = ntplib.NTPClient()
+        try:
+            response = c.request(NTP_SERVER)
+            print('\n' + 30*'-')
+            print('ntp time: ', ctime(response.tx_time))
+            print(30*'-' + '\n')
+        except:
+            print('Could not get ntp time!')
  
         # return a graceful error if the usb stick isn't mounted
         if os.path.isdir(MEDIA_BASE_PATH) == False:
@@ -252,6 +270,48 @@ class PlayerStatus(Resource):
 
         return jsonify(response)
 
+class Pair(Resource):
+    def get(self):
+        global player
+
+        args = getInput()
+        print('Pair with: ', args["pairhostname"])
+
+        try:
+            pairRes = player.pair(args["pairhostname"]) 
+        except Exception as e:
+            print('Exception: ', e)
+            pairRes = 1
+
+        return jsonify(pairRes)
+
+class Enslave(Resource):
+    def get(self):
+        global player
+
+        if player:
+            player.stop()
+            player.exit() 
+        else:
+            player = LushRoomsPlayer(None, None)
+
+        print('Enslaving, player stopped and exited')
+        print('Enslaved by: ', request.environ.get('HTTP_X_REAL_IP', request.remote_addr) )
+
+        # set paired to true
+        masterIp = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+
+        player.setPaired(True, masterIp)
+
+        return 0
+
+class Command(Resource):
+    def get(self):
+        global player
+        print('Accepting command from master!')
+
+        return 0
+
 class Stop(Resource):
     def get(self):
         global player 
@@ -272,6 +332,9 @@ api.add_resource(FadeDown, '/crossfade')
 api.add_resource(Seek, '/seek')
 api.add_resource(GetSettings, '/settings')
 api.add_resource(PlayerStatus, '/status')
+api.add_resource(Pair, '/pair')
+api.add_resource(Enslave, '/enslave')
+api.add_resource(Command, '/command')
 api.add_resource(Stop, '/stop')
 
 if __name__ == '__main__':
