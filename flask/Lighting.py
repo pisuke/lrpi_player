@@ -9,7 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler # pylint: disa
 from tinkerforge.ip_connection import IPConnection # pylint: disable=import-error
 from tinkerforge.bricklet_dmx import BrickletDMX # pylint: disable=import-error
 from tf_device_ids import deviceIdentifiersList 
-from numpy import array, ones # pylint: disable=import-error
+from numpy import array, ones, zeros # pylint: disable=import-error
 import os
 import json
 
@@ -74,6 +74,10 @@ class LushRoomsLighting():
         self.initDMX()
         self.initHUE()
 
+    def cleaningScene(self):
+        self.resetHUE()
+        self.resetDMX()   
+
          # Tinkerforge sensors enumeration
     def cb_enumerate(self, uid, connected_uid, position, hardware_version, firmware_version,
                     device_identifier, enumeration_type):
@@ -89,6 +93,7 @@ class LushRoomsLighting():
         # Trigger Enumerate
         self.ipcon.enumerate()
 
+        # Likely wait for the tinkerforge brickd to finish doing its thing
         sleep(2)
 
         if DEBUG:
@@ -118,6 +123,25 @@ class LushRoomsLighting():
 
         if dmxcount < 1:
             print("No DMX devices found.")
+
+    def resetDMX(self):
+        dmxcount = 0
+        for tf in self.tfIDs:
+            # try:
+            if True:
+                # print(len(tf[0]))
+
+                if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
+                    if tf[1] in self.deviceIDs:
+                        if VERBOSE:
+                            print(tf[0],tf[1], self.getIdentifier(tf)) 
+                    if tf[1] == 285: # DMX Bricklet
+                        if dmxcount == 0:
+                            # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512)*255)
+                            self.dmx.write_frame([MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS])
+                        dmxcount += 1
+                    print('dmxcount: ', dmxcount)
+
 
     def initHUE(self):
         settings_path = os.path.join(self.SETTINGS_BASE_PATH, self.JSON_SETTINGS_FILE)
@@ -163,6 +187,24 @@ class LushRoomsLighting():
                 print(self.hue_list)
             #except PhueRegistrationException:
             #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
+
+    def resetHUE(self):
+        lights = self.bridge.lights
+        for l in lights:
+            # print(dir(l))
+            l.on = False
+        sleep(1)
+        for l in lights:
+            # print(dir(l))
+            l.on = True
+        # Print light names
+        # Set brightness of each light to 10
+        for l in lights:
+            print(l.name)
+            l.brightness = 5
+            l.saturation = 0
+            l.hue = 10
+
 
     def getIdentifier(self, ID):
         deviceType = ""
@@ -342,13 +384,15 @@ class LushRoomsLighting():
         print("-------------")
 
     def exit(self):
+        self.cleaningScene()
         self.__del__()
 
     def seek(self):
         self.last_played = 0
 
     def __del__(self):
-        self.scheduler.shutdown()
+        if self.scheduler:
+            self.scheduler.shutdown()
         print("Lighting died!")
 
 

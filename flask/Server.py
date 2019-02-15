@@ -12,6 +12,8 @@ from flask_restful import Resource, Api
 from json import dumps
 from flask_jsonpify import jsonify
 from flask_restful import reqparse
+import ntplib
+from time import ctime
 
 from os.path import splitext
 import os
@@ -49,6 +51,7 @@ NEW_SRT_ARRAY = []
 DEFAULT_SETTINGS = {
     "fadeInterval" : "4",
     "roomName" : "?",
+    "canPair" : True,
     "format" : "mp4"
 }
 
@@ -76,6 +79,7 @@ def getInput():
     parser.add_argument('id', help='error with id')
     parser.add_argument('interval', help='error with interval')
     parser.add_argument('position', help='error with position')
+    parser.add_argument('pairhostname', help='error with pairHostname')
     args = parser.parse_args()
     return args
 
@@ -123,6 +127,10 @@ class GetTrackList(Resource):
         global NEW_SRT_ARRAY
         global BUILT_PATH
         global player
+
+        c = ntplib.NTPClient()
+        response = c.request('pool.ntp.org')
+        print('ntp time: ', ctime(response.tx_time))
  
         # return a graceful error if the usb stick isn't mounted
         if os.path.isdir(MEDIA_BASE_PATH) == False:
@@ -252,6 +260,22 @@ class PlayerStatus(Resource):
 
         return jsonify(response)
 
+class Pair(Resource):
+    def get(self):
+        global player
+
+        args = getInput()
+        print('Pair with: ', args["pairhostname"])
+
+        try:
+            response = player.pair(args["pairhostname"]) 
+        except Exception as e:
+            print('Exception: ', e)
+            response = 1
+
+        return jsonify(response)
+
+
 class Stop(Resource):
     def get(self):
         global player 
@@ -272,6 +296,7 @@ api.add_resource(FadeDown, '/crossfade')
 api.add_resource(Seek, '/seek')
 api.add_resource(GetSettings, '/settings')
 api.add_resource(PlayerStatus, '/status')
+api.add_resource(Pair, '/pair')
 api.add_resource(Stop, '/stop')
 
 if __name__ == '__main__':
