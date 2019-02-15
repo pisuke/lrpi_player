@@ -94,6 +94,9 @@ class OmxPlayer():
             
         return status
 
+    def setPaired(self, val):
+        self.paired = val
+
  
     def exit(self):
         if self.player:

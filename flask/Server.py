@@ -289,8 +289,11 @@ class Enslave(Resource):
     def get(self):
         global player
 
-        player.stop()
-        player.exit() 
+        if player:
+            player.stop()
+            player.exit() 
+        else:
+            player = LushRoomsPlayer(None, None)
 
         print('Enslaving, player stopped and exited')
 

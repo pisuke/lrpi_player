@@ -32,12 +32,13 @@ class LushRoomsPlayer():
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
+        self.paired = False
         self.status = {
             "source" : "",
             "srtSource" : "",
             "playerState" : "",
             "canControl" : "",
-            "paired" : False,
+            "paired" : self.paired,
             "position" : "",
             "trackDuration" : "",
             "playerType": self.playerType,
@@ -139,14 +140,14 @@ class LushRoomsPlayer():
         else:
             print(hostname, 'is down!')
 
-        self.paired = True
+        self.player.setPaired(True)
 
         return 0
 
     # Method called by the slave
 
-    def setPaired(self, val):
-        self.paired = val
+    def setPaired(self, val): 
+        self.player.setPaired(val)
 
     # When this player is enslaved, map the status of the 
     # master to a method
