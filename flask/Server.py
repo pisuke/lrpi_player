@@ -129,8 +129,11 @@ class GetTrackList(Resource):
         global player
 
         c = ntplib.NTPClient()
-        response = c.request('pool.ntp.org')
-        print('ntp time: ', ctime(response.tx_time))
+        try:
+            response = c.request('pool.ntp.org')
+            print('ntp time: ', ctime(response.tx_time))
+        except:
+            print('Could not get ntp time!')
  
         # return a graceful error if the usb stick isn't mounted
         if os.path.isdir(MEDIA_BASE_PATH) == False:
