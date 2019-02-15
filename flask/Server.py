@@ -12,7 +12,7 @@ from flask_restful import Resource, Api
 from json import dumps
 from flask_jsonpify import jsonify
 from flask_restful import reqparse
-import ntplib
+import ntplib # pylint: disable=import-error
 from time import ctime
 
 from os.path import splitext
@@ -26,7 +26,7 @@ import random
 from pathlib import Path
 from time import sleep 
 import signal
-from pysrt import open as srtopen
+from pysrt import open as srtopen # pylint: disable=import-error
 
 from Player import LushRoomsPlayer
 from OmxPlayer import killOmx
@@ -285,6 +285,9 @@ class Pair(Resource):
 
         return jsonify(response)
 
+class Enslave(Resource):
+    def get(self):
+        return 0
 
 class Stop(Resource):
     def get(self):
@@ -307,6 +310,7 @@ api.add_resource(Seek, '/seek')
 api.add_resource(GetSettings, '/settings')
 api.add_resource(PlayerStatus, '/status')
 api.add_resource(Pair, '/pair')
+api.add_resource(Enslave, '/enslave')
 api.add_resource(Stop, '/stop')
 
 if __name__ == '__main__':
