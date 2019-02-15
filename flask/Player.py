@@ -121,6 +121,8 @@ class LushRoomsPlayer():
     def getStatus(self):
         return self.player.status(self.status)
 
+    # Method called by the master
+
     def pair(self, hostname): 
         response = os.system("ping -c 1 " + hostname)
         if response == 0:
@@ -129,11 +131,31 @@ class LushRoomsPlayer():
             print("reqUrl: ", requestUrl)
             contents = urllib.request.urlopen(requestUrl + "/status").read()
             print("status: ", contents)
-            if response == 1:
+            if contents:
                 print('Attempting to enslave: ' + hostname)
+
         else:
             print(hostname, 'is down!')
+
+        self.paired = True
+
         return 0
+
+    # Method called by the slave
+
+    def setPaired(self, val):
+        self.paired = val
+
+    # When this player is enslaved, map the status of the 
+    # master to a method
+
+    def commandFromMaster(self, masterStatus, command, startTime):
+        if self.paired:
+            print('command from master: ', command)
+            print('Master status: ', masterStatus)
+        else:
+            print('Not paired, cannot accept master commands')
+
 
     def exit(self):
         self.player.exit()

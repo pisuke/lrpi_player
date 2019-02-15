@@ -287,6 +287,24 @@ class Pair(Resource):
 
 class Enslave(Resource):
     def get(self):
+        global player
+
+        player.stop()
+        player.exit() 
+
+        print('Enslaving, player stopped and exited')
+
+        # set paired to true
+
+        player.setPaired(True)
+
+        return 0
+
+class Command(Resource):
+    def get(self):
+        global player
+        print('Accepting command from master!')
+
         return 0
 
 class Stop(Resource):
@@ -311,6 +329,7 @@ api.add_resource(GetSettings, '/settings')
 api.add_resource(PlayerStatus, '/status')
 api.add_resource(Pair, '/pair')
 api.add_resource(Enslave, '/enslave')
+api.add_resource(Command, '/command')
 api.add_resource(Stop, '/stop')
 
 if __name__ == '__main__':
