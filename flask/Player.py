@@ -1,6 +1,9 @@
+import os
 from os import uname, system
 from time import sleep
+import urllib.request
 from Lighting import LushRoomsLighting
+
 
 # utils
 
@@ -29,12 +32,13 @@ class LushRoomsPlayer():
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
+        self.paired = False
         self.status = {
             "source" : "",
             "srtSource" : "",
             "playerState" : "",
             "canControl" : "",
-            "paired" : "",
+            "paired" : self.paired,
             "position" : "",
             "trackDuration" : "",
             "playerType": self.playerType,
@@ -74,7 +78,8 @@ class LushRoomsPlayer():
             self.lighting.exit()
             self.player.exit()
             return 0
-        except:
+        except Exception as e:
+            print("stop e: ", e)
             return 1
 
     def setPlaylist(self, playlist):
@@ -116,6 +121,44 @@ class LushRoomsPlayer():
 
     def getStatus(self):
         return self.player.status(self.status)
+
+    # Method called by the master
+
+    def pair(self, hostname): 
+        response = os.system("ping -c 1 " + hostname)
+        if response == 0:
+            print(hostname, 'is up!')
+            slaveUrl = "http://" + hostname
+            print("slaveUrl: ", slaveUrl)
+            statusRes = urllib.request.urlopen(slaveUrl + "/status").read()
+            print("status: ", statusRes)
+            if statusRes:
+                print('Attempting to enslave: ' + hostname)
+                enslaveRes = urllib.request.urlopen(slaveUrl + "/enslave").read()
+                print('res from enslave: ', enslaveRes)
+
+        else:
+            print(hostname, 'is down!')
+
+        self.player.setPaired(True, None)
+
+        return 0
+
+    # Method called by the slave
+
+    def setPaired(self, val, masterIp): 
+        self.player.setPaired(val, masterIp)
+
+    # When this player is enslaved, map the status of the 
+    # master to a method
+
+    def commandFromMaster(self, masterStatus, command, startTime):
+        if self.paired:
+            print('command from master: ', command)
+            print('Master status: ', masterStatus)
+        else:
+            print('Not paired, cannot accept master commands')
+
 
     def exit(self):
         self.player.exit()
