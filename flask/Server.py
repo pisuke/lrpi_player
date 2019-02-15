@@ -38,7 +38,10 @@ allFormats = False
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
 
-MEDIA_BASE_PATH = "/media/usb/tracks/" 
+
+NTP_SERVER = 'ns1.luns.net.uk'
+BASE_PATH = "/media/usb/"
+MEDIA_BASE_PATH = BASE_PATH + "tracks/" 
 BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
@@ -91,7 +94,7 @@ def printOmxVars():
 def loadSettings():
     # return a graceful error if contents.json can't be found
     
-    settingsPath = MEDIA_BASE_PATH + SETTINGS_FILE
+    settingsPath = BASE_PATH + SETTINGS_FILE
 
     # If no settings.json exists, either rclone hasn't
     # finished yet or something else is wrong...
@@ -101,7 +104,9 @@ def loadSettings():
     with open(settingsPath) as data: 
         settings = json.load(data)
 
-    print("Room name: ", settings["roomName"]) 
+    settings["roomName"] = settings["name"]
+
+    print("Room name: ", settings["name"]) 
        
     return settings
     
@@ -130,8 +135,10 @@ class GetTrackList(Resource):
 
         c = ntplib.NTPClient()
         try:
-            response = c.request('pool.ntp.org')
+            response = c.request(NTP_SERVER)
+            print('\n' + 30*'-')
             print('ntp time: ', ctime(response.tx_time))
+            print(30*'-' + '\n')
         except:
             print('Could not get ntp time!')
  
