@@ -83,6 +83,9 @@ def getInput():
     parser.add_argument('interval', help='error with interval')
     parser.add_argument('position', help='error with position')
     parser.add_argument('pairhostname', help='error with pairHostname')
+    # command and status should definitely be sent via POST...
+    parser.add_argument('commandFromMaster', help='error with commandFromMaster')
+    parser.add_argument('masterStatus', help='error with masterStatus')
     args = parser.parse_args()
     return args
 
@@ -309,6 +312,9 @@ class Enslave(Resource):
         player.setPairedAsSlave(True, masterIp)
 
         return 0
+
+# Should have the command, status of the master
+# and the desired trigger time
 
 class Command(Resource):
     def get(self):

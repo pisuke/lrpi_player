@@ -17,6 +17,7 @@ class OmxPlayer():
     def __init__(self):
         self.player = None
         self.paired = False
+        self.masterIp = None
 
     # omxplayer callbacks
 
@@ -33,6 +34,9 @@ class OmxPlayer():
         print("Playing on omx...") 
         print(pathToTrack)
         self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
+        # Might need to set the volume to 0 a different way,
+        # for some tracks omxplayer plays a short, sharp, shock
+        # before setting the volume to 0
         self.player.set_volume(0)
         sleep(2.5)
         self.player.positionEvent += self.posEvent
@@ -102,7 +106,7 @@ class OmxPlayer():
         self.paired = val
         self.masterIp = masterIp
         print('paired set to: ', val)
-
+        print('master_ip set to: ', masterIp)
  
     def exit(self):
         if self.player:

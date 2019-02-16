@@ -35,7 +35,8 @@ class LushRoomsPlayer():
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
-        self.slaveCommandOffset = 2.0
+        self.slaveCommandOffset = 2.0 # seconds
+        self.eventSyncTime = None
         self.status = {
             "source" : "",
             "srtSource" : "",
@@ -51,12 +52,22 @@ class LushRoomsPlayer():
         self.subs = None
  
     def getPlayerType(self):
-        return self.playerType
+        return self.playerType 
+
+    def commandMustSync():
+        return self.player.paired and status["master_ip"] is None and self.eventSyncTime is not None
 
     # Returns the current position in secoends
     def start(self, path, subs, subsPath):
+        status = self.player.status()
+
+        if commandMustSync():
+            # wait until the sync time to fire everything off
+            
+
         self.started = True
         response = self.player.start(path)
+
         self.status["subsPath"] = subsPath
         try:
             print('In Player: ', id(self.player))
@@ -163,6 +174,7 @@ class LushRoomsPlayer():
         if self.player.paired:
             print('command from master: ', command)
             print('Master status: ', masterStatus)
+
         else:
             print('Not paired, cannot accept master commands')
 
@@ -179,6 +191,7 @@ class LushRoomsPlayer():
                 print('ntp time: ', ctime(response.tx_time))
                 print('ntp time raw: ', response.tx_time)
                 print(30*'-' + '\n')
+                self.eventSyncTime = ctime(response.tx_time)
                 
             except:
                 print('Could not get ntp time!')
