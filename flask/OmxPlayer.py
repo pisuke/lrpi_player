@@ -94,7 +94,7 @@ class OmxPlayer():
             status["error"] = "error: player is not initialized!"
         
         status["paired"] = self.paired
-        status["masterIp"] = self.masterIp
+        status["master_ip"] = self.masterIp
             
         return status
 

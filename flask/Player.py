@@ -172,7 +172,17 @@ class LushRoomsPlayer():
     def sendSlaveCommand(self, command):
         if self.player.paired:
             print('sending command to slave: ', command)
-            print('at time: ')
+            c = ntplib.NTPClient()
+            try:
+                response = c.request(NTP_SERVER)
+                print('\n' + 30*'-')
+                print('ntp time: ', ctime(response.tx_time))
+                print('ntp time raw: ', response.tx_time)
+                print(30*'-' + '\n')
+                
+            except:
+                print('Could not get ntp time!')
+            
 
         else:
             print('Not paired, cannot send commands to slave')

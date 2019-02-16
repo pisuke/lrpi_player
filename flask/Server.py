@@ -289,6 +289,11 @@ class Enslave(Resource):
     def get(self):
         global player
 
+        # If there is a player running, kill it
+        # If there isnt, make one without a playlist
+        # since we'll be getting the path of the audio/srt
+        # from the status object from the master
+
         if player:
             player.stop()
             player.exit() 
