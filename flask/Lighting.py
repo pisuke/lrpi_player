@@ -395,6 +395,7 @@ class LushRoomsLighting():
         self.__del__()
 
     def seek(self):
+        # This doesn't seem to work fully...
         self.last_played = 0
 
     def __del__(self):

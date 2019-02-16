@@ -3,9 +3,12 @@ from os import uname, system
 from time import sleep
 import urllib.request
 from Lighting import LushRoomsLighting
-
+import ntplib # pylint: disable=import-error
+from time import ctime
 
 # utils
+
+NTP_SERVER = 'ns1.luns.net.uk'
 
 def findArm(): 
     return uname().machine == 'armv7l' 
@@ -32,13 +35,13 @@ class LushRoomsPlayer():
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
-        self.paired = False
+        self.slaveCommandOffset = 2.0
         self.status = {
             "source" : "",
             "srtSource" : "",
             "playerState" : "",
             "canControl" : "",
-            "paired" : self.paired,
+            "paired" : False,
             "position" : "",
             "trackDuration" : "",
             "playerType": self.playerType,
@@ -87,8 +90,8 @@ class LushRoomsPlayer():
         self.status["playlist"] = playlist
  
     def getPlaylist(self):
-        if len(self.playlist):
-            return self.playlist
+        if len(self.status["playlist"]):
+            return self.status["playlist"]
         else:
             return False
 
@@ -122,9 +125,9 @@ class LushRoomsPlayer():
     def getStatus(self):
         return self.player.status(self.status)
 
-    # Method called by the master
+    # Pair method called by the master
 
-    def pair(self, hostname): 
+    def pairAsMaster(self, hostname): 
         response = os.system("ping -c 1 " + hostname)
         if response == 0:
             print(hostname, 'is up!')
@@ -136,28 +139,43 @@ class LushRoomsPlayer():
                 print('Attempting to enslave: ' + hostname)
                 enslaveRes = urllib.request.urlopen(slaveUrl + "/enslave").read()
                 print('res from enslave: ', enslaveRes)
+                self.player.setPaired(True, None)
 
         else:
-            print(hostname, 'is down!')
-
-        self.player.setPaired(True, None)
+            print(hostname, 'is down! Cannot pair!')
 
         return 0
 
     # Method called by the slave
 
-    def setPaired(self, val, masterIp): 
+    def setPairedAsSlave(self, val, masterIp): 
         self.player.setPaired(val, masterIp)
+
+    def unPair(self):
+        if self.player.paired:
+            self.player.setPaired(False, None)
+            self.player.exit()
 
     # When this player is enslaved, map the status of the 
     # master to a method
 
     def commandFromMaster(self, masterStatus, command, startTime):
-        if self.paired:
+        if self.player.paired:
             print('command from master: ', command)
             print('Master status: ', masterStatus)
         else:
             print('Not paired, cannot accept master commands')
+
+    # When this player is acting as master, send commands to 
+    # the slave with a 'start' timestamp
+
+    def sendSlaveCommand(self, command):
+        if self.player.paired:
+            print('sending command to slave: ', command)
+            print('at time: ')
+
+        else:
+            print('Not paired, cannot send commands to slave')
 
 
     def exit(self):

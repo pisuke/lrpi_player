@@ -1,9 +1,11 @@
 from os import uname, system
 from time import sleep
 from omxplayer.player import OMXPlayer # pylint: disable=import-error
+import ntplib # pylint: disable=import-error
+from time import ctime
 
 def killOmx():
-    # This will only work on Unix-like systems...
+    # This will only work on Unix-like (just Linux?) systems...
     try:
         system("killall omxplayer.bin")
         print('omxplayer processes killed!')

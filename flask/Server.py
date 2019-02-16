@@ -278,7 +278,7 @@ class Pair(Resource):
         print('Pair with: ', args["pairhostname"])
 
         try:
-            pairRes = player.pair(args["pairhostname"]) 
+            pairRes = player.pairAsMaster(args["pairhostname"]) 
         except Exception as e:
             print('Exception: ', e)
             pairRes = 1
@@ -301,7 +301,7 @@ class Enslave(Resource):
         # set paired to true
         masterIp = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
 
-        player.setPaired(True, masterIp)
+        player.setPairedAsSlave(True, masterIp)
 
         return 0
 
