@@ -41,8 +41,7 @@ class LushRoomsPlayer():
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
-        self.slaveCommandOffset = 2.0 # seconds
-        self.eventSyncTime = None
+        self.slaveCommandOffset = 5.0 # seconds
         self.slaveUrl = None
         self.status = {
             "source" : "",
@@ -63,17 +62,16 @@ class LushRoomsPlayer():
         return self.playerType    
 
     # Returns the current position in secoends
-    def start(self, path, subs, subsPath):
+    def start(self, path, subs, subsPath, syncTime=None):
         self.player.status(self.status) 
         self.status["source"] = path
-        self.status["subsPath"] = subsPath
-        syncTimestamp = None
+        self.status["subsPath"] = subsPath  
 
-        commandMustSyncSlave = self.player.paired and self.status["master_ip"] is None and self.eventSyncTime is not None
+        isSlave = self.player.paired and self.status["master_ip"] is not None and syncTime is not None
 
         isMaster = self.player.paired and self.status["master_ip"] is None
 
-        if commandMustSyncSlave:
+        if isSlave:
             # wait until the sync time to fire everything off
             print('Slave: Syncing start!')  
 
@@ -83,7 +81,7 @@ class LushRoomsPlayer():
             syncTimestamp = self.sendSlaveCommand('start')
 
         self.started = True
-        response = self.player.start(path, syncTimestamp)
+        response = self.player.start(path, syncTime)
 
         try:
             print('In Player: ', id(self.player))
