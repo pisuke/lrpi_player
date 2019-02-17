@@ -41,7 +41,7 @@ class LushRoomsPlayer():
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
-        self.slaveCommandOffset = 2.0 # seconds
+        self.slaveCommandOffset = 5.0 # seconds
         self.eventSyncTime = None
         self.slaveUrl = None
         self.status = {
@@ -67,6 +67,7 @@ class LushRoomsPlayer():
         self.player.status(self.status) 
         self.status["source"] = path
         self.status["subsPath"] = subsPath
+        syncTimestamp = None
 
         commandMustSyncSlave = self.player.paired and self.status["master_ip"] is None and self.eventSyncTime is not None
 
@@ -78,10 +79,10 @@ class LushRoomsPlayer():
 
         if isMaster:
             print('Master, sending start!')
-            self.sendSlaveCommand('start')
+            syncTimestamp = self.sendSlaveCommand('start')
 
         self.started = True
-        response = self.player.start(path)
+        response = self.player.start(path, syncTimestamp)
 
         try:
             print('In Player: ', id(self.player))
@@ -126,7 +127,7 @@ class LushRoomsPlayer():
     def previous(self):
         print("Skipping back...")
 
-    def fadeDown(self, path, interval, subs, subsPath):
+    def fadeDown(self, path, interval, subs, subsPath, syncTimestamp=None):
         if interval > 0: 
             while self.player.volumeDown(interval):
                 sleep(1.0/interval)
@@ -223,9 +224,7 @@ class LushRoomsPlayer():
                 slaveRes = requests.post(self.slaveUrl + '/command', json=postFields)
                 print('command from slave, res: ', slaveRes)
 
-                pause.until(self.eventSyncTime)
-                print('After pause!')
-
+                return self.eventSyncTime
                 
             except Exception as e:
                 print('Could not get ntp time!')
@@ -234,6 +233,8 @@ class LushRoomsPlayer():
 
         else:
             print('Not paired, cannot send commands to slave')
+
+        return None
 
 
     def exit(self):

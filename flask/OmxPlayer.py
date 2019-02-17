@@ -3,6 +3,7 @@ from time import sleep
 from omxplayer.player import OMXPlayer # pylint: disable=import-error
 import ntplib # pylint: disable=import-error
 from time import ctime
+import pause # pylint: disable=import-error
 
 def killOmx():
     # This will only work on Unix-like (just Linux?) systems...
@@ -30,7 +31,7 @@ class OmxPlayer():
         print('seek event! ' + str(b))
         return
 
-    def start(self, pathToTrack):
+    def start(self, pathToTrack, syncTimestamp=None):
         print("Playing on omx...") 
         print(pathToTrack)
         self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
@@ -43,11 +44,15 @@ class OmxPlayer():
         self.player.seekEvent += self.seekEvent
         self.player.set_position(0)
         self.player.set_volume(1.0)
+
+        if syncTimestamp:
+            pause.until(syncTimestamp)
+
         self.player.play() 
         return str(self.player.duration())
 
     # action 16 is emulated keypress for playPause
-    def playPause(self):
+    def playPause(self, syncTimestamp=None):
         print("Playpausing...")
         self.player.action(16)
         return str(self.player.duration())
@@ -80,7 +85,7 @@ class OmxPlayer():
                 return True 
         return False
 
-    def seek(self, position):
+    def seek(self, position, syncTimestamp=None):
         if self.player.can_seek():
             self.player.set_position(self.player.duration()*(position/100.0))
         return self.player.position()
