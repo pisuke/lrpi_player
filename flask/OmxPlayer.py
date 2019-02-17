@@ -95,7 +95,7 @@ class OmxPlayer():
             status["trackDuration"] = self.player.duration()
             status["error"] = ""
         else: 
-            status["error"] = "error: player is not initialized!"
+            status["error"] = "Player is not initialized!"
         
         status["paired"] = self.paired
         status["master_ip"] = self.masterIp

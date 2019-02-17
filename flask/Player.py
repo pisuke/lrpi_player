@@ -52,18 +52,17 @@ class LushRoomsPlayer():
         self.subs = None
  
     def getPlayerType(self):
-        return self.playerType 
-
-    def commandMustSync():
-        return self.player.paired and status["master_ip"] is None and self.eventSyncTime is not None
+        return self.playerType   
 
     # Returns the current position in secoends
     def start(self, path, subs, subsPath):
-        status = self.player.status()
+        self.player.status(self.status) 
 
-        if commandMustSync():
+        commandMustSync = self.player.paired and self.status["master_ip"] is None and self.eventSyncTime is not None
+
+        if commandMustSync:
             # wait until the sync time to fire everything off
-            
+            print('Syncing start!')  
 
         self.started = True
         response = self.player.start(path)
