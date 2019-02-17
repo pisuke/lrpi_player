@@ -14,6 +14,7 @@ from flask_jsonpify import jsonify
 from flask_restful import reqparse
 import ntplib # pylint: disable=import-error
 from time import ctime
+import pause # pylint: disable=import-error
 
 from os.path import splitext
 import os
@@ -317,9 +318,19 @@ class Enslave(Resource):
 # and the desired trigger time
 
 class Command(Resource):
-    def get(self):
+    def post(self):
         global player
         print('Accepting command from master!')
+        command = request.get_json(force=True)
+        print('data from POST: ', command)
+
+        pause.until(command["sync_timestamp"])
+
+        player.start(
+            command["master_status"]["source"],  
+            None, 
+            command["master_status"]["subsPath"] 
+        ) 
 
         return 0
 
@@ -345,7 +356,7 @@ api.add_resource(GetSettings, '/settings')
 api.add_resource(PlayerStatus, '/status')
 api.add_resource(Pair, '/pair')
 api.add_resource(Enslave, '/enslave')
-api.add_resource(Command, '/command')
+api.add_resource(Command, '/command') # POST
 api.add_resource(Stop, '/stop')
 
 if __name__ == '__main__':

@@ -189,8 +189,9 @@ class LushRoomsLighting():
                     print(self.hue_list)
                 #except PhueRegistrationException:
                 #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
-        except:
+        except Exception as e:
             print("Could not create connection to Hue. Hue lighting is now disabled")
+            print("why: ", e)
             PLAY_HUE = False
 
     def resetHUE(self):
