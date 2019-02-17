@@ -2,10 +2,15 @@ import os
 from os import uname, system
 from time import sleep
 import urllib.request
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+from urllib import parse
+import requests
 from Lighting import LushRoomsLighting
 import ntplib # pylint: disable=import-error
 from time import ctime
 import pause # pylint: disable=import-error
+import json
 
 # utils
 
@@ -38,9 +43,10 @@ class LushRoomsPlayer():
         self.playlist = playlist
         self.slaveCommandOffset = 2.0 # seconds
         self.eventSyncTime = None
+        self.slaveUrl = None
         self.status = {
             "source" : "",
-            "srtSource" : "",
+            "subsPath" : "",
             "playerState" : "",
             "canControl" : "",
             "paired" : False,
@@ -48,7 +54,8 @@ class LushRoomsPlayer():
             "trackDuration" : "",
             "playerType": self.playerType,
             "playlist": self.playlist,
-            "error" : ""
+            "error" : "",
+            "slave_url": None
         }
         self.subs = None
  
@@ -58,6 +65,8 @@ class LushRoomsPlayer():
     # Returns the current position in secoends
     def start(self, path, subs, subsPath):
         self.player.status(self.status) 
+        self.status["source"] = path
+        self.status["subsPath"] = subsPath
 
         commandMustSyncSlave = self.player.paired and self.status["master_ip"] is None and self.eventSyncTime is not None
 
@@ -74,7 +83,6 @@ class LushRoomsPlayer():
         self.started = True
         response = self.player.start(path)
 
-        self.status["subsPath"] = subsPath
         try:
             print('In Player: ', id(self.player))
             self.lighting.start(self.player, subs) 
@@ -148,13 +156,13 @@ class LushRoomsPlayer():
         response = os.system("ping -c 1 " + hostname)
         if response == 0:
             print(hostname, 'is up!')
-            slaveUrl = "http://" + hostname
-            print("slaveUrl: ", slaveUrl)
-            statusRes = urllib.request.urlopen(slaveUrl + "/status").read()
+            self.slaveUrl = "http://" + hostname
+            print("slaveUrl: ", self.slaveUrl)
+            statusRes = urllib.request.urlopen(self.slaveUrl + "/status").read()
             print("status: ", statusRes)
             if statusRes:
                 print('Attempting to enslave: ' + hostname)
-                enslaveRes = urllib.request.urlopen(slaveUrl + "/enslave").read()
+                enslaveRes = urllib.request.urlopen(self.slaveUrl + "/enslave").read()
                 print('res from enslave: ', enslaveRes)
                 self.player.setPaired(True, None)
 
@@ -202,8 +210,19 @@ class LushRoomsPlayer():
                 print(30*'-' + '\n')
                 self.eventSyncTime = response.tx_time + self.slaveCommandOffset
                 print('events sync at: ', self.eventSyncTime)
+
+
                 # send the event sync time to the slave...
                 # if we don't get a response don't try and trigger the event!
+                self.player.status(self.status)
+                postFields = { \
+                    'command': str(command), \
+                    'master_status': self.getStatus(), \
+                    'sync_timestamp': self.eventSyncTime \
+                }
+                slaveRes = requests.post(self.slaveUrl + '/command', json=postFields)
+                print('command from slave, res: ', slaveRes)
+
                 pause.until(self.eventSyncTime)
                 print('After pause!')
 
