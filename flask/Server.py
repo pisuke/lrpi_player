@@ -29,7 +29,7 @@ from time import sleep
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
 
-from Player import LushRoomsPlayer
+from Player import LushRoomsPlayer 
 from OmxPlayer import killOmx
 
 mpegOnly = True
@@ -320,16 +320,13 @@ class Enslave(Resource):
 class Command(Resource):
     def post(self):
         global player
-        print('Accepting command from master!')
         command = request.get_json(force=True)
-        print('data from POST: ', command)
-
-        pause.until(command["sync_timestamp"])
 
         player.start(
             command["master_status"]["source"],  
             None, 
-            command["master_status"]["subsPath"] 
+            command["master_status"]["subsPath"],
+            command["sync_timestamp"] 
         ) 
 
         return 0
