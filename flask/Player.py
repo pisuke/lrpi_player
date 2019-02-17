@@ -41,7 +41,7 @@ class LushRoomsPlayer():
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
-        self.slaveCommandOffset = 5.0 # seconds
+        self.slaveCommandOffset = 2.0 # seconds
         self.eventSyncTime = None
         self.slaveUrl = None
         self.status = {
@@ -79,6 +79,7 @@ class LushRoomsPlayer():
 
         if isMaster:
             print('Master, sending start!')
+            self.player.primeForStart(path)
             syncTimestamp = self.sendSlaveCommand('start')
 
         self.started = True
@@ -210,7 +211,7 @@ class LushRoomsPlayer():
                 print('ntp time raw: ', response.tx_time)
                 print(30*'-' + '\n')
                 self.eventSyncTime = response.tx_time + self.slaveCommandOffset
-                print('events sync at: ', self.eventSyncTime)
+                print('events sync at: ', ctime(self.eventSyncTime))
 
 
                 # send the event sync time to the slave...

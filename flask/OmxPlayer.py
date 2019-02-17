@@ -4,6 +4,7 @@ from omxplayer.player import OMXPlayer # pylint: disable=import-error
 import ntplib # pylint: disable=import-error
 from time import ctime
 import pause # pylint: disable=import-error
+import datetime
 
 def killOmx():
     # This will only work on Unix-like (just Linux?) systems...
@@ -31,19 +32,29 @@ class OmxPlayer():
         print('seek event! ' + str(b))
         return
 
+    def primeForStart(self, pathToTrack):
+        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
+        self.player.set_volume(0)
+        sleep(2.5)
+
     def start(self, pathToTrack, syncTimestamp=None):
         print("Playing on omx...") 
         print(pathToTrack)
-        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
-        # Might need to set the volume to 0 a different way,
-        # for some tracks omxplayer plays a short, sharp, shock
-        # before setting the volume to 0
-        self.player.set_volume(0)
-        sleep(2.5)
+
+        if self.player is None and syncTimestamp is None:
+            self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
+            # Might need to set the volume to 0 a different way,
+            # for some tracks omxplayer plays a short, sharp, shock
+            # before setting the volume to 0
+            self.player.set_volume(0)
+            sleep(2.5)
+
         self.player.positionEvent += self.posEvent
         self.player.seekEvent += self.seekEvent
         self.player.set_position(0)
         self.player.set_volume(1.0)
+
+        print('synctime in omxplayer: ', ctime(syncTimestamp))
 
         if syncTimestamp:
             pause.until(syncTimestamp)
