@@ -5,6 +5,7 @@ import urllib.request
 from Lighting import LushRoomsLighting
 import ntplib # pylint: disable=import-error
 from time import ctime
+import pause # pylint: disable=import-error
 
 # utils
 
@@ -52,17 +53,23 @@ class LushRoomsPlayer():
         self.subs = None
  
     def getPlayerType(self):
-        return self.playerType   
+        return self.playerType    
 
     # Returns the current position in secoends
     def start(self, path, subs, subsPath):
         self.player.status(self.status) 
 
-        commandMustSync = self.player.paired and self.status["master_ip"] is None and self.eventSyncTime is not None
+        commandMustSyncSlave = self.player.paired and self.status["master_ip"] is None and self.eventSyncTime is not None
 
-        if commandMustSync:
+        isMaster = self.player.paired and self.status["master_ip"] is None
+
+        if commandMustSyncSlave:
             # wait until the sync time to fire everything off
-            print('Syncing start!')  
+            print('Slave: Syncing start!')  
+
+        if isMaster:
+            print('Master, sending start!')
+            self.sendSlaveCommand('start')
 
         self.started = True
         response = self.player.start(path)
@@ -185,15 +192,25 @@ class LushRoomsPlayer():
             print('sending command to slave: ', command)
             c = ntplib.NTPClient()
             try:
+                # tx_time is a unix timestamp
+                # this, among a few other things, means 'party mode'
+                # is only available on the 'Pi'/other unix like systems
                 response = c.request(NTP_SERVER)
                 print('\n' + 30*'-')
                 print('ntp time: ', ctime(response.tx_time))
                 print('ntp time raw: ', response.tx_time)
                 print(30*'-' + '\n')
-                self.eventSyncTime = ctime(response.tx_time)
+                self.eventSyncTime = response.tx_time + self.slaveCommandOffset
+                print('events sync at: ', self.eventSyncTime)
+                # send the event sync time to the slave...
+                # if we don't get a response don't try and trigger the event!
+                pause.until(self.eventSyncTime)
+                print('After pause!')
+
                 
-            except:
+            except Exception as e:
                 print('Could not get ntp time!')
+                print('Why: ', e)
             
 
         else:
