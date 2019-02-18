@@ -41,6 +41,12 @@ class OmxPlayer():
         print("Playing on omx...") 
         print(pathToTrack)
 
+        if self.player:
+            self.player.quit()
+        self.player = None
+
+        print('player: ', self.player)
+
         if self.player is None or syncTimestamp is None:
             self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
             # Might need to set the volume to 0 a different way,
@@ -52,6 +58,7 @@ class OmxPlayer():
         self.player.positionEvent += self.posEvent
         self.player.seekEvent += self.seekEvent
         self.player.set_position(0)
+        sleep(0.1)
         self.player.set_volume(1.0)
 
         print('synctime in omxplayer: ', ctime(syncTimestamp))
@@ -140,6 +147,7 @@ class OmxPlayer():
             
         if self.player:
             self.player.quit()
+            self.__del__()
             killOmx()
         else: 
             return 1
@@ -147,5 +155,5 @@ class OmxPlayer():
     def __del__(self):
         if self.player:
             self.player.quit()
-            killOmx()
+        killOmx()
         print("OMX died")

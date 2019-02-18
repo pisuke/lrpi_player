@@ -41,7 +41,7 @@ class LushRoomsPlayer():
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
-        self.slaveCommandOffset = 5.0 # seconds
+        self.slaveCommandOffset = 2.0 # seconds
         self.slaveUrl = None
         self.status = {
             "source" : "",
