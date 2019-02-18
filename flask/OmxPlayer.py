@@ -5,6 +5,8 @@ import ntplib # pylint: disable=import-error
 from time import ctime
 import pause # pylint: disable=import-error
 import datetime
+import os
+import json
 
 def killOmx():
     # This will only work on Unix-like (just Linux?) systems...
@@ -17,9 +19,12 @@ def killOmx():
 
 class OmxPlayer():
     def __init__(self):
+        self.SETTINGS_BASE_PATH = "/media/usb/"
+        self.JSON_SETTINGS_FILE = "settings.json"
         self.player = None
         self.paired = False
         self.masterIp = None
+        self.audio_volume = 1.0
 
     # omxplayer callbacks
 
@@ -58,7 +63,15 @@ class OmxPlayer():
         self.player.seekEvent += self.seekEvent
         self.player.set_position(0)
 
-        self.player.set_volume(1.0)
+        settings_path = os.path.join(self.SETTINGS_BASE_PATH, self.JSON_SETTINGS_FILE)
+        if os.path.exists(settings_path):
+            with open(settings_path) as f:
+                settings_json = json.loads(f.read())
+                print(json.dumps(settings_json))
+                self.audio_volume = settings_json["audio_volume"]
+            print("Volume set to %s" % self.audio_volume)
+
+        self.player.set_volume(float(self.audio_volume)/100.0)
 
         print('synctime in omxplayer: ', ctime(syncTimestamp))
 
