@@ -112,7 +112,7 @@ class OmxPlayer():
 
     def status(self, status):
         if self.player != None:
-            print('status requested!')
+            print('status requested from omxplayer!')
             try:
                 status["source"] = self.player.get_source()
                 status["playerState"] = self.player.playback_status()
@@ -149,6 +149,7 @@ class OmxPlayer():
             self.player.quit()
             self.__del__()
             killOmx()
+            self.__del__()
         else: 
             return 1
 

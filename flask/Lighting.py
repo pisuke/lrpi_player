@@ -15,8 +15,8 @@ import json
 
 # dev
 
-DEBUG = True
-VERBOSE = True
+DEBUG = False
+VERBOSE = False
 
 # dmx
 
@@ -323,8 +323,6 @@ class LushRoomsLighting():
             ts = SubRipTime(seconds = t)
             tsd = SubRipTime(seconds = t+1*TICK_TIME)
             # print(dir(player))
-            print('in tick, player: ', id(self.player))
-            print('in tick, playerDur: ', self.player.getPosition())
             pp = self.player.getPosition()
             #ptms = player.get_time()/1000.0
             #pt = SubRipTime(seconds=(player.get_time()/1000.0))
