@@ -298,6 +298,11 @@ class Enslave(Resource):
         # since we'll be getting the path of the audio/srt
         # from the status object from the master
 
+        # If the Angular app is accessed while a LRPi is
+        # in slave mode, we know from the status object that
+        # it is paired: we can easily lock the UI and stop it
+        # sending any control commands
+
         if player:
             player.stop()
             player.exit() 
@@ -312,9 +317,9 @@ class Enslave(Resource):
 
         player.setPairedAsSlave(True, masterIp)
 
-        return 0
+        return jsonify(0)
 
-# Should have the command, status of the master
+# POST body Should have the command, status of the master
 # and the desired trigger time
 
 class Command(Resource):
@@ -322,14 +327,13 @@ class Command(Resource):
         global player
         command = request.get_json(force=True)
 
-        player.start(
-            command["master_status"]["source"],  
-            None, 
-            command["master_status"]["subsPath"],
-            command["sync_timestamp"] 
+        res = player.commandFromMaster(
+            command["master_status"],
+            command["command"],
+            command["sync_timestamp"]
         ) 
 
-        return 0
+        return jsonify(res)
 
 class Stop(Resource):
     def get(self):

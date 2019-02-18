@@ -65,6 +65,8 @@ class OmxPlayer():
     # action 16 is emulated keypress for playPause
     def playPause(self, syncTimestamp=None):
         print("Playpausing...")
+        if syncTimestamp:
+            pause.until(syncTimestamp)
         self.player.action(16)
         return str(self.player.duration())
 
@@ -132,7 +134,10 @@ class OmxPlayer():
         print('paired set to: ', val)
         print('master_ip set to: ', masterIp)
  
-    def exit(self):
+    def exit(self, syncTimestamp=None):
+        if syncTimestamp:
+            pause.until(syncTimestamp)
+            
         if self.player:
             self.player.quit()
             killOmx()

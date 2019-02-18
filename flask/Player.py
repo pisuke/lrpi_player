@@ -59,7 +59,13 @@ class LushRoomsPlayer():
         self.subs = None
  
     def getPlayerType(self):
-        return self.playerType    
+        return self.playerType 
+
+    def isMaster(self):
+        return self.player.paired and self.status["master_ip"] is None
+
+    def isSlave(self):
+        return self.player.paired and self.status["master_ip"] is not None           
 
     # Returns the current position in secoends
     def start(self, path, subs, subsPath, syncTime=None):
@@ -67,15 +73,11 @@ class LushRoomsPlayer():
         self.status["source"] = path
         self.status["subsPath"] = subsPath  
 
-        isSlave = self.player.paired and self.status["master_ip"] is not None and syncTime is not None
-
-        isMaster = self.player.paired and self.status["master_ip"] is None
-
-        if isSlave:
+        if self.isSlave():
             # wait until the sync time to fire everything off
             print('Slave: Syncing start!')  
 
-        if isMaster:
+        if self.isMaster():
             print('Master, sending start!')
             self.player.primeForStart(path)
             syncTime = self.sendSlaveCommand('start')
@@ -91,23 +93,30 @@ class LushRoomsPlayer():
 
         return response
 
-    def playPause(self):
-        response = self.player.playPause()
+    def playPause(self, syncTime=None):
+
+        if self.isMaster():
+            print('Master, sending playPause!')
+            syncTime = self.sendSlaveCommand('playPause')
+
+        response = self.player.playPause(syncTime)
+
         try:
             print('In Player: ', id(self.player))
             self.lighting.playPause(self.getStatus()["playerState"]) 
         except Exception as e:
-            print('Lighting failed: ', e)
+            print('Lighting playPause failed: ', e)
+
         return response
 
-    def stop(self):
+    def stop(self, syncTime=None):
         try:
             print('Stopping...')
+            self.player.exit(syncTime)
             self.lighting.exit()
-            self.player.exit()
             return 0
         except Exception as e:
-            print("stop e: ", e)
+            print("stop failed: ", e)
             return 1
 
     def setPlaylist(self, playlist):
@@ -186,12 +195,37 @@ class LushRoomsPlayer():
     # master to a method
 
     def commandFromMaster(self, masterStatus, command, startTime):
+        res = 1
         if self.player.paired:
-            print('command from master: ', command)
-            print('Master status: ', masterStatus)
+            try:
+                print('command from master: ', command)
+                # print('Master status: ', masterStatus)
+
+                if command == "start":
+                    self.start(
+                        masterStatus,  
+                        None, 
+                        masterStatus["subsPath"],
+                        startTime 
+                    ) 
+                
+                if command == "playPause":
+                    self.playPause(startTime)
+
+                if command == "stop":
+                    self.stop(startTime)
+
+                res = 0
+
+            except Exception as e:
+                print("Command from master failed: ", str(e))
+                return 1
 
         else:
             print('Not paired, cannot accept master commands')
+            res = 1
+
+        return res
 
     # When this player is acting as master, send commands to 
     # the slave with a 'start' timestamp
