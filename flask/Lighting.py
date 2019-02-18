@@ -15,8 +15,8 @@ import json
 
 # dev
 
-DEBUG = True
-VERBOSE = True
+DEBUG = False
+VERBOSE = False
 
 # dmx
 
@@ -189,8 +189,9 @@ class LushRoomsLighting():
                     print(self.hue_list)
                 #except PhueRegistrationException:
                 #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
-        except:
+        except Exception as e:
             print("Could not create connection to Hue. Hue lighting is now disabled")
+            print("why: ", e)
             PLAY_HUE = False
 
     def resetHUE(self):
@@ -322,8 +323,6 @@ class LushRoomsLighting():
             ts = SubRipTime(seconds = t)
             tsd = SubRipTime(seconds = t+1*TICK_TIME)
             # print(dir(player))
-            print('in tick, player: ', id(self.player))
-            print('in tick, playerDur: ', self.player.getPosition())
             pp = self.player.getPosition()
             #ptms = player.get_time()/1000.0
             #pt = SubRipTime(seconds=(player.get_time()/1000.0))
@@ -395,6 +394,7 @@ class LushRoomsLighting():
         self.__del__()
 
     def seek(self):
+        # This doesn't seem to work fully...
         self.last_played = 0
 
     def __del__(self):
