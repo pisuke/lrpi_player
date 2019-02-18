@@ -112,6 +112,11 @@ class LushRoomsPlayer():
     def stop(self, syncTime=None):
         try:
             print('Stopping...')
+
+            if self.isMaster():
+                print('Master, sending stop!')
+                syncTime = self.sendSlaveCommand('stop')
+                
             self.player.exit(syncTime)
             self.lighting.exit()
             return 0
@@ -199,11 +204,15 @@ class LushRoomsPlayer():
         if self.player.paired:
             try:
                 print('command from master: ', command)
+                print('master status: ', masterStatus)
+                print('startTime: ', startTime)
+
+
                 # print('Master status: ', masterStatus)
 
                 if command == "start":
                     self.start(
-                        masterStatus,  
+                        masterStatus["source"],  
                         None, 
                         masterStatus["subsPath"],
                         startTime 
