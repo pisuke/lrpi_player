@@ -29,7 +29,7 @@ HUE1_IP_ADDRESS = ""
 HUE2_IP_ADDRESS = ""
 TICK_TIME = 0.1 # seconds
 PLAY_HUE = True
-PLAY_DMX = False
+PLAY_DMX = True
 # SLEEP_TIME = 0.1 # seconds
 # TRANSITION_TIME = 10 # milliseconds
 
@@ -308,7 +308,7 @@ class LushRoomsLighting():
                     if DEBUG:
                         print("Trigger DMX:", l, channels)
                     if PLAY_DMX:
-                        if self.dm != None:
+                        if self.dmx != None:
                             self.dmx.write_frame(channels)
             #except:
             #    pass
