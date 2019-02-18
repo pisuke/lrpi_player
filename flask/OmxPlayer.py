@@ -52,6 +52,7 @@ class OmxPlayer():
         self.player.positionEvent += self.posEvent
         self.player.seekEvent += self.seekEvent
         self.player.set_position(0)
+        sleep(0.1)
         self.player.set_volume(1.0)
 
         print('synctime in omxplayer: ', ctime(syncTimestamp))
@@ -105,7 +106,7 @@ class OmxPlayer():
 
     def status(self, status):
         if self.player != None:
-            print('status requested!')
+            print('status requested from omxplayer!')
             try:
                 status["source"] = self.player.get_source()
                 status["playerState"] = self.player.playback_status()
@@ -141,6 +142,7 @@ class OmxPlayer():
         if self.player:
             self.player.quit()
             killOmx()
+            self.__del__()
         else: 
             return 1
 

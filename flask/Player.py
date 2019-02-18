@@ -41,7 +41,7 @@ class LushRoomsPlayer():
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
-        self.slaveCommandOffset = 5.0 # seconds
+        self.slaveCommandOffset = 2.0 # seconds
         self.slaveUrl = None
         self.status = {
             "source" : "",
@@ -116,9 +116,10 @@ class LushRoomsPlayer():
             if self.isMaster():
                 print('Master, sending stop!')
                 syncTime = self.sendSlaveCommand('stop')
-                
+
+            self.lighting.exit()  
             self.player.exit(syncTime)
-            self.lighting.exit()
+            
             return 0
         except Exception as e:
             print("stop failed: ", e)
