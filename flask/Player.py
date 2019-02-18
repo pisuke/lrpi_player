@@ -83,7 +83,7 @@ class LushRoomsPlayer():
             syncTime = self.sendSlaveCommand('start')
 
         self.started = True
-        response = self.player.start(path, syncTime)
+        response = self.player.start(path, syncTime, self.isMaster())
 
         try:
             print('In Player: ', id(self.player))

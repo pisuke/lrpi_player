@@ -37,13 +37,14 @@ class OmxPlayer():
         self.player.set_volume(0)
         sleep(2.5)
 
-    def start(self, pathToTrack, syncTimestamp=None):
-        print("Playing on omx...") 
+    def start(self, pathToTrack, syncTimestamp=None, master=False):
+        print("Playing on omx... :", master) 
         print(pathToTrack)
 
-        if self.player:
-            self.player.quit()
-        self.player = None
+        if not master:
+            if self.player:
+                self.player.quit()
+            self.player = None
 
         print('player: ', self.player)
 
