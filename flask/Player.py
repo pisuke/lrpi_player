@@ -78,7 +78,7 @@ class LushRoomsPlayer():
         if isMaster:
             print('Master, sending start!')
             self.player.primeForStart(path)
-            syncTimestamp = self.sendSlaveCommand('start')
+            syncTime = self.sendSlaveCommand('start')
 
         self.started = True
         response = self.player.start(path, syncTime)
@@ -148,6 +148,7 @@ class LushRoomsPlayer():
             return self.player.seek(position)
 
     def getStatus(self):
+        self.status["slave_url"] = self.slaveUrl
         return self.player.status(self.status)
 
     # Pair method called by the master

@@ -41,7 +41,7 @@ class OmxPlayer():
         print("Playing on omx...") 
         print(pathToTrack)
 
-        if self.player is None and syncTimestamp is None:
+        if self.player is None or syncTimestamp is None:
             self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
             # Might need to set the volume to 0 a different way,
             # for some tracks omxplayer plays a short, sharp, shock
@@ -104,13 +104,21 @@ class OmxPlayer():
     def status(self, status):
         if self.player != None:
             print('status requested!')
-            status["source"] = self.player.get_source()
-            status["playerState"] = self.player.playback_status()
-            status["canControl"] = self.player.can_control()
-            status["position"] = self.player.position()
-            status["trackDuration"] = self.player.duration()
-            status["error"] = ""
+            try:
+                status["source"] = self.player.get_source()
+                status["playerState"] = self.player.playback_status()
+                status["canControl"] = self.player.can_control()
+                status["position"] = self.player.position()
+                status["trackDuration"] = self.player.duration()
+                status["error"] = ""
+            except Exception as e:
+                status["playerState"] = ""
+                status["canControl"] = False
+                status["error"] = "Something went wrong with player status request: " + str(e)
+
         else: 
+            status["playerState"] = ""
+            status["canControl"] = False
             status["error"] = "Player is not initialized!"
         
         status["paired"] = self.paired
