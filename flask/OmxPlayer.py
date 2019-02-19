@@ -24,7 +24,7 @@ class OmxPlayer():
         self.player = None
         self.paired = False
         self.masterIp = None
-        self.audio_volume = 1.0
+        self.audio_volume = 100.0
 
     # omxplayer callbacks
 
@@ -68,7 +68,9 @@ class OmxPlayer():
             with open(settings_path) as f:
                 settings_json = json.loads(f.read())
                 print(json.dumps(settings_json))
-                self.audio_volume = settings_json["audio_volume"]
+                volume = settings_json.get("audio_volume")
+                if volume is not None:
+                    self.audio_volume = volume
             print("Volume set to %s" % self.audio_volume)
 
         self.player.set_volume(float(self.audio_volume)/100.0)
