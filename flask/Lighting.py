@@ -40,7 +40,7 @@ dmx = None
 scheduler = None
 last_played = 0
 
-tfConnect = False
+tfConnect = False 
 
 # utils
 
