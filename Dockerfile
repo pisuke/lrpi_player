@@ -26,6 +26,10 @@ RUN mkdir -p /media/usb
 
 RUN sudo apt-get install libatlas-base-dev
 
+RUN sudo apt-get install libusb-1.0-0 libudev0 pm-utils
+RUN wget http://download.tinkerforge.com/tools/brickd/linux/brickd_linux_latest_armhf.deb
+RUN sudo dpkg -i brickd_linux_latest_armhf.deb
+
 RUN git clone --single-branch -b develop --depth 5 https://github.com/LUSHDigital/lrpi_player.git /opt/code && \
     pip3 install -r /opt/code/requirements.txt
 
