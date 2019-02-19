@@ -232,6 +232,7 @@ class FadeDown(Resource):
         args = getInput()
         print('argsid: ', args["id"])
         # print('argsinterval: ', args["interval"])
+        pathToTrack = None
 
         for track in NEW_TRACK_ARRAY:
             if track["ID"] == args["id"]:
@@ -241,7 +242,7 @@ class FadeDown(Resource):
                     subs = srtopen(BUILT_PATH + srtFileName)
                 pathToTrack = BUILT_PATH + track["Path"]
 
-        if os.path.isfile(pathToTrack) == False:
+        if pathToTrack is None or not os.path.isfile(pathToTrack):
             print('Bad file path, will not attempt to play...')
             return jsonify(1) 
 
