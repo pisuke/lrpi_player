@@ -24,6 +24,8 @@ RUN mkdir -p /media/usb
 
 # copy lrpi_player repo
 
+RUN sudo apt-get install libatlas-base-dev
+
 RUN git clone --single-branch -b develop --depth 5 https://github.com/LUSHDigital/lrpi_player.git /opt/code && \
     pip3 install -r /opt/code/requirements.txt
 
