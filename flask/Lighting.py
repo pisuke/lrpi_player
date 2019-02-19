@@ -15,8 +15,8 @@ import json
 
 # dev
 
-DEBUG = True
-VERBOSE = True
+DEBUG = False
+VERBOSE = False
 
 # dmx
 
@@ -29,7 +29,7 @@ HUE1_IP_ADDRESS = ""
 HUE2_IP_ADDRESS = ""
 TICK_TIME = 0.1 # seconds
 PLAY_HUE = True
-PLAY_DMX = True
+PLAY_DMX = False
 # SLEEP_TIME = 0.1 # seconds
 # TRANSITION_TIME = 10 # milliseconds
 
@@ -40,7 +40,7 @@ dmx = None
 scheduler = None
 last_played = 0
 
-tfConnect = True
+tfConnect = False 
 
 # utils
 
@@ -71,7 +71,8 @@ class LushRoomsLighting():
 
         # init methods
 
-        self.initDMX()
+        if PLAY_DMX:
+            self.initDMX()
         self.initHUE()
 
     def cleaningScene(self):
@@ -158,7 +159,7 @@ class LushRoomsLighting():
                 #try:
                 if True:
                     # b = Bridge('lushroom-hue.local')
-                    self.bridge = Bridge(HUE1_IP_ADDRESS)
+                    self.bridge = Bridge(HUE1_IP_ADDRESS, config_file_path="/media/usb/python_hue")
                     # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
                     self.bridge.connect()
                     # Get the bridge state (This returns the full dictionary that you can explore)
@@ -172,7 +173,7 @@ class LushRoomsLighting():
                         # print(dir(l))
                         l.on = True
                     # Print light names
-                    # Set brightness of each light to 10
+                    # Set brightness of each light to 100
                     for l in lights:
                         print(l.name)
                         l.brightness = 255
@@ -189,8 +190,9 @@ class LushRoomsLighting():
                     print(self.hue_list)
                 #except PhueRegistrationException:
                 #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
-        except:
+        except Exception as e:
             print("Could not create connection to Hue. Hue lighting is now disabled")
+            print("why: ", e)
             PLAY_HUE = False
 
     def resetHUE(self):
@@ -240,7 +242,7 @@ class LushRoomsLighting():
         #print(lights)
         hue_l = [[]]
         i = 1
-        for j in range(len(lights)):
+        for j in range(len(lights)+1):
             for l in lights:
                 #print(dir(l))
                 #lname = "lamp   "+l.name+"   "
@@ -256,7 +258,6 @@ class LushRoomsLighting():
                         hue_l[j].append(l.light_id)
             i += 1
         return(hue_l)
-
 
     def trigger_light(self, subs):
         # print(perf_counter(), subs)
@@ -307,7 +308,8 @@ class LushRoomsLighting():
                     if DEBUG:
                         print("Trigger DMX:", l, channels)
                     if PLAY_DMX:
-                        self.dmx.write_frame(channels)
+                        if self.dmx != None:
+                            self.dmx.write_frame(channels)
             #except:
             #    pass
         print(30*'-')
@@ -322,8 +324,6 @@ class LushRoomsLighting():
             ts = SubRipTime(seconds = t)
             tsd = SubRipTime(seconds = t+1*TICK_TIME)
             # print(dir(player))
-            print('in tick, player: ', id(self.player))
-            print('in tick, playerDur: ', self.player.getPosition())
             pp = self.player.getPosition()
             #ptms = player.get_time()/1000.0
             #pt = SubRipTime(seconds=(player.get_time()/1000.0))
@@ -395,6 +395,7 @@ class LushRoomsLighting():
         self.__del__()
 
     def seek(self):
+        # This doesn't seem to work fully...
         self.last_played = 0
 
     def __del__(self):

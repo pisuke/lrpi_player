@@ -14,6 +14,7 @@ from flask_jsonpify import jsonify
 from flask_restful import reqparse
 import ntplib # pylint: disable=import-error
 from time import ctime
+import pause # pylint: disable=import-error
 
 from os.path import splitext
 import os
@@ -28,7 +29,7 @@ from time import sleep
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
 
-from Player import LushRoomsPlayer
+from Player import LushRoomsPlayer 
 from OmxPlayer import killOmx
 
 mpegOnly = True
@@ -83,6 +84,9 @@ def getInput():
     parser.add_argument('interval', help='error with interval')
     parser.add_argument('position', help='error with position')
     parser.add_argument('pairhostname', help='error with pairHostname')
+    # command and status should definitely be sent via POST...
+    parser.add_argument('commandFromMaster', help='error with commandFromMaster')
+    parser.add_argument('masterStatus', help='error with masterStatus')
     args = parser.parse_args()
     return args
 
@@ -278,7 +282,7 @@ class Pair(Resource):
         print('Pair with: ', args["pairhostname"])
 
         try:
-            pairRes = player.pair(args["pairhostname"]) 
+            pairRes = player.pairAsMaster(args["pairhostname"]) 
         except Exception as e:
             print('Exception: ', e)
             pairRes = 1
@@ -288,6 +292,16 @@ class Pair(Resource):
 class Enslave(Resource):
     def get(self):
         global player
+
+        # If there is a player running, kill it
+        # If there isnt, make one without a playlist
+        # since we'll be getting the path of the audio/srt
+        # from the status object from the master
+
+        # If the Angular app is accessed while a LRPi is
+        # in slave mode, we know from the status object that
+        # it is paired: we can easily lock the UI and stop it
+        # sending any control commands
 
         if player:
             player.stop()
@@ -301,16 +315,25 @@ class Enslave(Resource):
         # set paired to true
         masterIp = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
 
-        player.setPaired(True, masterIp)
+        player.setPairedAsSlave(True, masterIp)
 
-        return 0
+        return jsonify(0)
+
+# POST body Should have the command, status of the master
+# and the desired trigger time
 
 class Command(Resource):
-    def get(self):
+    def post(self):
         global player
-        print('Accepting command from master!')
+        command = request.get_json(force=True)
 
-        return 0
+        res = player.commandFromMaster(
+            command["master_status"],
+            command["command"],
+            command["sync_timestamp"]
+        ) 
+
+        return jsonify(res)
 
 class Stop(Resource):
     def get(self):
@@ -334,7 +357,7 @@ api.add_resource(GetSettings, '/settings')
 api.add_resource(PlayerStatus, '/status')
 api.add_resource(Pair, '/pair')
 api.add_resource(Enslave, '/enslave')
-api.add_resource(Command, '/command')
+api.add_resource(Command, '/command') # POST
 api.add_resource(Stop, '/stop')
 
 if __name__ == '__main__':

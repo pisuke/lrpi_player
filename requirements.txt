@@ -12,3 +12,5 @@ numpy==1.15.4
 apscheduler==3.5.3
 keyboard==0.13.2
 ntplib>=0.3.3
+pause>=0.2
+phue>=1.1
