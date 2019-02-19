@@ -29,7 +29,7 @@ HUE1_IP_ADDRESS = ""
 HUE2_IP_ADDRESS = ""
 TICK_TIME = 0.1 # seconds
 PLAY_HUE = True
-PLAY_DMX = True
+PLAY_DMX = False
 # SLEEP_TIME = 0.1 # seconds
 # TRANSITION_TIME = 10 # milliseconds
 
