@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
+import os
 
-HOST = "127.0.0.1"
+HOST = os.environ.get("BRICKD_HOST", "127.0.0.1")
 PORT = 4223
 
 debug = False
