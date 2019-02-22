@@ -20,7 +20,7 @@ VERBOSE = False
 
 # dmx
 
-HOST = "127.0.0.1"
+HOST = os.environ.get("BRICKD_HOST", "127.0.0.1")
 PORT = 4223
 
 MAX_BRIGHTNESS = 200
