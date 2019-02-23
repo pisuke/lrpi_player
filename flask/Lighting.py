@@ -27,7 +27,7 @@ MAX_BRIGHTNESS = 200
 SRT_FILENAME = "Surround_Test_Audio.srt"
 HUE1_IP_ADDRESS = ""
 HUE2_IP_ADDRESS = ""
-TICK_TIME = 0.1 # seconds
+TICK_TIME = 0.05 # seconds
 PLAY_HUE = True
 PLAY_DMX = True
 # SLEEP_TIME = 0.1 # seconds
@@ -77,7 +77,7 @@ class LushRoomsLighting():
 
     def cleaningScene(self):
         self.resetHUE()
-        self.resetDMX()   
+        self.resetDMX()
 
          # Tinkerforge sensors enumeration
     def cb_enumerate(self, uid, connected_uid, position, hardware_version, firmware_version,
@@ -178,9 +178,18 @@ class LushRoomsLighting():
                         print(l.name)
                         l.brightness = 255
                     for l in lights:
-                        # print(l.name)
-                        l.brightness = 100
-                        l.saturation = 0
+                        ## print(l.name)
+                        #l.brightness = 100
+                        ##l.colormode = 'ct'
+                        #l.colortemp_k = 2700
+                        #l.saturation = 0
+                        bri = 200
+                        sat = 100
+                        hue = 0
+                        colormode = 'ct'
+                        colortemp = 400
+                        cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'colormode' : colormode, 'ct' : colortemp}
+                        self.bridge.set_light(l.light_id,cmd)
 
 
                     # Get a dictionary with the light name as the key
@@ -207,13 +216,20 @@ class LushRoomsLighting():
                 # print(dir(l))
                 l.on = True
             # Print light names
-            # Set brightness of each light to 7
+            # Set brightness of each light to 100
             for l in lights:
                 print(l.name)
-                l.brightness = 7
-                l.saturation = 0
-                l.hue = 10
-
+                #l.brightness = 100
+                ##l.colormode = 'ct'
+                #l.colortemp_k = 2700
+                #l.saturation = 0
+                bri = 200
+                sat = 100
+                hue = 0
+                colormode = 'ct'
+                colortemp = 450
+                cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'colormode' : colormode, 'ct' : colortemp}
+                self.bridge.set_light(l.light_id,cmd)
 
     def getIdentifier(self, ID):
         deviceType = ""
@@ -284,7 +300,7 @@ class LushRoomsLighting():
                     # print(perf_counter(), l, items, hue, sat, bri, TRANSITION_TIME)
                     bri = int((float(bri)/255.0)*int(MAX_BRIGHTNESS))
                     # print(bri)
-                    cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
+                    cmd =  {'colormode' : 'hs', 'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
                     if DEBUG:
                         print("Trigger HUE",l,cmd)
                     if PLAY_HUE: 
@@ -383,7 +399,7 @@ class LushRoomsLighting():
         print("Lighting: fadeDown")
         # self.scheduler.shutdown()
         self.last_played = 0
-        
+
         if status=="Paused":
             self.scheduler.pause()
         elif status=="Playing":
