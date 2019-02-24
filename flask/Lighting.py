@@ -8,7 +8,7 @@ from pytz import utc
 from apscheduler.schedulers.background import BackgroundScheduler # pylint: disable=import-error
 from tinkerforge.ip_connection import IPConnection # pylint: disable=import-error
 from tinkerforge.bricklet_dmx import BrickletDMX # pylint: disable=import-error
-from tf_device_ids import deviceIdentifiersList 
+from tf_device_ids import deviceIdentifiersList
 from numpy import array, ones, zeros # pylint: disable=import-error
 import os
 import json
@@ -20,16 +20,18 @@ VERBOSE = False
 
 # dmx
 
-HOST = "127.0.0.1"
+HOST = os.environ.get("BRICKD_HOST", "127.0.0.1")
 PORT = 4223
+
+# lighting
 
 MAX_BRIGHTNESS = 200
 SRT_FILENAME = "Surround_Test_Audio.srt"
-HUE1_IP_ADDRESS = ""
-HUE2_IP_ADDRESS = ""
-TICK_TIME = 0.1 # seconds
+HUE_IP_ADDRESS = ""
+# HUE2_IP_ADDRESS = ""
+TICK_TIME = 0.05 # seconds
 PLAY_HUE = True
-PLAY_DMX = False
+PLAY_DMX = True
 # SLEEP_TIME = 0.1 # seconds
 # TRANSITION_TIME = 10 # milliseconds
 
@@ -40,14 +42,14 @@ dmx = None
 scheduler = None
 last_played = 0
 
-tfConnect = False 
+tfConnect = False
 
 # utils
 
-class LushRoomsLighting(): 
+class LushRoomsLighting():
 
     def __init__(self):
-        print('LRLighting init!')
+        print('Lushroom Lighting init!')
         self.SETTINGS_BASE_PATH = "/media/usb/"
         self.JSON_SETTINGS_FILE = "settings.json"
         self.TRANSITION_TIME = 5 # milliseconds
@@ -77,7 +79,7 @@ class LushRoomsLighting():
 
     def cleaningScene(self):
         self.resetHUE()
-        self.resetDMX()   
+        self.resetDMX()
 
          # Tinkerforge sensors enumeration
     def cb_enumerate(self, uid, connected_uid, position, hardware_version, firmware_version,
@@ -109,7 +111,7 @@ class LushRoomsLighting():
                 if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
                     if tf[1] in self.deviceIDs:
                         if VERBOSE:
-                            print(tf[0],tf[1], self.getIdentifier(tf)) 
+                            print(tf[0],tf[1], self.getIdentifier(tf))
                     if tf[1] == 285: # DMX Bricklet
                         if dmxcount == 0:
                             print("Registering %s as slave DMX device for playing DMX frames" % tf[0])
@@ -135,7 +137,7 @@ class LushRoomsLighting():
                 if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
                     if tf[1] in self.deviceIDs:
                         if VERBOSE:
-                            print(tf[0],tf[1], self.getIdentifier(tf)) 
+                            print(tf[0],tf[1], self.getIdentifier(tf))
                     if tf[1] == 285: # DMX Bricklet
                         if dmxcount == 0:
                             # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512)*255)
@@ -150,8 +152,8 @@ class LushRoomsLighting():
         if os.path.exists(settings_path):
             with open(settings_path) as f:
                 settings_json = json.loads(f.read())
-                print(json.dumps(settings_json))
-                HUE1_IP_ADDRESS = settings_json["hue_ip"]
+                # print(json.dumps(settings_json))
+                HUE_IP_ADDRESS = settings_json["hue_ip"]
 
         try:
             if PLAY_HUE:
@@ -159,7 +161,7 @@ class LushRoomsLighting():
                 #try:
                 if True:
                     # b = Bridge('lushroom-hue.local')
-                    self.bridge = Bridge(HUE1_IP_ADDRESS, config_file_path="/media/usb/python_hue")
+                    self.bridge = Bridge(HUE_IP_ADDRESS, config_file_path="/media/usb/python_hue")
                     # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
                     self.bridge.connect()
                     # Get the bridge state (This returns the full dictionary that you can explore)
@@ -178,9 +180,18 @@ class LushRoomsLighting():
                         print(l.name)
                         l.brightness = 255
                     for l in lights:
-                        # print(l.name)
+                        ## print(l.name)
                         l.brightness = 100
-                        l.saturation = 0
+                        ##l.colormode = 'ct'
+                        #l.colortemp_k = 2700
+                        #l.saturation = 0
+                        bri = 100
+                        sat = 100
+                        hue = 0
+                        colormode = 'ct'
+                        colortemp = 400
+                        cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
+                        self.bridge.set_light(l.light_id,cmd)
 
 
                     # Get a dictionary with the light name as the key
@@ -207,13 +218,20 @@ class LushRoomsLighting():
                 # print(dir(l))
                 l.on = True
             # Print light names
-            # Set brightness of each light to 7
+            # Set brightness of each light to 100
             for l in lights:
                 print(l.name)
-                l.brightness = 7
-                l.saturation = 0
-                l.hue = 10
-
+                l.brightness = 100
+                ##l.colormode = 'ct'
+                #l.colortemp_k = 2700
+                #l.saturation = 0
+                bri = 100
+                sat = 100
+                hue = 0
+                colormode = 'ct'
+                colortemp = 450
+                cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
+                self.bridge.set_light(l.light_id,cmd)
 
     def getIdentifier(self, ID):
         deviceType = ""
@@ -228,7 +246,7 @@ class LushRoomsLighting():
             # print(subtitle[i])
             if (subtitle[i].start >= to_t):
                 break
-            if (subtitle[i].start <= from_t) & (to_t  <= subtitle[i].end):
+            if (subtitle[i].start >= from_t) & (to_t  >= subtitle[i].start):
                 # print(subtitle[i].start, from_t, to_t)
                 return subtitle[i].text, i
             i += 1
@@ -260,7 +278,7 @@ class LushRoomsLighting():
         return(hue_l)
 
     def trigger_light(self, subs):
-        # print(perf_counter(), subs)
+        print(perf_counter(), subs)
         commands = str(subs).split(";")
         global MAX_BRIGHTNESS, DEBUG, PLAY_HUE
         print("Trigger light", self.hue_list)
@@ -268,14 +286,12 @@ class LushRoomsLighting():
             #try:
             if True:
                 # print(command)
+                print(command[0:len(command)-1].split("("))
                 scope,items = command[0:len(command)-1].split("(")
                 # print(scope,items)
                 if scope[0:3] == "HUE" and PLAY_HUE:
                     l = int(scope[3:])
-                    print(l)
-                    # There seems to be something wrong with the lookup table
-                    # so if we can't find the current light in the table (or it doesn't exist)
-                    # skip to the next light
+                    #print(l)
                     try:
                         print(self.hue_list[l])
                     except:
@@ -287,7 +303,7 @@ class LushRoomsLighting():
                     cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
                     if DEBUG:
                         print("Trigger HUE",l,cmd)
-                    if PLAY_HUE: 
+                    if PLAY_HUE:
                         #lights = bridge.lights
                         #for light in lights:
                         #   print(light.name)
@@ -315,8 +331,8 @@ class LushRoomsLighting():
         print(30*'-')
 
     def tick(self):
-        #try:
-        if True:
+        try:
+        # if True:
             # print(subs[0])
             t = perf_counter()
             # ts = str(timedelta(seconds=t)).replace('.',',')
@@ -344,8 +360,8 @@ class LushRoomsLighting():
                 self.trigger_light(sub)
                 self.last_played = i
                 print('last_played: ', i)
-        #except:
-        #    pass
+        except:
+           pass
 
 
     def time_convert(self, t):
@@ -365,13 +381,13 @@ class LushRoomsLighting():
         self.last_played = 0
         #if self.scheduler !
         self.scheduler = BackgroundScheduler()
-        self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME)
+        self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=1, max_instances=20, coalesce=True)
         self.scheduler.start(paused=False)
         print("-------------")
 
     def playPause(self, status):
 
-        print('Lighting pp: ', status)
+        print('Lighting PlayPause: ', status)
         if status=="Paused":
             self.scheduler.pause()
         elif status=="Playing":
@@ -383,7 +399,7 @@ class LushRoomsLighting():
         print("Lighting: fadeDown")
         # self.scheduler.shutdown()
         self.last_played = 0
-        
+
         if status=="Paused":
             self.scheduler.pause()
         elif status=="Playing":
@@ -411,5 +427,3 @@ class ExitException(Exception):
         if tfConnect:
             ipcon.disconnect()
         exit(0)
-
-

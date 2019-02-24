@@ -14,7 +14,7 @@ def killOmx():
         system("killall omxplayer.bin")
         print('omxplayer processes killed!')
     except:
-        print('How are you running omxplayer NOT on Linux?')
+        print('How are you NOT running omxplayer on Linux?')
         exit(0)
 
 class OmxPlayer():
@@ -43,7 +43,7 @@ class OmxPlayer():
         sleep(2.5)
 
     def start(self, pathToTrack, syncTimestamp=None, master=False):
-        print("Playing on omx... :", master) 
+        print("Playing on omx... :", master)
         print(pathToTrack)
 
         if not master:
@@ -57,7 +57,7 @@ class OmxPlayer():
             # for some tracks omxplayer plays a short, sharp, shock
             # before setting the volume to 0
             self.player.set_volume(0)
-            sleep(2.5)
+            sleep(0.5)
 
         self.player.positionEvent += self.posEvent
         self.player.seekEvent += self.seekEvent
@@ -67,7 +67,7 @@ class OmxPlayer():
         if os.path.exists(settings_path):
             with open(settings_path) as f:
                 settings_json = json.loads(f.read())
-                print(json.dumps(settings_json))
+                # print(json.dumps(settings_json))
                 volume = settings_json.get("audio_volume")
                 if volume is not None:
                     self.audio_volume = volume
@@ -80,7 +80,7 @@ class OmxPlayer():
         if syncTimestamp:
             pause.until(syncTimestamp)
 
-        self.player.play() 
+        self.player.play()
         return str(self.player.duration())
 
     # action 16 is emulated keypress for playPause
@@ -92,7 +92,7 @@ class OmxPlayer():
         return str(self.player.duration())
 
     def getPosition(self):
-        return self.player.position() 
+        return self.player.position()
 
     def getDuration(self):
         return str(self.player.duration())
@@ -106,17 +106,17 @@ class OmxPlayer():
         self.player.set_volume(self.player.volume() + 0.1)
 
     def volumeDown(self, interval):
-        # If we're right at the end of the track, don't try to 
+        # If we're right at the end of the track, don't try to
         # lower the volume or else dbus will disconnect and
         # the server will look at though it's crashed
-        
+
         if self.player.duration() - self.player.position() > 1:
             print("omx downer: ", self.player.volume())
             if (self.player.volume() <= 0.07 or interval == 0):
                 return False
             else:
                 self.player.set_volume(self.player.volume() - ((1.0/interval)/4.0))
-                return True 
+                return True
         return False
 
     def seek(self, position, syncTimestamp=None):
@@ -139,14 +139,14 @@ class OmxPlayer():
                 status["canControl"] = False
                 status["error"] = "Something went wrong with player status request: " + str(e)
 
-        else: 
+        else:
             status["playerState"] = ""
             status["canControl"] = False
             status["error"] = "Player is not initialized!"
-        
+
         status["paired"] = self.paired
         status["master_ip"] = self.masterIp
-            
+
         return status
 
     def setPaired(self, val, masterIp):
@@ -154,17 +154,17 @@ class OmxPlayer():
         self.masterIp = masterIp
         print('paired set to: ', val)
         print('master_ip set to: ', masterIp)
- 
+
     def exit(self, syncTimestamp=None):
         if syncTimestamp:
             pause.until(syncTimestamp)
-            
+
         if self.player:
             self.player.quit()
             self.__del__()
             killOmx()
             self.__del__()
-        else: 
+        else:
             return 1
 
     def __del__(self):
