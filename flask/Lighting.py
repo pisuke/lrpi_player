@@ -183,7 +183,7 @@ class LushRoomsLighting():
                         ##l.colormode = 'ct'
                         #l.colortemp_k = 2700
                         #l.saturation = 0
-                        bri = 200
+                        bri = 100
                         sat = 100
                         hue = 0
                         colormode = 'ct'
@@ -223,7 +223,7 @@ class LushRoomsLighting():
                 ##l.colormode = 'ct'
                 #l.colortemp_k = 2700
                 #l.saturation = 0
-                bri = 200
+                bri = 100
                 sat = 100
                 hue = 0
                 colormode = 'ct'
