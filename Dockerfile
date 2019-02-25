@@ -24,7 +24,7 @@ RUN mkdir -p /media/usb
 
 # copy lrpi_player repo
 
-RUN sudo apt-get install libatlas-base-dev
+RUN sudo apt-get install libatlas-base-dev psmisc
 
 # removed the brick daemon from here to go into its own container
 #RUN sudo apt-get install libusb-1.0-0 libudev0 pm-utils
