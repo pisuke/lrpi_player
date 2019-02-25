@@ -233,6 +233,29 @@ class LushRoomsLighting():
                 cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
                 self.bridge.set_light(l.light_id,cmd)
 
+    def pauseHUE(self):
+        global PLAY_HUE
+        if PLAY_HUE:
+            lights = self.bridge.lights
+            for l in lights:
+                # print(dir(l))
+                l.on = True
+            # Print light names
+            # Set brightness of each light to 100
+            for l in lights:
+                print(l.name)
+                l.brightness = 100
+                ##l.colormode = 'ct'
+                #l.colortemp_k = 2700
+                #l.saturation = 0
+                bri = 100
+                sat = 100
+                hue = 0
+                colormode = 'ct'
+                colortemp = 450
+                cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
+                self.bridge.set_light(l.light_id,cmd)
+
     def getIdentifier(self, ID):
         deviceType = ""
         for t in range(len(self.deviceIDs)):
@@ -381,7 +404,7 @@ class LushRoomsLighting():
         self.last_played = 0
         #if self.scheduler !
         self.scheduler = BackgroundScheduler()
-        self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=1, max_instances=20, coalesce=True)
+        self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=None, max_instances=4096, coalesce=False)
         self.scheduler.start(paused=False)
         print("-------------")
 
@@ -390,6 +413,7 @@ class LushRoomsLighting():
         print('Lighting PlayPause: ', status)
         if status=="Paused":
             self.scheduler.pause()
+            self.pauseHUE()
         elif status=="Playing":
             self.scheduler.resume()
         print("-------------")
@@ -402,6 +426,7 @@ class LushRoomsLighting():
 
         if status=="Paused":
             self.scheduler.pause()
+            self.pauseHUE()
         elif status=="Playing":
             self.scheduler.resume()
         print("-------------")

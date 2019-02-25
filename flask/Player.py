@@ -16,12 +16,12 @@ import json
 
 NTP_SERVER = 'ns1.luns.net.uk'
 
-def findArm(): 
-    return uname().machine == 'armv7l' 
+def findArm():
+    return uname().machine == 'armv7l'
 
 if findArm():
     from OmxPlayer import OmxPlayer
-else: 
+else:
     from VlcPlayer import VlcPlayer
 
 class LushRoomsPlayer():
@@ -57,25 +57,27 @@ class LushRoomsPlayer():
             "slave_url": None
         }
         self.subs = None
- 
+
     def getPlayerType(self):
-        return self.playerType 
+        return self.playerType
 
     def isMaster(self):
-        return self.player.paired and self.status["master_ip"] is None
+        print("isMaster",self.player.paired,self.status["master_ip"],self.player.paired and (self.status["master_ip"] is None))
+        return self.player.paired and (self.status["master_ip"] is None)
 
     def isSlave(self):
-        return self.player.paired and self.status["master_ip"] is not None           
+        print("isSlave",self.player.paired,self.status["master_ip"],self.player.paired and (self.status["master_ip"] is None))
+        return self.player.paired and (self.status["master_ip"] is not None)
 
     # Returns the current position in secoends
     def start(self, path, subs, subsPath, syncTime=None):
-        self.player.status(self.status) 
+        self.player.status(self.status)
         self.status["source"] = path
-        self.status["subsPath"] = subsPath  
+        self.status["subsPath"] = subsPath
 
         if self.isSlave():
             # wait until the sync time to fire everything off
-            print('Slave: Syncing start!')  
+            print('Slave: Syncing start!')
 
         if self.isMaster():
             print('Master, sending start!')
@@ -87,9 +89,9 @@ class LushRoomsPlayer():
 
         try:
             print('In Player: ', id(self.player))
-            self.lighting.start(self.player, subs) 
+            self.lighting.start(self.player, subs)
         except Exception as e:
-            print('Lighting failed: ', e)  
+            print('Lighting failed: ', e)
 
         return response
 
@@ -103,7 +105,7 @@ class LushRoomsPlayer():
 
         try:
             print('In Player: ', id(self.player))
-            self.lighting.playPause(self.getStatus()["playerState"]) 
+            self.lighting.playPause(self.getStatus()["playerState"])
         except Exception as e:
             print('Lighting playPause failed: ', e)
 
@@ -117,9 +119,9 @@ class LushRoomsPlayer():
                 print('Master, sending stop!')
                 syncTime = self.sendSlaveCommand('stop')
 
-            self.lighting.exit()  
+            self.lighting.exit()
             self.player.exit(syncTime)
-            
+
             return 0
         except Exception as e:
             print("stop failed: ", e)
@@ -128,7 +130,7 @@ class LushRoomsPlayer():
     def setPlaylist(self, playlist):
         self.playlist = playlist
         self.status["playlist"] = playlist
- 
+
     def getPlaylist(self):
         if len(self.status["playlist"]):
             return self.status["playlist"]
@@ -142,18 +144,18 @@ class LushRoomsPlayer():
         print("Skipping back...")
 
     def fadeDown(self, path, interval, subs, subsPath, syncTimestamp=None):
-        if interval > 0: 
+        if interval > 0:
             while self.player.volumeDown(interval):
                 sleep(1.0/interval)
-        self.player.exit() 
-        self.lighting.exit() 
+        self.player.exit()
+        self.lighting.exit()
         response = self.player.start(path)
         self.status["subsPath"] = subsPath
         try:
             print('In Player: ', id(self.player))
-            self.lighting.start(self.player, subs) 
+            self.lighting.start(self.player, subs)
         except Exception as e:
-            print('Lighting failed: ', e) 
+            print('Lighting failed: ', e)
 
         return response
 
@@ -168,7 +170,7 @@ class LushRoomsPlayer():
 
     # Pair method called by the master
 
-    def pairAsMaster(self, hostname): 
+    def pairAsMaster(self, hostname):
         response = os.system("ping -c 1 " + hostname)
         if response == 0:
             print(hostname, 'is up!')
@@ -189,7 +191,7 @@ class LushRoomsPlayer():
 
     # Method called by the slave
 
-    def setPairedAsSlave(self, val, masterIp): 
+    def setPairedAsSlave(self, val, masterIp):
         self.player.setPaired(val, masterIp)
 
     def unPair(self):
@@ -197,7 +199,7 @@ class LushRoomsPlayer():
             self.player.setPaired(False, None)
             self.player.exit()
 
-    # When this player is enslaved, map the status of the 
+    # When this player is enslaved, map the status of the
     # master to a method
 
     def commandFromMaster(self, masterStatus, command, startTime):
@@ -213,12 +215,12 @@ class LushRoomsPlayer():
 
                 if command == "start":
                     self.start(
-                        masterStatus["source"],  
-                        None, 
+                        masterStatus["source"],
+                        None,
                         masterStatus["subsPath"],
-                        startTime 
-                    ) 
-                
+                        startTime
+                    )
+
                 if command == "playPause":
                     self.playPause(startTime)
 
@@ -237,7 +239,7 @@ class LushRoomsPlayer():
 
         return res
 
-    # When this player is acting as master, send commands to 
+    # When this player is acting as master, send commands to
     # the slave with a 'start' timestamp
 
     def sendSlaveCommand(self, command):
@@ -269,11 +271,11 @@ class LushRoomsPlayer():
                 print('command from slave, res: ', slaveRes)
 
                 return self.eventSyncTime
-                
+
             except Exception as e:
                 print('Could not get ntp time!')
                 print('Why: ', e)
-            
+
 
         else:
             print('Not paired, cannot send commands to slave')
