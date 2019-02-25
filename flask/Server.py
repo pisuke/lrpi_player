@@ -3,7 +3,7 @@
 # Clearing omxplayer temporary files sometimes solves the issue,
 # sometimes it doesnt...
 # sudo rm -rf /tmp/omxplayerdbus*
-# 
+#
 #
 
 from flask import Flask, request, send_from_directory, render_template
@@ -20,16 +20,16 @@ from os.path import splitext
 import os
 import os.path
 import sys
-import time 
+import time
 import subprocess
 import json
 import random
 from pathlib import Path
-from time import sleep 
+from time import sleep
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
 
-from Player import LushRoomsPlayer 
+from Player import LushRoomsPlayer
 from OmxPlayer import killOmx
 
 mpegOnly = True
@@ -42,7 +42,7 @@ api = Api(app)
 
 NTP_SERVER = 'ns1.luns.net.uk'
 BASE_PATH = "/media/usb/"
-MEDIA_BASE_PATH = BASE_PATH + "tracks/" 
+MEDIA_BASE_PATH = BASE_PATH + "tracks/"
 BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
@@ -53,7 +53,7 @@ NEW_TRACK_ARRAY = []
 NEW_SRT_ARRAY = []
 
 DEFAULT_SETTINGS = {
-    "fadeInterval" : "4",
+    "fadeInterval" : "3",
     "roomName" : "?",
     "canPair" : True,
     "format" : "mp4"
@@ -75,7 +75,7 @@ killOmx()
 def sigint_handler(signum, frame):
     killOmx()
     exit()
- 
+
 signal.signal(signal.SIGINT, sigint_handler)
 
 def getInput():
@@ -97,23 +97,23 @@ def printOmxVars():
 
 def loadSettings():
     # return a graceful error if contents.json can't be found
-    
+
     settingsPath = BASE_PATH + SETTINGS_FILE
 
     # If no settings.json exists, either rclone hasn't
     # finished yet or something else is wrong...
-    if os.path.isfile(settingsPath) == False: 
-        return DEFAULT_SETTINGS  
-         
-    with open(settingsPath) as data: 
+    if os.path.isfile(settingsPath) == False:
+        return DEFAULT_SETTINGS
+
+    with open(settingsPath) as data:
         settings = json.load(data)
 
     settings["roomName"] = settings["name"]
 
-    print("Room name: ", settings["name"]) 
-       
+    print("Room name: ", settings["name"])
+
     return settings
-    
+
 # serve the angular app
 
 @app.route('/', defaults={'path': ''})
@@ -130,8 +130,8 @@ class GetSettings(Resource):
     def get(self):
         return jsonify(loadSettings())
 
-class GetTrackList(Resource): 
-    def get(self): 
+class GetTrackList(Resource):
+    def get(self):
         global NEW_TRACK_ARRAY
         global NEW_SRT_ARRAY
         global BUILT_PATH
@@ -145,36 +145,36 @@ class GetTrackList(Resource):
             print(30*'-' + '\n')
         except:
             print('Could not get ntp time!')
- 
+
         # return a graceful error if the usb stick isn't mounted
         if os.path.isdir(MEDIA_BASE_PATH) == False:
             return jsonify(1)
-        
+
         BUILT_PATH = MEDIA_BASE_PATH
         args = getInput()
-    
+
         print("track list id: " +  str(args['id']))
-        
+
         try:
             if args['id']:
                 if NEW_TRACK_ARRAY:
                     BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
                     print(BUILT_PATH[0])
         except:
-            return jsonify(2)     
+            return jsonify(2)
 
         print('BUILT_PATH: ' + str(BUILT_PATH))
-            
+
 
         # return a graceful error if contents.json can't be found
-        if os.path.isfile(BUILT_PATH + JSON_LIST_FILE) == False: 
-            return jsonify(2)   
-            
+        if os.path.isfile(BUILT_PATH + JSON_LIST_FILE) == False:
+            return jsonify(2)
+
         with open(BUILT_PATH + JSON_LIST_FILE) as data:
             TRACK_ARRAY_WITH_CONTENTS = json.load(data)
             NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
 
-            if mpegOnly: 
+            if mpegOnly:
                 NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
             elif mlpOnly:
                 NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
@@ -186,12 +186,12 @@ class GetTrackList(Resource):
             #print(NEW_TRACK_ARRAY)
             #print( NEW_SRT_ARRAY)
             if player:
-                player.setPlaylist(NEW_TRACK_ARRAY) 
+                player.setPlaylist(NEW_TRACK_ARRAY)
             else:
                 player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
 
             return jsonify(NEW_TRACK_ARRAY)
-            
+
 class PlaySingleTrack(Resource):
     def get(self):
         global player
@@ -211,22 +211,22 @@ class PlaySingleTrack(Resource):
         if os.path.isfile(pathToTrack) == False:
             print('Bad file path, will not attempt to play...')
             return jsonify("(Playing) File not found!")
- 
+
         print("Playing: " + pathToTrack)
-            
+
         duration = player.start(pathToTrack, subs, BUILT_PATH + srtFileName)
-            
+
         return jsonify(duration)
 
 class PlayPause(Resource):
     def get(self):
-        global player 
+        global player
         duration = player.playPause()
-        return jsonify(duration) 
+        return jsonify(duration)
 
 class FadeDown(Resource):
     def get(self):
-        global player 
+        global player
         global BUILT_PATH
 
         args = getInput()
@@ -244,7 +244,7 @@ class FadeDown(Resource):
 
         if pathToTrack is None or not os.path.isfile(pathToTrack):
             print('Bad file path, will not attempt to play...')
-            return jsonify(1) 
+            return jsonify(1)
 
         response = player.fadeDown(pathToTrack, int(args["interval"]),  subs, BUILT_PATH + srtFileName)
 
@@ -252,7 +252,7 @@ class FadeDown(Resource):
 
 class Seek(Resource):
     def get(self):
-        global player 
+        global player
         global BUILT_PATH
 
         args = getInput()
@@ -266,11 +266,11 @@ class Seek(Resource):
 
 class PlayerStatus(Resource):
     def get(self):
-        global player 
+        global player
 
         try:
-            response = player.getStatus() 
-        except: 
+            response = player.getStatus()
+        except:
             response = 1
 
         return jsonify(response)
@@ -283,7 +283,7 @@ class Pair(Resource):
         print('Pair with: ', args["pairhostname"])
 
         try:
-            pairRes = player.pairAsMaster(args["pairhostname"]) 
+            pairRes = player.pairAsMaster(args["pairhostname"])
         except Exception as e:
             print('Exception: ', e)
             pairRes = 1
@@ -306,7 +306,7 @@ class Enslave(Resource):
 
         if player:
             player.stop()
-            player.exit() 
+            player.exit()
         else:
             player = LushRoomsPlayer(None, None)
 
@@ -332,17 +332,17 @@ class Command(Resource):
             command["master_status"],
             command["command"],
             command["sync_timestamp"]
-        ) 
+        )
 
         return jsonify(res)
 
 class Stop(Resource):
     def get(self):
-        global player 
+        global player
 
         try:
-            response = player.stop()  
-        except: 
+            response = player.stop()
+        except:
             response = 1
 
         return jsonify(response)
