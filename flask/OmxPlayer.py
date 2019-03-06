@@ -38,7 +38,9 @@ class OmxPlayer():
         return
 
     def primeForStart(self, pathToTrack):
-        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
+
+
+        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'hdmi', '--layout', '5.1'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
         self.player.set_volume(0)
         sleep(2.5)
 
@@ -52,7 +54,7 @@ class OmxPlayer():
             self.player = None
 
         if self.player is None or syncTimestamp is None:
-            self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'both'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
+            self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'hdmi', '--layout', '5.1'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
             # Might need to set the volume to 0 a different way,
             # for some tracks omxplayer plays a short, sharp, shock
             # before setting the volume to 0
