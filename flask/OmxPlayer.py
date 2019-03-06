@@ -79,8 +79,8 @@ class OmxPlayer():
 
         print('synctime in omxplayer: ', ctime(syncTimestamp))
 
-        # if syncTimestamp:
-        #     pause.until(syncTimestamp)
+        if syncTimestamp:
+            pause.until(syncTimestamp)
 
         self.player.play()
         return str(self.player.duration())

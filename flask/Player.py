@@ -89,9 +89,6 @@ class LushRoomsPlayer():
             self.player.primeForStart(path)
             syncTime = self.sendSlaveCommand('start')
 
-        if syncTime:
-            pause.until(syncTime)
-
         self.started = True
         response = self.player.start(path, syncTime, self.isMaster())
 
