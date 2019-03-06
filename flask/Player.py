@@ -10,6 +10,7 @@ from Lighting import LushRoomsLighting
 import ntplib # pylint: disable=import-error
 from time import ctime
 import pause # pylint: disable=import-error
+from pysrt import open as srtopen # pylint: disable=import-error
 import json
 
 # utils
@@ -75,6 +76,10 @@ class LushRoomsPlayer():
         self.status["source"] = path
         self.status["subsPath"] = subsPath
 
+        if os.path.isfile(subsPath):
+            print(subsPath)
+            subs = srtopen(subsPath)
+
         if self.isSlave():
             # wait until the sync time to fire everything off
             print('Slave: Syncing start!')
@@ -83,6 +88,9 @@ class LushRoomsPlayer():
             print('Master, sending start!')
             self.player.primeForStart(path)
             syncTime = self.sendSlaveCommand('start')
+
+        if syncTime:
+            pause.until(syncTime)
 
         self.started = True
         response = self.player.start(path, syncTime, self.isMaster())

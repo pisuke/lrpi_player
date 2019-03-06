@@ -203,9 +203,9 @@ class PlaySingleTrack(Resource):
         for track in NEW_TRACK_ARRAY:
             if track["ID"] == args["id"]:
                 srtFileName = splitext(track["Path"])[0]+".srt"
-                if os.path.isfile(BUILT_PATH + srtFileName):
-                    print(srtFileName)
-                    subs = srtopen(BUILT_PATH + srtFileName)
+                # if os.path.isfile(BUILT_PATH + srtFileName):
+                #     print(srtFileName)
+                #     subs = srtopen(BUILT_PATH + srtFileName)
                 pathToTrack = BUILT_PATH + track["Path"]
 
         if os.path.isfile(pathToTrack) == False:
@@ -214,7 +214,7 @@ class PlaySingleTrack(Resource):
 
         print("Playing: " + pathToTrack)
 
-        duration = player.start(pathToTrack, subs, BUILT_PATH + srtFileName)
+        duration = player.start(pathToTrack, None, BUILT_PATH + srtFileName)
 
         return jsonify(duration)
 
