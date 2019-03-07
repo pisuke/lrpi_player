@@ -19,6 +19,8 @@ import vlc
 
 import argparse
 
+LIGHTING_MSGS = False
+
 # SLEEP_TIME = 0.1 # seconds
 MAX_BRIGHTNESS = 200
 # TRANSITION_TIME = 10 # milliseconds
@@ -66,7 +68,8 @@ def trigger_light_hue(subs):
                 cmd =  {'TRANSITION_TIME' : int(TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
                 if PLAY_HUE:
                     b.set_light(l, cmd)
-                print("Trigger light",l,cmd)
+                if LIGHTING_MSGS:
+                    print("Trigger light",l,cmd)
         except:
             pass
     print(30*'-')

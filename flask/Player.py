@@ -76,8 +76,9 @@ class LushRoomsPlayer():
         self.status["source"] = path
         self.status["subsPath"] = subsPath
 
+        print("***************  start  ********************")
+
         if os.path.isfile(subsPath):
-            print(subsPath)
             subs = srtopen(subsPath)
 
         if self.isSlave():
@@ -148,14 +149,32 @@ class LushRoomsPlayer():
     def previous(self):
         print("Skipping back...")
 
+
     def fadeDown(self, path, interval, subs, subsPath, syncTimestamp=None):
+
+        self.status["interval"] = interval
+        if self.isMaster():
+            print('Master, sending fadeDown!')
+            syncTime = self.sendSlaveCommand('fadeDown')
+            pause.until(syncTime)
+        else:
+            print("isnt master")
+
+        if syncTimestamp:
+            pause.until(syncTimestamp)
+
         if interval > 0:
             while self.player.volumeDown(interval):
                 sleep(1.0/interval)
         self.player.exit()
         self.lighting.exit()
-        response = self.player.start(path)
+
+        response = self.player.start(path, None, self.isMaster())
+
         self.status["subsPath"] = subsPath
+        if os.path.isfile(subsPath):
+            subs = srtopen(subsPath)
+
         try:
             print('In Player: ', id(self.player))
             self.lighting.start(self.player, subs)
