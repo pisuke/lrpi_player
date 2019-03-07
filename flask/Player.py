@@ -219,40 +219,32 @@ class LushRoomsPlayer():
     def commandFromMaster(self, masterStatus, command, startTime):
         res = 1
         if self.player.paired:
-            try:
-                print('command from master: ', command)
-                print('master status: ', masterStatus)
-                print('startTime: ', startTime)
 
+            print('command from master: ', command)
+            print('master status: ', masterStatus)
+            print('startTime: ', startTime)
 
-                # print('Master status: ', masterStatus)
+            if command == "start":
+                self.start(
+                    masterStatus["source"],
+                    None,
+                    masterStatus["subsPath"],
+                    startTime
+                )
 
-                if command == "start":
-                    self.start(
-                        masterStatus["source"],
-                        None,
-                        masterStatus["subsPath"],
-                        startTime
-                    )
+            if command == "playPause":
+                self.playPause(startTime)
 
-                if command == "playPause":
-                    self.playPause(startTime)
+            if command == "stop":
+                self.stop(startTime)
 
-                if command == "stop":
-                    self.stop(startTime)
-
-                if command == "fadeDown":
-                    self.fadeDown(masterStatus["source"],
-                                  masterStatus["interval"],
-                                  None,
-                                  masterStatus["subsPath"],
-                                  startTime)
-
-                res = 0
-
-            except Exception as e:
-                print("Command from master failed: ", str(e))
-                return 1
+            if command == "fadeDown":
+                self.fadeDown(masterStatus["source"],
+                              masterStatus["interval"],
+                              None,
+                              masterStatus["subsPath"],
+                              startTime)
+            res = 0
 
         else:
             print('Not paired, cannot accept master commands')
