@@ -157,8 +157,6 @@ class LushRoomsPlayer():
             print('Master, sending fadeDown!')
             syncTime = self.sendSlaveCommand('fadeDown')
             pause.until(syncTime)
-        else:
-            print("isnt master")
 
         if syncTimestamp:
             pause.until(syncTimestamp)
@@ -169,19 +167,11 @@ class LushRoomsPlayer():
         self.player.exit()
         self.lighting.exit()
 
-        response = self.player.start(path, None, self.isMaster())
+        if not self.isSlave():
+            return self.start(path, subs, subsPath)
+        else:
+            return 0
 
-        self.status["subsPath"] = subsPath
-        if os.path.isfile(subsPath):
-            subs = srtopen(subsPath)
-
-        try:
-            print('In Player: ', id(self.player))
-            self.lighting.start(self.player, subs)
-        except Exception as e:
-            print('Lighting failed: ', e)
-
-        return response
 
     def seek(self, position):
         if self.started:
@@ -250,6 +240,13 @@ class LushRoomsPlayer():
 
                 if command == "stop":
                     self.stop(startTime)
+
+                if command == "fadeDown":
+                    self.fadeDown(masterStatus["source"],
+                                  masterStatus["interval"],
+                                  None,
+                                  masterStatus["subsPath"],
+                                  startTime)
 
                 res = 0
 

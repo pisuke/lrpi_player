@@ -17,7 +17,7 @@ import json
 
 DEBUG = False
 VERBOSE = False
-LIGHTING_MSGS = False
+LIGHTING_MSGS = True
 
 
 # dmx
