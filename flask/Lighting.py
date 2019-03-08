@@ -17,6 +17,8 @@ import json
 
 DEBUG = False
 VERBOSE = False
+LIGHTING_MSGS = True
+
 
 # dmx
 
@@ -125,7 +127,8 @@ class LushRoomsLighting():
                         dmxcount += 1
 
         if dmxcount < 1:
-            print("No DMX devices found.")
+            if LIGHTING_MSGS:
+                print("No DMX devices found.")
 
     def resetDMX(self):
         dmxcount = 0
@@ -143,7 +146,8 @@ class LushRoomsLighting():
                             # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512)*255)
                             self.dmx.write_frame([MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS])
                         dmxcount += 1
-                    print('dmxcount: ', dmxcount)
+                    if LIGHTING_MSGS:
+                        print('dmxcount: ', dmxcount)
 
 
     def initHUE(self):
@@ -177,7 +181,8 @@ class LushRoomsLighting():
                     # Print light names
                     # Set brightness of each light to 100
                     for l in lights:
-                        print(l.name)
+                        if LIGHTING_MSGS:
+                            print(l.name)
                         l.brightness = 255
                     for l in lights:
                         ## print(l.name)
@@ -196,9 +201,11 @@ class LushRoomsLighting():
 
                     # Get a dictionary with the light name as the key
                     light_names = self.bridge.get_light_objects('name')
-                    print("Light names:", light_names)
+                    if LIGHTING_MSGS:
+                        print("Light names:", light_names)
                     self.hue_list = self.hue_build_lookup_table(lights)
-                    print(self.hue_list)
+                    if LIGHTING_MSGS:
+                        print(self.hue_list)
                 #except PhueRegistrationException:
                 #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
         except Exception as e:
@@ -220,7 +227,8 @@ class LushRoomsLighting():
             # Print light names
             # Set brightness of each light to 100
             for l in lights:
-                print(l.name)
+                if LIGHTING_MSGS:
+                    print(l.name)
                 l.brightness = 100
                 ##l.colormode = 'ct'
                 #l.colortemp_k = 2700
@@ -243,7 +251,8 @@ class LushRoomsLighting():
             # Print light names
             # Set brightness of each light to 100
             for l in lights:
-                print(l.name)
+                if LIGHTING_MSGS:
+                    print(l.name)
                 l.brightness = 100
                 ##l.colormode = 'ct'
                 #l.colortemp_k = 2700
@@ -276,7 +285,8 @@ class LushRoomsLighting():
         return "", i
 
     def end_callback(self, event):
-        print('End of media stream (event %s)' % event.type)
+        if LIGHTING_MSGS:
+            print('End of media stream (event %s)' % event.type)
         exit(0)
 
     def hue_build_lookup_table(self, lights):
@@ -292,7 +302,8 @@ class LushRoomsLighting():
                 #print("testing", str(j), lname.find(str(i)), len(hue), l.name.find(str(i)), l.light_id, l.name, l.bridge.ip, l.bridge.name, str(i+1))
                 if lname.find(str(j))>=0:
                     #if str(i) in lname:
-                    print(j, lname.find(str(j)), l.light_id, l.name, l.bridge.ip, l.bridge.name)
+                    if LIGHTING_MSGS:
+                        print(j, lname.find(str(j)), l.light_id, l.name, l.bridge.ip, l.bridge.name)
                     if len(hue_l)<=j:
                         hue_l.append([l.light_id])
                     else:
@@ -301,22 +312,26 @@ class LushRoomsLighting():
         return(hue_l)
 
     def trigger_light(self, subs):
-        print(perf_counter(), subs)
+        if LIGHTING_MSGS:
+            print(perf_counter(), subs)
         commands = str(subs).split(";")
         global MAX_BRIGHTNESS, DEBUG, PLAY_HUE
-        print("Trigger light", self.hue_list)
+        if LIGHTING_MSGS:
+            print("Trigger light", self.hue_list)
         for command in commands:
             #try:
             if True:
                 # print(command)
-                print(command[0:len(command)-1].split("("))
+                if LIGHTING_MSGS:
+                    print(command[0:len(command)-1].split("("))
                 scope,items = command[0:len(command)-1].split("(")
                 # print(scope,items)
                 if scope[0:3] == "HUE" and PLAY_HUE:
                     l = int(scope[3:])
                     #print(l)
                     try:
-                        print(self.hue_list[l])
+                        if LIGHTING_MSGS:
+                            print(self.hue_list[l])
                     except:
                         continue
                     hue, sat, bri, TRANSITION_TIME = items.split(',')
@@ -337,7 +352,8 @@ class LushRoomsLighting():
                         #lights[l].saturation = sat
                         #lights[l].hue = hue
                         for hl in self.hue_list[l]:
-                            print(hl)
+                            if LIGHTING_MSGS:
+                                print(hl)
                             self.bridge.set_light(hl, cmd)
                 if scope[0:3] == "DMX":
                     l = int(scope[3:])
@@ -351,7 +367,8 @@ class LushRoomsLighting():
                             self.dmx.write_frame(channels)
             #except:
             #    pass
-        print(30*'-')
+        if LIGHTING_MSGS:
+            print(30*'-')
 
     def tick(self):
         try:
@@ -378,11 +395,13 @@ class LushRoomsLighting():
             ## hours, minutes, seconds, milliseconds = time_convert(sub.start)
             ## t = seconds + minutes*60 + hours*60*60 + milliseconds/1000.0
             if sub!="" and i > self.last_played:
-                print(i, "Light event:", sub)
+                if LIGHTING_MSGS:
+                    print(i, "Light event:", sub)
                 # print("Trigger light event %s" % i)
                 self.trigger_light(sub)
                 self.last_played = i
-                print('last_played: ', i)
+                if LIGHTING_MSGS:
+                    print('last_played: ', i)
         except:
            pass
 
@@ -396,9 +415,10 @@ class LushRoomsLighting():
         self.player = audioPlayer
         self.subs = subs
 
-        print("Lighting: Start!")
-        print('AudioPlayer: ', self.player)
-        print("Number of lighting events",len(self.subs))
+        if LIGHTING_MSGS:
+            print("Lighting: Start!")
+            print('AudioPlayer: ', self.player)
+            print("Number of lighting events",len(self.subs))
 
         # start lighting scheduler
         self.last_played = 0
@@ -406,7 +426,8 @@ class LushRoomsLighting():
         self.scheduler = BackgroundScheduler()
         self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=None, max_instances=4096, coalesce=False)
         self.scheduler.start(paused=False)
-        print("-------------")
+        if LIGHTING_MSGS:
+            print("-------------")
 
     def playPause(self, status):
 
@@ -416,7 +437,8 @@ class LushRoomsLighting():
             self.pauseHUE()
         elif status=="Playing":
             self.scheduler.resume()
-        print("-------------")
+        if LIGHTING_MSGS:
+            print("-------------")
 
     def fadeDown(self, status):
 
@@ -429,7 +451,8 @@ class LushRoomsLighting():
             self.pauseHUE()
         elif status=="Playing":
             self.scheduler.resume()
-        print("-------------")
+        if LIGHTING_MSGS:
+            print("-------------")
 
     def exit(self):
         self.cleaningScene()
@@ -442,7 +465,8 @@ class LushRoomsLighting():
     def __del__(self):
         if self.scheduler:
             self.scheduler.shutdown()
-        print("Lighting died!")
+        if LIGHTING_MSGS:
+            print("Lighting died!")
 
 
 class ExitException(Exception):

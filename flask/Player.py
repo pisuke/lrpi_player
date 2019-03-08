@@ -10,6 +10,7 @@ from Lighting import LushRoomsLighting
 import ntplib # pylint: disable=import-error
 from time import ctime
 import pause # pylint: disable=import-error
+from pysrt import open as srtopen # pylint: disable=import-error
 import json
 
 # utils
@@ -74,6 +75,11 @@ class LushRoomsPlayer():
         self.player.status(self.status)
         self.status["source"] = path
         self.status["subsPath"] = subsPath
+
+        print("***************  start  ********************")
+
+        if os.path.isfile(subsPath):
+            subs = srtopen(subsPath)
 
         if self.isSlave():
             # wait until the sync time to fire everything off
@@ -143,21 +149,29 @@ class LushRoomsPlayer():
     def previous(self):
         print("Skipping back...")
 
+
     def fadeDown(self, path, interval, subs, subsPath, syncTimestamp=None):
+
+        self.status["interval"] = interval
+        if self.isMaster():
+            print('Master, sending fadeDown!')
+            syncTime = self.sendSlaveCommand('fadeDown')
+            pause.until(syncTime)
+
+        if syncTimestamp:
+            pause.until(syncTimestamp)
+
         if interval > 0:
             while self.player.volumeDown(interval):
                 sleep(1.0/interval)
         self.player.exit()
         self.lighting.exit()
-        response = self.player.start(path)
-        self.status["subsPath"] = subsPath
-        try:
-            print('In Player: ', id(self.player))
-            self.lighting.start(self.player, subs)
-        except Exception as e:
-            print('Lighting failed: ', e)
 
-        return response
+        if not self.isSlave():
+            return self.start(path, subs, subsPath)
+        else:
+            return 0
+
 
     def seek(self, position):
         if self.started:
@@ -205,33 +219,32 @@ class LushRoomsPlayer():
     def commandFromMaster(self, masterStatus, command, startTime):
         res = 1
         if self.player.paired:
-            try:
-                print('command from master: ', command)
-                print('master status: ', masterStatus)
-                print('startTime: ', startTime)
 
+            print('command from master: ', command)
+            print('master status: ', masterStatus)
+            print('startTime: ', startTime)
 
-                # print('Master status: ', masterStatus)
+            if command == "start":
+                self.start(
+                    masterStatus["source"],
+                    None,
+                    masterStatus["subsPath"],
+                    startTime
+                )
 
-                if command == "start":
-                    self.start(
-                        masterStatus["source"],
-                        None,
-                        masterStatus["subsPath"],
-                        startTime
-                    )
+            if command == "playPause":
+                self.playPause(startTime)
 
-                if command == "playPause":
-                    self.playPause(startTime)
+            if command == "stop":
+                self.stop(startTime)
 
-                if command == "stop":
-                    self.stop(startTime)
-
-                res = 0
-
-            except Exception as e:
-                print("Command from master failed: ", str(e))
-                return 1
+            if command == "fadeDown":
+                self.fadeDown(masterStatus["source"],
+                              masterStatus["interval"],
+                              None,
+                              masterStatus["subsPath"],
+                              startTime)
+            res = 0
 
         else:
             print('Not paired, cannot accept master commands')

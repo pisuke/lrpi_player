@@ -39,6 +39,12 @@ allFormats = False
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
 
+SENTRY_URL = os.environ.get("SENTRY_URL")
+
+if SENTRY_URL is not None:
+    from raven.contrib.flask import Sentry
+    sentry = Sentry(app, dsn=SENTRY_URL)
+
 
 NTP_SERVER = 'ns1.luns.net.uk'
 BASE_PATH = "/media/usb/"
@@ -155,20 +161,18 @@ class GetTrackList(Resource):
 
         print("track list id: " +  str(args['id']))
 
-        try:
-            if args['id']:
-                if NEW_TRACK_ARRAY:
-                    BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
-                    print(BUILT_PATH[0])
-        except:
-            return jsonify(2)
+
+        if args['id']:
+            if NEW_TRACK_ARRAY:
+                BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
+                print(BUILT_PATH[0])
+
 
         print('BUILT_PATH: ' + str(BUILT_PATH))
 
-
         # return a graceful error if contents.json can't be found
         if os.path.isfile(BUILT_PATH + JSON_LIST_FILE) == False:
-            return jsonify(2)
+            raise Exception("Can't find the JSON_LIST_FILE")
 
         with open(BUILT_PATH + JSON_LIST_FILE) as data:
             TRACK_ARRAY_WITH_CONTENTS = json.load(data)
@@ -203,9 +207,9 @@ class PlaySingleTrack(Resource):
         for track in NEW_TRACK_ARRAY:
             if track["ID"] == args["id"]:
                 srtFileName = splitext(track["Path"])[0]+".srt"
-                if os.path.isfile(BUILT_PATH + srtFileName):
-                    print(srtFileName)
-                    subs = srtopen(BUILT_PATH + srtFileName)
+                # if os.path.isfile(BUILT_PATH + srtFileName):
+                #     print(srtFileName)
+                #     subs = srtopen(BUILT_PATH + srtFileName)
                 pathToTrack = BUILT_PATH + track["Path"]
 
         if os.path.isfile(pathToTrack) == False:
@@ -214,7 +218,7 @@ class PlaySingleTrack(Resource):
 
         print("Playing: " + pathToTrack)
 
-        duration = player.start(pathToTrack, subs, BUILT_PATH + srtFileName)
+        duration = player.start(pathToTrack, None, BUILT_PATH + srtFileName)
 
         return jsonify(duration)
 
@@ -346,6 +350,7 @@ class Stop(Resource):
             response = 1
 
         return jsonify(response)
+
 
 # URLs are defined here
 
