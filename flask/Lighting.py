@@ -278,7 +278,8 @@ class LushRoomsLighting():
             # print(subtitle[i])
             if (subtitle[i].start >= to_t):
                 break
-            if (subtitle[i].start >= from_t) & (to_t  >= subtitle[i].start):
+            # if (subtitle[i].start >= from_t) & (to_t  >= subtitle[i].start):
+            if (from_t >= subtitle[i].start) & (from_t  <= subtitle[i].end):
                 # print(subtitle[i].start, from_t, to_t)
                 return subtitle[i].text, i
             i += 1

@@ -181,6 +181,7 @@ class GetTrackList(Resource):
         # TRACK_ARRAY_WITH_CONTENTS = json.load(data)
 
         TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
+        # print(TRACK_ARRAY_WITH_CONTENTS)
         NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
 
         if mpegOnly:
@@ -192,8 +193,8 @@ class GetTrackList(Resource):
 
 
         NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
-        #print(NEW_TRACK_ARRAY)
-        #print( NEW_SRT_ARRAY)
+        print(NEW_TRACK_ARRAY)
+        print(NEW_SRT_ARRAY)
         if player:
             player.setPlaylist(NEW_TRACK_ARRAY)
         else:
