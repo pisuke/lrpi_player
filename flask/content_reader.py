@@ -28,7 +28,6 @@ def content_in_dir(dir):
 
     filenames = os.listdir(dir)
     sorted_filenames = sorted(filenames)
-    print(sorted_filenames)
 
     for filename in sorted_filenames:
         filepath = os.path.join(dir, filename)
