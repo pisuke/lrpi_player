@@ -1,7 +1,7 @@
 #
 #
 # Clearing omxplayer temporary files sometimes solves the issue,
-# sometimes it doesnt...
+# sometimes it doesn't...
 # sudo rm -rf /tmp/omxplayerdbus*
 #
 #
@@ -25,16 +25,19 @@ import subprocess
 import json
 import random
 from pathlib import Path
-from time import sleep
+# from time import sleep
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
 
 from Player import LushRoomsPlayer
 from OmxPlayer import killOmx
 
+from content_reader import content_in_dir
+
 mpegOnly = True
 mlpOnly = False
 allFormats = False
+useNTP = False
 
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
@@ -136,6 +139,7 @@ class GetSettings(Resource):
     def get(self):
         return jsonify(loadSettings())
 
+
 class GetTrackList(Resource):
     def get(self):
         global NEW_TRACK_ARRAY
@@ -143,14 +147,15 @@ class GetTrackList(Resource):
         global BUILT_PATH
         global player
 
-        c = ntplib.NTPClient()
-        try:
-            response = c.request(NTP_SERVER)
-            print('\n' + 30*'-')
-            print('ntp time: ', ctime(response.tx_time))
-            print(30*'-' + '\n')
-        except:
-            print('Could not get ntp time!')
+        if useNTP:
+            c = ntplib.NTPClient()
+            try:
+                response = c.request(NTP_SERVER)
+                print('\n' + 30*'-')
+                print('ntp time: ', ctime(response.tx_time))
+                print(30*'-' + '\n')
+            except:
+                print('Could not get ntp time!')
 
         # return a graceful error if the usb stick isn't mounted
         if os.path.isdir(MEDIA_BASE_PATH) == False:
@@ -174,27 +179,35 @@ class GetTrackList(Resource):
         if os.path.isfile(BUILT_PATH + JSON_LIST_FILE) == False:
             raise Exception("Can't find the JSON_LIST_FILE")
 
-        with open(BUILT_PATH + JSON_LIST_FILE) as data:
-            TRACK_ARRAY_WITH_CONTENTS = json.load(data)
-            NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
+        # with open(BUILT_PATH + JSON_LIST_FILE) as data:
+        # TRACK_ARRAY_WITH_CONTENTS = json.load(data)
 
-            if mpegOnly:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
-            elif mlpOnly:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
-            elif allFormats:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
+        TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
+        # print(TRACK_ARRAY_WITH_CONTENTS)
+        NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
+
+        if mpegOnly:
+            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
+        elif mlpOnly:
+            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
+        elif allFormats:
+            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
 
 
-            NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
-            #print(NEW_TRACK_ARRAY)
-            #print( NEW_SRT_ARRAY)
-            if player:
-                player.setPlaylist(NEW_TRACK_ARRAY)
-            else:
-                player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
+        NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
+        # print(NEW_TRACK_ARRAY)
+        # print(NEW_SRT_ARRAY)
+        if player:
+            player.setPlaylist(NEW_TRACK_ARRAY)
+            player.lighting.resetHUE()
+            player.lighting.resetDMX()
+        else:
+            player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
+            player.lighting.resetHUE()
+            player.lighting.resetDMX()
 
-            return jsonify(NEW_TRACK_ARRAY)
+        return jsonify(NEW_TRACK_ARRAY)
+
 
 class PlaySingleTrack(Resource):
     def get(self):
