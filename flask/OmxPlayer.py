@@ -39,10 +39,9 @@ class OmxPlayer():
 
     def primeForStart(self, pathToTrack):
 
-
         self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'hdmi', '--layout', '5.1'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
         self.player.set_volume(0)
-        sleep(2.5)
+        sleep(0.5)
 
     def start(self, pathToTrack, syncTimestamp=None, master=False):
         print("Playing on omx... :", master)

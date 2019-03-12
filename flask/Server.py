@@ -1,7 +1,7 @@
 #
 #
 # Clearing omxplayer temporary files sometimes solves the issue,
-# sometimes it doesnt...
+# sometimes it doesn't...
 # sudo rm -rf /tmp/omxplayerdbus*
 #
 #
@@ -25,7 +25,7 @@ import subprocess
 import json
 import random
 from pathlib import Path
-from time import sleep
+# from time import sleep
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
 
@@ -37,6 +37,7 @@ from content_reader import content_in_dir
 mpegOnly = True
 mlpOnly = False
 allFormats = False
+useNTP = False
 
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
@@ -146,14 +147,15 @@ class GetTrackList(Resource):
         global BUILT_PATH
         global player
 
-        c = ntplib.NTPClient()
-        try:
-            response = c.request(NTP_SERVER)
-            print('\n' + 30*'-')
-            print('ntp time: ', ctime(response.tx_time))
-            print(30*'-' + '\n')
-        except:
-            print('Could not get ntp time!')
+        if useNTP:
+            c = ntplib.NTPClient()
+            try:
+                response = c.request(NTP_SERVER)
+                print('\n' + 30*'-')
+                print('ntp time: ', ctime(response.tx_time))
+                print(30*'-' + '\n')
+            except:
+                print('Could not get ntp time!')
 
         # return a graceful error if the usb stick isn't mounted
         if os.path.isdir(MEDIA_BASE_PATH) == False:
@@ -193,12 +195,16 @@ class GetTrackList(Resource):
 
 
         NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
-        print(NEW_TRACK_ARRAY)
-        print(NEW_SRT_ARRAY)
+        # print(NEW_TRACK_ARRAY)
+        # print(NEW_SRT_ARRAY)
         if player:
             player.setPlaylist(NEW_TRACK_ARRAY)
+            player.lighting.resetHUE()
+            player.lighting.resetDMX()
         else:
             player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
+            player.lighting.resetHUE()
+            player.lighting.resetDMX()
 
         return jsonify(NEW_TRACK_ARRAY)
 
