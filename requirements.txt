@@ -8,7 +8,7 @@ python-vlc==3.0.4106
 omxplayer-wrapper==0.3.2
 tinkerforge==2.1.20
 pysrt==1.1.1
-numpy>=1.15.4
+numpy==1.15.4
 apscheduler==3.5.3
 keyboard==0.13.2
 ntplib>=0.3.3
