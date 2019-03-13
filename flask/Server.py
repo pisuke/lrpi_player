@@ -175,12 +175,6 @@ class GetTrackList(Resource):
 
         print('BUILT_PATH: ' + str(BUILT_PATH))
 
-        # return a graceful error if contents.json can't be found
-        if os.path.isfile(BUILT_PATH + JSON_LIST_FILE) == False:
-            raise Exception("Can't find the JSON_LIST_FILE")
-
-        # with open(BUILT_PATH + JSON_LIST_FILE) as data:
-        # TRACK_ARRAY_WITH_CONTENTS = json.load(data)
 
         TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
         # print(TRACK_ARRAY_WITH_CONTENTS)
@@ -244,7 +238,7 @@ class PlayPause(Resource):
 class FadeDown(Resource):
     def get(self):
         global player
-        global BUILT_PATH
+        global BUILT_PATH 
 
         args = getInput()
         print('argsid: ', args["id"])
