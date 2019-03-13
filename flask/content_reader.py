@@ -1,25 +1,23 @@
 import datetime
 import os
 import random
+import hashlib
 
-ALPHA_NUMERIC = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 MIME_TYPES = {
     "json": "application/json",
     "mp4": "video/mp4",
 }
 
-def generateNewRandomAlphaNumeric(length):
-    random.seed()
-    values = []
-    for i in range(length):
-        values.append(random.choice(ALPHA_NUMERIC))
-    return "".join(values)
-
 
 def get_mime_type(filename):
     ext = os.path.splitext(filename)[1][1:]
     return MIME_TYPES.get(ext, "application/octet-stream")
+
+def id_for_filename(file_name):
+    md5 = hashlib.md5()
+    md5.update(file_name.encode("utf-8"))
+    return md5.hexdigest()
 
 
 def content_in_dir(dir):
@@ -44,7 +42,7 @@ def content_in_dir(dir):
 
         content.append(
             {
-                "ID": generateNewRandomAlphaNumeric(33),
+                "ID": id_for_filename(filename),
                 "IsDir": is_dir,
                 "MimeType": mime_type,
                 "ModTime": dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
