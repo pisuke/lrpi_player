@@ -175,12 +175,6 @@ class GetTrackList(Resource):
 
         print('BUILT_PATH: ' + str(BUILT_PATH))
 
-        # return a graceful error if contents.json can't be found
-        if os.path.isfile(BUILT_PATH + JSON_LIST_FILE) == False:
-            raise Exception("Can't find the JSON_LIST_FILE")
-
-        # with open(BUILT_PATH + JSON_LIST_FILE) as data:
-        # TRACK_ARRAY_WITH_CONTENTS = json.load(data)
 
         TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
         # print(TRACK_ARRAY_WITH_CONTENTS)
@@ -244,7 +238,7 @@ class PlayPause(Resource):
 class FadeDown(Resource):
     def get(self):
         global player
-        global BUILT_PATH
+        global BUILT_PATH 
 
         args = getInput()
         print('argsid: ', args["id"])
@@ -307,6 +301,18 @@ class Pair(Resource):
 
         return jsonify(pairRes)
 
+class Unpair(Resource):
+    def get(self):
+        global player
+
+        try:
+            unpairRes = player.unpairAsMaster()
+        except Exception as e: 
+            print('Exception: ', e)
+            pairRes = 1
+
+        return jsonify(unpairRes)
+
 class Enslave(Resource):
     def get(self):
         global player
@@ -336,6 +342,18 @@ class Enslave(Resource):
         player.setPairedAsSlave(True, masterIp)
 
         return jsonify(0)
+
+class Free(Resource):
+    def get(self):
+        global player
+ 
+        try:
+            freeRes = player.free()
+        except Exception as e: 
+            print('Exception: ', e)
+            freeRes = 1
+
+        return jsonify(freeRes)
 
 # POST body Should have the command, status of the master
 # and the desired trigger time
@@ -372,12 +390,16 @@ api.add_resource(PlaySingleTrack, '/play-single-track')
 api.add_resource(PlayPause, '/play-pause')
 api.add_resource(FadeDown, '/crossfade')
 api.add_resource(Seek, '/seek')
+api.add_resource(Stop, '/stop')
 api.add_resource(GetSettings, '/settings')
 api.add_resource(PlayerStatus, '/status')
+# Master endpoints
 api.add_resource(Pair, '/pair')
+api.add_resource(Unpair, '/unpair')
+# Slave endpoints
 api.add_resource(Enslave, '/enslave')
+api.add_resource(Free, '/free')
 api.add_resource(Command, '/command') # POST
-api.add_resource(Stop, '/stop')
 
 if __name__ == '__main__':
    app.run(debug=True, port=80, host='0.0.0.0')
