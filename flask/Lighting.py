@@ -195,10 +195,11 @@ class LushRoomsLighting():
                     # Get the bridge state (This returns the full dictionary that you can explore)
                     self.bridge.get_api()
                     lights = self.bridge.lights
-                    for l in lights:
-                        # print(dir(l))
-                        l.on = False
-                    sleep(1)
+                    # lplay-85 
+                    # for l in lights:
+                    #     # print(dir(l))
+                    #     l.on = False
+                    # sleep(1)
                     for l in lights:
                         # print(dir(l))
                         l.on = True
