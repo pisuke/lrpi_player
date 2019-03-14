@@ -195,10 +195,11 @@ class LushRoomsLighting():
                     # Get the bridge state (This returns the full dictionary that you can explore)
                     self.bridge.get_api()
                     lights = self.bridge.lights
-                    for l in lights:
-                        # print(dir(l))
-                        l.on = False
-                    sleep(1)
+                    # lplay-85 
+                    # for l in lights:
+                    #     # print(dir(l))
+                    #     l.on = False
+                    # sleep(1)
                     for l in lights:
                         # print(dir(l))
                         l.on = True
@@ -241,10 +242,10 @@ class LushRoomsLighting():
         global PLAY_HUE
         if PLAY_HUE:
             lights = self.bridge.lights
-            for l in lights:
-                # print(dir(l))
-                l.on = False
-            sleep(1)
+            # for l in lights:
+            #     # print(dir(l))
+            #     l.on = False
+            # sleep(1)
             for l in lights:
                 # print(dir(l))
                 l.on = True
@@ -472,8 +473,9 @@ class LushRoomsLighting():
         print('Lighting PlayPause: ', status)
         if status=="Paused":
             self.scheduler.pause()
-            self.pauseHUE()
-            self.pauseDMX()
+            # lplay-86
+            # self.pauseHUE()
+            # self.pauseDMX()
         elif status=="Playing":
             self.scheduler.resume()
         if LIGHTING_MSGS:

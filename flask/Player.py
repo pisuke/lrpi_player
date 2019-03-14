@@ -11,6 +11,7 @@ import ntplib # pylint: disable=import-error
 from time import ctime
 import pause # pylint: disable=import-error
 from pysrt import open as srtopen # pylint: disable=import-error
+import datetime, calendar
 import json
 
 # utils
@@ -275,17 +276,21 @@ class LushRoomsPlayer():
     def sendSlaveCommand(self, command):
         if self.player.paired:
             print('sending command to slave: ', command)
-            c = ntplib.NTPClient()
+            # c = ntplib.NTPClient()
             try:
                 # tx_time is a unix timestamp
                 # this, among a few other things, means 'party mode'
                 # is only available on the 'Pi'/other unix like systems
-                response = c.request(NTP_SERVER)
-                print('\n' + 30*'-')
-                print('ntp time: ', ctime(response.tx_time))
-                print('ntp time raw: ', response.tx_time)
-                print(30*'-' + '\n')
-                self.eventSyncTime = response.tx_time + self.slaveCommandOffset
+                # response = c.request(NTP_SERVER)
+                # print('\n' + 30*'-')
+                # print('ntp time: ', ctime(response.tx_time))
+                # print('ntp time raw: ', response.tx_time)
+                # print(30*'-' + '\n')
+
+                localTimestamp = calendar.timegm(datetime.datetime.now().timetuple())
+                
+                print('currentUnixTimestamp (local on pi: )', localTimestamp)
+                self.eventSyncTime = localTimestamp + self.slaveCommandOffset
                 print('events sync at: ', ctime(self.eventSyncTime))
 
 
