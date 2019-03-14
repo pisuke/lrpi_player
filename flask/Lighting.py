@@ -166,9 +166,17 @@ class LushRoomsLighting():
                     if tf[1] == 285: # DMX Bricklet
                         if dmxcount == 0:
                             # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512)*255)
-                            self.dmx.write_frame([MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS,
-                                                  MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS,
-                                                  MAX_BRIGHTNESS,0,0,0,MAX_BRIGHTNESS])
+                            # hardcoded values for lighting in LushSpa
+                            self.dmx.write_frame([int(0.65*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  0,0,0,int(0.40*MAX_BRIGHTNESS)])
                         dmxcount += 1
                     if LIGHTING_MSGS:
                         print('dmxcount: ', dmxcount)
@@ -195,7 +203,7 @@ class LushRoomsLighting():
                     # Get the bridge state (This returns the full dictionary that you can explore)
                     self.bridge.get_api()
                     lights = self.bridge.lights
-                    # lplay-85 
+                    # lplay-85
                     # for l in lights:
                     #     # print(dir(l))
                     #     l.on = False
@@ -211,11 +219,11 @@ class LushRoomsLighting():
                         l.brightness = 255
                     for l in lights:
                         ## print(l.name)
-                        l.brightness = 100
+                        l.brightness = 50
                         ##l.colormode = 'ct'
                         #l.colortemp_k = 2700
                         #l.saturation = 0
-                        bri = 100
+                        bri = 50
                         sat = 100
                         hue = 0
                         colormode = 'ct'
@@ -254,11 +262,11 @@ class LushRoomsLighting():
             for l in lights:
                 if LIGHTING_MSGS:
                     print(l.name)
-                l.brightness = 100
+                l.brightness = 50
                 ##l.colormode = 'ct'
                 #l.colortemp_k = 2700
                 #l.saturation = 0
-                bri = 100
+                bri = 50
                 sat = 100
                 hue = 0
                 colormode = 'ct'
@@ -344,10 +352,11 @@ class LushRoomsLighting():
         return(hue_l)
 
     def trigger_light(self, subs):
+        global MAX_BRIGHTNESS, DEBUG, PLAY_HUE
         if DEBUG:
             print(perf_counter(), subs)
         commands = str(subs).split(";")
-        global MAX_BRIGHTNESS, DEBUG, PLAY_HUE
+
         if DEBUG:
             print("Trigger light", self.hue_list)
         for command in commands:
@@ -489,8 +498,8 @@ class LushRoomsLighting():
 
         if status=="Paused":
             self.scheduler.pause()
-            self.pauseHUE()
-            self.pauseDMX()
+            # self.pauseHUE()
+            # self.pauseDMX()
         elif status=="Playing":
             self.scheduler.resume()
         if LIGHTING_MSGS:
