@@ -145,9 +145,16 @@ class LushRoomsLighting():
                     if tf[1] == 285: # DMX Bricklet
                         if dmxcount == 0:
                             # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512)*255)
-                            self.dmx.write_frame([MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS,
-                                                  MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS,MAX_BRIGHTNESS,
-                                                  MAX_BRIGHTNESS,0,0,0,MAX_BRIGHTNESS])
+                            self.dmx.write_frame([int(0.65*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  int(0.40*MAX_BRIGHTNESS),
+                                                  0,0,0,int(0.40*MAX_BRIGHTNESS)])
                         dmxcount += 1
                     if LIGHTING_MSGS:
                         print('dmxcount: ', dmxcount)
