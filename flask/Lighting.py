@@ -242,10 +242,10 @@ class LushRoomsLighting():
         global PLAY_HUE
         if PLAY_HUE:
             lights = self.bridge.lights
-            for l in lights:
-                # print(dir(l))
-                l.on = False
-            sleep(1)
+            # for l in lights:
+            #     # print(dir(l))
+            #     l.on = False
+            # sleep(1)
             for l in lights:
                 # print(dir(l))
                 l.on = True
