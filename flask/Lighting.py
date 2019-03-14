@@ -472,8 +472,9 @@ class LushRoomsLighting():
         print('Lighting PlayPause: ', status)
         if status=="Paused":
             self.scheduler.pause()
-            self.pauseHUE()
-            self.pauseDMX()
+            # lplay-86
+            # self.pauseHUE()
+            # self.pauseDMX()
         elif status=="Playing":
             self.scheduler.resume()
         if LIGHTING_MSGS:
