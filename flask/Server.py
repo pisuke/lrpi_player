@@ -162,7 +162,7 @@ class GetTrackList(Resource):
             return jsonify(1)
 
         if BUILT_PATH is None:
-            BUILT_PATH = MEDIA_BASE_PATH
+            BUILT_PATH = MEDIA_BASE_PATH 
         
         args = getInput()
 
@@ -378,9 +378,10 @@ class Stop(Resource):
         global player
         global BUILT_PATH
 
+        BUILT_PATH = None
+
         try:
             response = player.stop()
-            BUILT_PATH = None
         except:
             response = 1
 
