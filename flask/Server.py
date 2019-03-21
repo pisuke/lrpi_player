@@ -7,7 +7,7 @@
 #
 
 from flask import Flask, request, send_from_directory, render_template
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS, cross_origin 
 from flask_restful import Resource, Api
 from json import dumps
 from flask_jsonpify import jsonify
@@ -17,7 +17,7 @@ from time import ctime
 import pause # pylint: disable=import-error
 
 from os.path import splitext
-import os
+import os 
 import os.path
 import sys
 import time
@@ -161,7 +161,9 @@ class GetTrackList(Resource):
         if os.path.isdir(MEDIA_BASE_PATH) == False:
             return jsonify(1)
 
-        BUILT_PATH = MEDIA_BASE_PATH
+        if BUILT_PATH is None:
+            BUILT_PATH = MEDIA_BASE_PATH
+        
         args = getInput()
 
         print("track list id: " +  str(args['id']))
@@ -374,9 +376,11 @@ class Command(Resource):
 class Stop(Resource):
     def get(self):
         global player
+        global BUILT_PATH
 
         try:
             response = player.stop()
+            BUILT_PATH = None
         except:
             response = 1
 
