@@ -12,6 +12,8 @@ from tf_device_ids import deviceIdentifiersList
 from numpy import array, ones, zeros # pylint: disable=import-error
 import os
 import json
+import settings
+import find_hue
 
 # dev
 
@@ -52,8 +54,6 @@ class LushRoomsLighting():
 
     def __init__(self):
         print('Lushroom Lighting init!')
-        self.SETTINGS_BASE_PATH = "/media/usb/"
-        self.JSON_SETTINGS_FILE = "settings.json"
         self.TRANSITION_TIME = 5 # milliseconds
         self.hue_list = [[]]
         self.player = None
@@ -191,12 +191,8 @@ class LushRoomsLighting():
 
     def initHUE(self):
         global PLAY_HUE
-        settings_path = os.path.join(self.SETTINGS_BASE_PATH, self.JSON_SETTINGS_FILE)
-        if os.path.exists(settings_path):
-            with open(settings_path) as f:
-                settings_json = json.loads(f.read())
-                # print(json.dumps(settings_json))
-                HUE_IP_ADDRESS = settings_json["hue_ip"]
+
+        HUE_IP_ADDRESS = find_hue.hue_ip()
 
         try:
             if PLAY_HUE:
