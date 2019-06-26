@@ -8,6 +8,11 @@
 
 #!/usr/bin/env python3
 
+from os.path import splitext
+import os
+import os.path
+os.environ["FLASK_ENV"] = "development"
+
 from flask import Flask, request, send_from_directory, render_template
 from flask_cors import CORS, cross_origin 
 from flask_restful import Resource, Api
@@ -18,15 +23,13 @@ import ntplib # pylint: disable=import-error
 from time import ctime
 import pause # pylint: disable=import-error
 
-from os.path import splitext
-import os 
-import os.path
-import sys
-import time
-import subprocess
-import json
-import random
-from pathlib import Path
+
+# import sys
+# import time
+# import subprocess
+# import json
+# import random
+# from pathlib import Path
 # from time import sleep
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
@@ -35,6 +38,8 @@ from Player import LushRoomsPlayer
 from OmxPlayer import killOmx
 
 from content_reader import content_in_dir
+
+import settings
 
 mpegOnly = True
 mlpOnly = False
@@ -57,18 +62,10 @@ MEDIA_BASE_PATH = BASE_PATH + "tracks/"
 BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
-SETTINGS_FILE = "settings.json"
 
 TEST_TRACK = MEDIA_BASE_PATH + AUDIO_PATH_TEST_MP4
 NEW_TRACK_ARRAY = []
 NEW_SRT_ARRAY = []
-
-DEFAULT_SETTINGS = {
-    "fadeInterval" : "3",
-    "roomName" : "?",
-    "canPair" : True,
-    "format" : "mp4"
-}
 
 player = None
 paused = None
@@ -109,21 +106,12 @@ def printOmxVars():
 def loadSettings():
     # return a graceful error if contents.json can't be found
 
-    settingsPath = BASE_PATH + SETTINGS_FILE
+    settings_json = settings.get_settings()
+    settings_json = settings_json.copy()
+    settings_json["roomName"] = settings_json["name"]
+    print("Room name: ", settings_json["name"])
 
-    # If no settings.json exists, either rclone hasn't
-    # finished yet or something else is wrong...
-    if os.path.isfile(settingsPath) == False:
-        return DEFAULT_SETTINGS
-
-    with open(settingsPath) as data:
-        settings = json.load(data)
-
-    settings["roomName"] = settings["name"]
-
-    print("Room name: ", settings["name"])
-
-    return settings
+    return settings_json
 
 # serve the angular app
 
@@ -144,6 +132,11 @@ class GetSettings(Resource):
 
 class GetTrackList(Resource):
     def get(self):
+
+        print(GetTrackList)
+
+
+
         global NEW_TRACK_ARRAY
         global NEW_SRT_ARRAY
         global BUILT_PATH
@@ -409,4 +402,6 @@ api.add_resource(Free, '/free')
 api.add_resource(Command, '/command') # POST
 
 if __name__ == '__main__':
-   app.run(debug=False, port=80, host='0.0.0.0', use_reloader=False)
+
+    settings_json = settings.get_settings()
+    app.run(debug=settings_json["debug"], port=80, host='0.0.0.0')
