@@ -14,13 +14,13 @@ sudo sshfs -o allow_other,defer_permissions,IdentityFile=./lrpi_id_rsa lush@xxx.
 Run dev code inside a running Dockerised player (only works on a 'Pi!):
 
 ```
-sudo docker run -it --rm -p 80:80 \ 
--v ./flask:/opt/code/flask \ 
--v /opt/vc:/opt/vc \ 
--v /media/usb:/media/usb \ 
---device /dev/vchiq:/dev/vchiq \ 
---device /dev/fb0:/dev/fb0 \ 
-lushroom-player:local
+sudo docker run -it --rm -p 80:80 \
+-v /home/lush/lrpi_player/flask:/opt/code/flask \
+-v /opt/vc:/opt/vc \
+-v /media/usb:/media/usb \
+--device /dev/vchiq:/dev/vchiq \
+--device /dev/fb0:/dev/fb0 \
+lushdigital/lushroom-player:staging
 ```
 
 

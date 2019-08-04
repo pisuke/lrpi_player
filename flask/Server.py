@@ -247,7 +247,7 @@ class FadeDown(Resource):
         global BUILT_PATH 
 
         args = getInput()
-        print('argsid: ', args["id"])
+        print('argsid : ', args["id"])
         # print('argsinterval: ', args["interval"])
         pathToTrack = None
 
