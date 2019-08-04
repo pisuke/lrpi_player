@@ -46,13 +46,16 @@ class OmxPlayer():
         print("Playing on omx... :", master)
         print(pathToTrack)
 
+        settings_json = settings.get_settings()
+        volume = settings_json.get("audio_volume")
+
         if not master:
             if self.player:
                 self.player.quit()
             self.player = None
 
         if self.player is None or syncTimestamp is None:
-            self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'hdmi', '--layout', '5.1'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
+            self.player = OMXPlayer(pathToTrack, args=['-w', '-o', settings_json.get("audio_ouput"), '--layout', '5.1'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
             # Might need to set the volume to 0 a different way,
             # for some tracks omxplayer plays a short, sharp, shock
             # before setting the volume to 0
@@ -63,8 +66,6 @@ class OmxPlayer():
         self.player.seekEvent += self.seekEvent
         self.player.set_position(0)
 
-        settings_json = settings.get_settings()
-        volume = settings_json.get("audio_volume")
         if volume is not None:
             self.audio_volume = volume
             print("Volume set to %s" % self.audio_volume)

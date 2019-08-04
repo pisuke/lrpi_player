@@ -64,4 +64,5 @@ def get_evn_settings():
     settings["slave_ip"] = os.environ.get("SLAVE_IP", "")
     settings["debug"] = os.environ.get("DEBUG") == "true"
     settings["audio_volume"] = int(os.environ.get("AUDIO_VOLUME", "100"))
+    settings["audio_ouput"] = int(os.environ.get("AUDIO_OUPUT", "hdmi"))
     return settings
