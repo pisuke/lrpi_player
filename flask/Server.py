@@ -23,9 +23,8 @@ import ntplib # pylint: disable=import-error
 from time import ctime
 import pause # pylint: disable=import-error
 
-
 # import sys
-# import time
+import time
 # import subprocess
 # import json
 # import random
@@ -33,7 +32,7 @@ import pause # pylint: disable=import-error
 # from time import sleep
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
-
+from pysrt import stream as srtstream
 from Player import LushRoomsPlayer
 from OmxPlayer import killOmx
 
@@ -112,6 +111,16 @@ def loadSettings():
     print("Room name: ", settings_json["name"])
 
     return settings_json
+
+def timing(f):
+    def wrap(*args):
+        time1 = time.time()
+        ret = f(*args)
+        time2 = time.time()
+        print('{:s} function took {:.3f} ms'.format(f.__name__, (time2-time1)*1000.0))
+
+        return ret
+    return wrap
 
 # serve the angular app
 
@@ -247,7 +256,13 @@ class FadeDown(Resource):
                 srtFileName = splitext(track["Path"])[0]+".srt"
                 if os.path.isfile(BUILT_PATH + srtFileName):
                     print(srtFileName)
+                    start_time = time.time()
+                    print("Loading SRT file " + srtFileName + " - " + str(start_time))
                     subs = srtopen(BUILT_PATH + srtFileName)
+                    #subs = srtstream(BUILT_PATH + srtFileName)
+                    end_time = time.time()
+                    print("Finished loading SRT file " + srtFileName + " - " + str(end_time))
+                    print("Total time elapsed: " + str(end_time - start_time))
                 pathToTrack = BUILT_PATH + track["Path"]
 
         if pathToTrack is None or not os.path.isfile(pathToTrack):
