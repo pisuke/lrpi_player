@@ -250,6 +250,8 @@ class FadeDown(Resource):
         print('argsid: ', args["id"])
         # print('argsinterval: ', args["interval"])
         pathToTrack = None
+        subs = None
+        srtFileName = None
 
         for track in NEW_TRACK_ARRAY:
             if track["ID"] == args["id"]:
