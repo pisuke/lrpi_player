@@ -1,6 +1,7 @@
 import os
 from os import uname, system
 from time import sleep
+import time
 import urllib.request
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -11,6 +12,7 @@ import ntplib # pylint: disable=import-error
 from time import ctime
 import pause # pylint: disable=import-error
 from pysrt import open as srtopen # pylint: disable=import-error
+from pysrt import stream as srtstream
 import datetime, calendar
 import json
 
@@ -80,7 +82,13 @@ class LushRoomsPlayer():
         print("***************  start  ********************")
 
         if os.path.isfile(subsPath):
+            start_time = time.time()
+            print("Loading SRT file " + subsPath + " - " + str(start_time))
             subs = srtopen(subsPath)
+            #subs = srtstream(subsPath)
+            end_time = time.time()
+            print("Finished loading SRT file " + subsPath + " - " + str(end_time))
+            print("Total time elapsed: " + str(end_time - start_time))
 
         if self.isSlave():
             # wait until the sync time to fire everything off

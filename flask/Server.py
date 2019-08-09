@@ -6,8 +6,15 @@
 #
 #
 
+#!/usr/bin/env python3
+
+from os.path import splitext
+import os
+import os.path
+os.environ["FLASK_ENV"] = "development"
+
 from flask import Flask, request, send_from_directory, render_template
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS, cross_origin 
 from flask_restful import Resource, Api
 from json import dumps
 from flask_jsonpify import jsonify
@@ -16,23 +23,22 @@ import ntplib # pylint: disable=import-error
 from time import ctime
 import pause # pylint: disable=import-error
 
-from os.path import splitext
-import os
-import os.path
-import sys
+# import sys
 import time
-import subprocess
-import json
-import random
-from pathlib import Path
+# import subprocess
+# import json
+# import random
+# from pathlib import Path
 # from time import sleep
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
-
+from pysrt import stream as srtstream
 from Player import LushRoomsPlayer
 from OmxPlayer import killOmx
 
 from content_reader import content_in_dir
+
+import settings
 
 mpegOnly = True
 mlpOnly = False
@@ -55,18 +61,10 @@ MEDIA_BASE_PATH = BASE_PATH + "tracks/"
 BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
-SETTINGS_FILE = "settings.json"
 
 TEST_TRACK = MEDIA_BASE_PATH + AUDIO_PATH_TEST_MP4
 NEW_TRACK_ARRAY = []
 NEW_SRT_ARRAY = []
-
-DEFAULT_SETTINGS = {
-    "fadeInterval" : "3",
-    "roomName" : "?",
-    "canPair" : True,
-    "format" : "mp4"
-}
 
 player = None
 paused = None
@@ -107,21 +105,22 @@ def printOmxVars():
 def loadSettings():
     # return a graceful error if contents.json can't be found
 
-    settingsPath = BASE_PATH + SETTINGS_FILE
+    settings_json = settings.get_settings()
+    settings_json = settings_json.copy()
+    settings_json["roomName"] = settings_json["name"]
+    print("Room name: ", settings_json["name"])
 
-    # If no settings.json exists, either rclone hasn't
-    # finished yet or something else is wrong...
-    if os.path.isfile(settingsPath) == False:
-        return DEFAULT_SETTINGS
+    return settings_json
 
-    with open(settingsPath) as data:
-        settings = json.load(data)
+def timing(f):
+    def wrap(*args):
+        time1 = time.time()
+        ret = f(*args)
+        time2 = time.time()
+        print('{:s} function took {:.3f} ms'.format(f.__name__, (time2-time1)*1000.0))
 
-    settings["roomName"] = settings["name"]
-
-    print("Room name: ", settings["name"])
-
-    return settings
+        return ret
+    return wrap
 
 # serve the angular app
 
@@ -142,6 +141,11 @@ class GetSettings(Resource):
 
 class GetTrackList(Resource):
     def get(self):
+
+        print(GetTrackList)
+
+
+
         global NEW_TRACK_ARRAY
         global NEW_SRT_ARRAY
         global BUILT_PATH
@@ -161,7 +165,9 @@ class GetTrackList(Resource):
         if os.path.isdir(MEDIA_BASE_PATH) == False:
             return jsonify(1)
 
-        BUILT_PATH = MEDIA_BASE_PATH
+        if BUILT_PATH is None:
+            BUILT_PATH = MEDIA_BASE_PATH 
+        
         args = getInput()
 
         print("track list id: " +  str(args['id']))
@@ -250,7 +256,13 @@ class FadeDown(Resource):
                 srtFileName = splitext(track["Path"])[0]+".srt"
                 if os.path.isfile(BUILT_PATH + srtFileName):
                     print(srtFileName)
+                    start_time = time.time()
+                    print("Loading SRT file " + srtFileName + " - " + str(start_time))
                     subs = srtopen(BUILT_PATH + srtFileName)
+                    #subs = srtstream(BUILT_PATH + srtFileName)
+                    end_time = time.time()
+                    print("Finished loading SRT file " + srtFileName + " - " + str(end_time))
+                    print("Total time elapsed: " + str(end_time - start_time))
                 pathToTrack = BUILT_PATH + track["Path"]
 
         if pathToTrack is None or not os.path.isfile(pathToTrack):
@@ -374,6 +386,9 @@ class Command(Resource):
 class Stop(Resource):
     def get(self):
         global player
+        global BUILT_PATH
+
+        BUILT_PATH = None
 
         try:
             response = player.stop()
@@ -402,4 +417,6 @@ api.add_resource(Free, '/free')
 api.add_resource(Command, '/command') # POST
 
 if __name__ == '__main__':
-   app.run(debug=True, port=80, host='0.0.0.0')
+
+    settings_json = settings.get_settings()
+    app.run(debug=settings_json["debug"], port=80, host='0.0.0.0')
