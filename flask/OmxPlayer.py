@@ -36,15 +36,45 @@ class OmxPlayer():
         print('seek event! ' + str(b))
         return
 
-    def primeForStart(self, pathToTrack):
+    def triggerStart(self, pathToTrack):
+        # lrpi_player#105
+        # Audio output can be routed through hdmi or the jack,
+        # if settings.json is corrupted, default to the hdmi
 
-        self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'hdmi', '--layout', '5.1'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
+        settings_json = settings.get_settings()
+        output_route = settings_json.get("audio_output")
+        normalised_output_route = 'hdmi'
+        omxArgs = ['-w']
+
+        if output_route == 'hdmi':
+            normalised_output_route = 'hdmi'
+            omxArgs += ['--layout', '5.1']
+        elif output_route == 'jack': 
+            normalised_output_route = 'local'
+
+        omxArgs += ['-o', normalised_output_route] 
+
+        print('OUTPUT: ' + normalised_output_route)
+        print('Full playing args: ' + str(omxArgs))
+
+        self.player = OMXPlayer(pathToTrack, args=omxArgs, dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
+        # Might need to set the volume to 0 a different way,
+        # for some tracks omxplayer plays a short, sharp, shock
+        # before setting the volume to 0
         self.player.set_volume(0)
         sleep(0.5)
 
+
+    def primeForStart(self, pathToTrack):
+        self.triggerStart(pathToTrack)
+
     def start(self, pathToTrack, syncTimestamp=None, master=False):
         print("Playing on omx... :", master)
+        print("\n")
         print(pathToTrack)
+
+        settings_json = settings.get_settings()
+        volume = settings_json.get("audio_volume")
 
         if not master:
             if self.player:
@@ -52,19 +82,12 @@ class OmxPlayer():
             self.player = None
 
         if self.player is None or syncTimestamp is None:
-            self.player = OMXPlayer(pathToTrack, args=['-w', '-o', 'hdmi', '--layout', '5.1'], dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
-            # Might need to set the volume to 0 a different way,
-            # for some tracks omxplayer plays a short, sharp, shock
-            # before setting the volume to 0
-            self.player.set_volume(0)
-            sleep(0.5)
+            self.triggerStart(pathToTrack)
 
         self.player.positionEvent += self.posEvent
         self.player.seekEvent += self.seekEvent
         self.player.set_position(0)
 
-        settings_json = settings.get_settings()
-        volume = settings_json.get("audio_volume")
         if volume is not None:
             self.audio_volume = volume
             print("Volume set to %s" % self.audio_volume)
