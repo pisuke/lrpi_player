@@ -416,7 +416,7 @@ class LushRoomsLighting():
                             self.dmx.write_frame(channels)
             except:
                pass
-        if LIGHTING_MSGS:
+        if LIGHTING_MSGS and DEBUG:
             print(30*'-')
 
     def tick(self):
@@ -458,7 +458,7 @@ class LushRoomsLighting():
                 ## hours, minutes, seconds, milliseconds = time_convert(sub.start)
                 ## t = seconds + minutes*60 + hours*60*60 + milliseconds/1000.0
                 if sub!="": #and i > self.last_played:
-                    if LIGHTING_MSGS:
+                    if LIGHTING_MSGS and DEBUG:
                         print(i, "Light event:", sub)
                     # print("Trigger light event %s" % i)
                     self.trigger_light(sub)
