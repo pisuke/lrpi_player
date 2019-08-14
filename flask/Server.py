@@ -40,6 +40,9 @@ from content_reader import content_in_dir
 
 import settings
 
+# 103 -> whitelist is injected from settings.json into the logic that uses the bools below...
+# Remember to update docs/gdrive examples!
+
 mpegOnly = True
 mlpOnly = False
 allFormats = False
@@ -220,9 +223,6 @@ class PlaySingleTrack(Resource):
         for track in NEW_TRACK_ARRAY:
             if track["ID"] == args["id"]:
                 srtFileName = splitext(track["Path"])[0]+".srt"
-                # if os.path.isfile(BUILT_PATH + srtFileName):
-                #     print(srtFileName)
-                #     subs = srtopen(BUILT_PATH + srtFileName)
                 pathToTrack = BUILT_PATH + track["Path"]
 
         if os.path.isfile(pathToTrack) == False:
@@ -247,14 +247,16 @@ class FadeDown(Resource):
         global BUILT_PATH 
 
         args = getInput()
-        print('argsid: ', args["id"])
+        print('argsid : ', args["id"])
         # print('argsinterval: ', args["interval"])
         pathToTrack = None
+        subs = None
+        srtFileName = None
 
         for track in NEW_TRACK_ARRAY:
             if track["ID"] == args["id"]:
                 srtFileName = splitext(track["Path"])[0]+".srt"
-                if os.path.isfile(BUILT_PATH + srtFileName):
+                if os.path.isfile(str(BUILT_PATH) + srtFileName):
                     print(srtFileName)
                     start_time = time.time()
                     print("Loading SRT file " + srtFileName + " - " + str(start_time))
