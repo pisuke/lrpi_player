@@ -14,7 +14,7 @@ sudo sshfs -o allow_other,defer_permissions,IdentityFile=./lrpi_id_rsa lush@xxx.
 Run dev code inside a running Dockerised player (only works on a 'Pi!):
 
 ```
-sudo docker run -it --rm --network host -p 80:80 \
+sudo docker run --env MENU_DMX_VAL="255,172,36" --env NUM_DMX_CHANNELS=192 -it --rm --network host -p 80:80 \
 -v /home/lush/lrpi_player/flask:/opt/code/flask \
 -v /opt/vc:/opt/vc \
 -v /media/usb:/media/usb \
