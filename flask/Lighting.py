@@ -23,7 +23,8 @@ LIGHTING_MSGS = True
 
 
 # dmx
-
+MENU_DMX_VAL = os.environ.get("MENU_DMX_VAL", None)
+NUM_DMX_CHANNELS = os.environ.get("NUM_DMX_CHANNELS", None)
 HOST = os.environ.get("BRICKD_HOST", "127.0.0.1")
 PORT = 4223
 
@@ -150,16 +151,27 @@ class LushRoomsLighting():
                     if tf[1] == 285: # DMX Bricklet
                         if dmxcount == 0:
                             # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512)*255)
-                            self.dmx.write_frame([ int(0.65*MAX_BRIGHTNESS),
-                                                   int(0.40*MAX_BRIGHTNESS),
-                                                   int(0.40*MAX_BRIGHTNESS),
-                                                   int(0.40*MAX_BRIGHTNESS),
-                                                   int(0.40*MAX_BRIGHTNESS),
-                                                   int(0.40*MAX_BRIGHTNESS),
-                                                   int(0.40*MAX_BRIGHTNESS),
-                                                   int(0.40*MAX_BRIGHTNESS),
-                                                   int(0.40*MAX_BRIGHTNESS),
-                                                   0,0,0,int(0.40*MAX_BRIGHTNESS) ])
+                            if (MENU_DMX_VAL is not None and NUM_DMX_CHANNELS is not None):
+                                print('menu values: ', MENU_DMX_VAL)
+                                print('number of DMX channels: ', NUM_DMX_CHANNELS)
+                                frame_arr = []
+                                menu_val_arr = MENU_DMX_VAL.split(",")
+                                menu_val_arr = [int(i) for i in menu_val_arr]
+                                for i in range(int(int(NUM_DMX_CHANNELS)/3)):
+                                    frame_arr += menu_val_arr
+                                self.dmx.write_frame(frame_arr)
+                            else:
+                                print('Resetting DMX...')
+                                self.dmx.write_frame([ int(0.65*MAX_BRIGHTNESS),
+                                                    int(0.40*MAX_BRIGHTNESS),
+                                                    int(0.40*MAX_BRIGHTNESS),
+                                                    int(0.40*MAX_BRIGHTNESS),
+                                                    int(0.40*MAX_BRIGHTNESS),
+                                                    int(0.40*MAX_BRIGHTNESS),
+                                                    int(0.40*MAX_BRIGHTNESS),
+                                                    int(0.40*MAX_BRIGHTNESS),
+                                                    int(0.40*MAX_BRIGHTNESS),
+                                                    0,0,0,int(0.40*MAX_BRIGHTNESS) ])
                         dmxcount += 1
                     if LIGHTING_MSGS:
                         print('dmxcount: ', dmxcount)
