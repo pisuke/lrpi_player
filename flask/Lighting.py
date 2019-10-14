@@ -59,6 +59,7 @@ class LushRoomsLighting():
         self.hue_list = [[]]
         self.player = None
         self.scheduler = None
+        self.no_more_dmx_events = False
 
         # 'last_played' seems to be the last numbered lighting event
         # in the SRT file
@@ -331,21 +332,45 @@ class LushRoomsLighting():
                 deviceType = deviceIdentifiersList[t][1]
         return(deviceType)
 
+    # Find the next DMX event for interpolation
+
+    def find_next_dmx_event(self, subtitle, from_t, to_t, currentI, currentSubText):
+        nextI = currentI + 1
+        lenSubs = len(subtitle)
+
+        # TODO: Once we find there are no DMX results left in the file once,
+        # memoise the result!
+        # Perhaps see: https://dbader.org/blog/python-memoization
+
+        while nextI < lenSubs:
+            if subtitle[nextI].text.find("DMX", 0, 5) > -1:
+                print('next dmx: ', subtitle[nextI].text)
+                return currentSubText, currentI, nextI
+            nextI += 1
+
+        self.no_more_dmx_events = True
+
+        return currentSubText, currentI, currentI 
+
     def find_subtitle(self, subtitle, from_t, to_t, lo=0):
         i = lo
+
         if DEBUG:
             print("Starting from subtitle", lo, from_t, to_t, len(subtitle))
+
+        # Find where we are
+
         while (i < len(subtitle)):
             # print(subtitle[i])
             if (subtitle[i].start >= to_t):
                 break
 
-            # if (from_t >= subtitle[i].start) & (from_t  <= subtitle[i].end):
+            # if (from_t >= subtitle[i].start) & (fro   m_t  <= subtitle[i].end):
             if (subtitle[i].start >= from_t) & (to_t  >= subtitle[i].start):
                 # print(subtitle[i].start, from_t, to_t)
-                return subtitle[i].text, i
+                return self.find_next_dmx_event(subtitle, from_t, to_t, i, subtitle[i].text)
             i += 1
-        return "", i
+        return "", i, i+1
 
     def end_callback(self, event):
         if LIGHTING_MSGS:
@@ -353,7 +378,9 @@ class LushRoomsLighting():
         exit(0)
 
     def hue_build_lookup_table(self, lights):
-        #print(lights)
+        if DEBUG:
+            print("hue lookup lights: ", lights)
+    
         hue_l = [[]]
         i = 1
         for j in range(len(lights)+1):
@@ -469,16 +496,17 @@ class LushRoomsLighting():
                 #pt = SubRipTime(seconds=(player.get_time()/1000.0))
                 #ptd = SubRipTime(seconds=(player.get_time()/1000.0+1*TICK_TIME))
 
-
                 pt = SubRipTime(seconds=pp)
                 ptd = SubRipTime(seconds=(pp+1*TICK_TIME))
+
                 if DEBUG:
                     #print('Time: %s | %s | %s - %s | %s - %s | %s | %s' % (datetime.now(),t,ts,tsd,pt,ptd,pp,ptms))
                     print('Time: %s | %s | %s | %s | %s | %s | %s ' % (datetime.now(),t,ts,tsd,pp,pt,ptd))
                     pass
                 ## sub, i = self.find_subtitle(subs, ts, tsd)
                 # sub, i = self.find_subtitle(self.subs, pt, ptd)
-                sub, i = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
+                sub, i, i_dmx_next = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
+
                 if DEBUG:
                     print(i, "Found Subtitle for light event:", sub)
 
@@ -493,6 +521,7 @@ class LushRoomsLighting():
                     self.last_played = i
                     if DEBUG:
                         print('last_played: ', i)
+
             except Exception as e:
                 print('ERROR: It is likely the connection to the audio player has been severed...')
                 print('Why? --> ', e)
@@ -566,6 +595,7 @@ class LushRoomsLighting():
 
     def seek(self):
         # This doesn't seem to work fully...
+        # But may be solved by LUSHDigital/lrpi_player#114
         self.last_played = 0
         # pass
 

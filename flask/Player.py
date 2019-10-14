@@ -73,7 +73,7 @@ class LushRoomsPlayer():
         print("isSlave",self.player.paired,self.status["master_ip"],self.player.paired and (self.status["master_ip"] is None))
         return self.player.paired and (self.status["master_ip"] is not None)
 
-    # Returns the current position in secoends
+    # Returns the current position in seconds
     def start(self, path, subs, subsPath, syncTime=None):
         self.player.status(self.status)
         self.status["source"] = path
