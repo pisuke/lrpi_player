@@ -17,7 +17,7 @@ import find_hue
 
 # dev
 
-DEBUG = False
+DEBUG = True
 VERBOSE = False
 LIGHTING_MSGS = True
 
@@ -79,6 +79,9 @@ class LushRoomsLighting():
         if PLAY_DMX:
             self.initDMX()
         self.initHUE()
+
+    def emptyDMXFrame(self):
+        return zeros((512,), dtype=int)
 
     def cleaningScene(self):
         pass
@@ -386,7 +389,10 @@ class LushRoomsLighting():
                 if DEBUG:
                     print(command[0:len(command)-1].split("("))
                 scope,items = command[0:len(command)-1].split("(")
-                # print(scope,items)
+
+                if DEBUG:
+                    print("sc: ", scope, "it: ", items)
+
                 if scope[0:3] == "HUE" and PLAY_HUE:
                     l = int(scope[3:])
                     #print(l)
@@ -418,11 +424,19 @@ class LushRoomsLighting():
                             self.bridge.set_light(hl, cmd)
                 if scope[0:3] == "DMX":
                     l = int(scope[3:])
-                    # channels = int(int(MAX_BRIGHTNESS)/255.0*(array(items.split(",")).astype(int)))
-                    channels = array(items.split(",")).astype(int)
-                    # channels = array(map(lambda i: int(MAX_BRIGHTNESS)*i, channels))
+                    print("l: ", l)
+
+                    if items == "":
+                        print("Empty DMX event found! Turning all DMX channels off...")
+                        channels = self.emptyDMXFrame()
+                    else:
+                        # channels = int(int(MAX_BRIGHTNESS)/255.0*(array(items.split(",")).astype(int)))
+                        channels = array(items.split(",")).astype(int)
+                        # channels = array(map(lambda i: int(MAX_BRIGHTNESS)*i, channels))
+
                     if DEBUG:
                         print("Trigger DMX:", l, channels)
+
                     if PLAY_DMX:
                         if self.dmx != None:
                             self.dmx.write_frame(channels)
@@ -467,8 +481,10 @@ class LushRoomsLighting():
                 sub, i = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
                 if DEBUG:
                     print(i, "Found Subtitle for light event:", sub)
+
                 ## hours, minutes, seconds, milliseconds = time_convert(sub.start)
                 ## t = seconds + minutes*60 + hours*60*60 + milliseconds/1000.0
+
                 if sub!="": #and i > self.last_played:
                     if LIGHTING_MSGS and DEBUG:
                         print(i, "Light event:", sub)
