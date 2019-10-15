@@ -342,6 +342,11 @@ class LushRoomsLighting():
         # memoise the result!
         # Perhaps see: https://dbader.org/blog/python-memoization
 
+        # Idea - use this as a first attempt
+        # Meanwhile - fire off a thread that creates a hash table of
+        # current dmx event index and next DMX event. If that finishes in time,
+        # use the hash table and make this method redundant
+
         while nextI < lenSubs:
             if subtitle[nextI].text.find("DMX", 0, 5) > -1:
                 print('next dmx: ', subtitle[nextI].text)
