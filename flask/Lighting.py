@@ -390,8 +390,9 @@ class LushRoomsLighting():
                     print('last_played: ', i)
 
             if self.dmx_interpolator.isRunning():
-                print("result from interpolation:")
-                print(self.dmx_interpolator.getInterpolatedFrame(pt))
+                if PLAY_DMX:
+                        if self.dmx != None:
+                            self.dmx.write_frame(self.dmx_interpolator.getInterpolatedFrame(pt))
 
             # except Exception as e:
             #     print('ERROR: It is likely the connection to the audio player has been severed...')

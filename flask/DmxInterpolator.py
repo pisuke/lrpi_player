@@ -9,16 +9,17 @@ class DmxInterpolator():
         self.target_time = None
         self.duration = None
         self.running = False
+        self.twiddle = 0.5
 
     def srt_to_seconds(self, t):
         block, milliseconds = str(t).split(",")
         hours, minutes, seconds = block.split(":")
         u_ts = (int(seconds) + int(minutes)*60 + int(hours)*60*60 + int(milliseconds)/1000.0)
-        print("converted to seconds: ", u_ts)
+        # print("converted to seconds: ", u_ts)
         return u_ts
 
     def srt_to_array(self, f):
-        print("converting frame: ", f)
+        # print("converting frame: ", f)
         scope,items = f[0:len(f)-1].split("(")
         return array(items.split(",")).astype(int)   
 
@@ -65,7 +66,7 @@ class DmxInterpolator():
                 print('at time: ', subtitle[thisI].start)
                 print('TO frame: ', subtitle[nextI].text)
                 print('until time: ', subtitle[nextI].start)
-                print()
+                
                 self.start(
                     subtitle[thisI].text,
                     subtitle[thisI].start,
@@ -73,18 +74,29 @@ class DmxInterpolator():
                     subtitle[nextI].start
                 )
             nextI += 1
-       
+
+    # NB: this is linear interpolation only!       
 
     def getInterpolatedFrame(self, current_time):
         # Calculate the interpolated DMX frame
-        print("Getting int frame at ", current_time)
+        # print("Getting int frame at ", current_time)
         ct = self.srt_to_seconds(current_time)
-        print("Current int frame time after conversion ", ct, " target_time: ", self.target_time)
-    
-        val = int(self.start_frame[0] + ( (self.target_frame[0] - self.start_frame[0]) / (self.target_time - ct) ))
-        print("return (1) interpolated value! :: ", val)
+        # print("Current int frame time after conversion ", ct, " target_time: ", self.target_time)
+        # print("Target time minus current time: ", self.target_time - ct)
+        
+        frame_diff = self.target_frame[0] - self.start_frame[0]
+        period = self.target_time - self.start_time
+        # print("Frame diff: ", frame_diff)
+        # print("interpolation period: ", period)
 
-        if ct >= self.target_time or val == self.target_frame[0]:
+        # print("ct/tt * frame diff + start: ", ((ct/self.target_time)*frame_diff) + self.start_frame[0])
+        normalized_ct = ct - self.start_time
+
+        val = int(((normalized_ct/period)*frame_diff) + self.start_frame[0])
+
+        print("return (1) interpolated value! :: ", val, " sf: ", self.start_frame[0], " ef: ", self.target_frame[0])
+
+        if (ct >= self.target_time - self.twiddle) or (val == self.target_frame[0]):
             self.running = False
             self.clear()
             print("Target reached!")
