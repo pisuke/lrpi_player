@@ -1,6 +1,8 @@
 from pysrt import SubRipFile, SubRipItem, SubRipTime # pylint: disable=import-error
 from numpy import array, ones, zeros, full # pylint: disable=import-error
 
+VERBOSE=True
+
 class DmxInterpolator():
     def __init__(self):
         self.start_frame = None
@@ -44,16 +46,17 @@ class DmxInterpolator():
             self.target_time = self.srt_to_seconds(target_time)
             self.num_channels = len(self.start_frame)
             self.running = True
-            print("Interpolator starting with duration: ", self.duration)
-            print("Starts at: ", self.start_time)
-            print("Ends at: ", self.target_time)
-            print("Running ", self.running)
+            if VERBOSE:
+                print("Interpolator starting with duration: ", self.duration)
+                print("Starts at: ", self.start_time)
+                print("Ends at: ", self.target_time)
+                print("Running ", self.running)
 
     def isRunning(self):
         return self.running
 
     def clear(self):
-        self.target_frame = None
+        self.start_frame = None
         self.start_time = None
         self.target_time = None
         self.duration = None
@@ -73,11 +76,12 @@ class DmxInterpolator():
 
         while nextI < lenSubs and not self.running:
             if subtitle[nextI].text.find("DMX", 0, 5) > -1 and subtitle[thisI].text.find("DMX", 0, 5) > -1:
-                print("Interpolation event found!")
-                print('From frame: ', subtitle[thisI].text)
-                print('at time: ', subtitle[thisI].start)
-                print('TO frame: ', subtitle[nextI].text)
-                print('until time: ', subtitle[nextI].start)
+                if VERBOSE:
+                    print("Interpolation event found!")
+                    print('From frame: ', subtitle[thisI].text)
+                    print('at time: ', subtitle[thisI].start)
+                    print('TO frame: ', subtitle[nextI].text)
+                    print('until time: ', subtitle[nextI].start)
                 
                 self.start(
                     subtitle[thisI].text,
@@ -91,35 +95,32 @@ class DmxInterpolator():
 
     def getInterpolatedFrame(self, current_time):
         # Calculate the interpolated DMX frame
-        # print("Getting int frame at ", current_time)
+        # ct is 'current time'
         ct = self.srt_to_seconds(current_time)
-        # print("Current int frame time after conversion ", ct, " target_time: ", self.target_time)
-        # print("Target time minus current time: ", self.target_time - ct)
+     
+        # max() is used here to account for what could
+        # be rounding errors
+        normalized_ct = max(0, ct - self.start_time)
+        print('normalized ct: ', normalized_ct)
+
+        # frame_diff = self.target_frame[0] - self.start_frame[0]
+        # val = int(((normalized_ct/self.duration)*frame_diff) + self.start_frame[0])
         
-        frame_diff = self.target_frame[0] - self.start_frame[0]
+        # Above, the basic method for interpolating a single DMX frame.
+        # Below, a lambda that does the same thing but for all DMX channels
 
-        print("period: ", self.duration)
-        
-        # print("Frame diff: ", frame_diff)
-        # print("interpolation period: ", period)
-
-        # print("ct/tt * frame diff + start: ", ((ct/self.target_time)*frame_diff) + self.start_frame[0])
-        normalized_ct = ct - self.start_time
-
-        val = int(((normalized_ct/self.duration)*frame_diff) + self.start_frame[0])
-
-        # for channel in self.start_frame:
-        #     interpolated_frame[]
-
-        print("return (1) interpolated value! :: ", val, " sf: ", self.start_frame[0], " ef: ", self.target_frame[0])
+        interpolated_frame = map(lambda sf, tf: int(((normalized_ct/self.duration)*(tf-sf))) + sf, self.start_frame, self.target_frame)
 
         if (ct >= self.target_time - self.twiddle):
             self.running = False
             self.clear()
-            print("Target reached!")
+            if VERBOSE:
+                print("Target reached!")
+                print("target frame: ", self.target_frame)
             return self.target_frame      
         else:
-            print("len target frame: ", len(self.target_frame))
-            print("returning: ", full(len(self.target_frame), val))
-            return full(len(self.target_frame), val)
+            iFrame = list(interpolated_frame)
+            if VERBOSE:
+                print("from interpolation: ", iFrame)
+            return iFrame
         

@@ -169,6 +169,7 @@ class LushRoomsLighting():
                                 self.dmx.write_frame(frame_arr)
                             else:
                                 print('Resetting DMX...')
+                                self.dmx_interpolator.__init__()
                                 self.dmx.write_frame([ int(0.65*MAX_BRIGHTNESS),
                                                     int(0.40*MAX_BRIGHTNESS),
                                                     int(0.40*MAX_BRIGHTNESS),
@@ -356,50 +357,50 @@ class LushRoomsLighting():
             tsd = SubRipTime(seconds = t + (1*TICK_TIME))
             # print(dir(player))
 
-            # try:
-            pp = self.player.getPosition()
+            try:
+                pp = self.player.getPosition()
 
-            #ptms = player.get_time()/1000.0
-            #pt = SubRipTime(seconds=(player.get_time()/1000.0))
-            #ptd = SubRipTime(seconds=(player.get_time()/1000.0+1*TICK_TIME))
+                #ptms = player.get_time()/1000.0
+                #pt = SubRipTime(seconds=(player.get_time()/1000.0))
+                #ptd = SubRipTime(seconds=(player.get_time()/1000.0+1*TICK_TIME))
 
-            pt = SubRipTime(seconds=pp)
-            ptd = SubRipTime(seconds=(pp+1*TICK_TIME))
+                pt = SubRipTime(seconds=pp)
+                ptd = SubRipTime(seconds=(pp+1*TICK_TIME))
 
-            if DEBUG:
-                #print('Time: %s | %s | %s - %s | %s - %s | %s | %s' % (datetime.now(),t,ts,tsd,pt,ptd,pp,ptms))
-                # print('Time: %s | %s | %s | %s | %s | %s | %s ' % (datetime.now(),t,ts,tsd,pp,pt,ptd))
-                pass
-            ## sub, i = self.find_subtitle(subs, ts, tsd)
-            # sub, i = self.find_subtitle(self.subs, pt, ptd)
-            sub, i = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
-
-            if DEBUG:
-                print(i, "Found Subtitle for light event:", sub, i)
-
-            ## hours, minutes, seconds, milliseconds = time_convert(sub.start)
-            ## t = seconds + minutes*60 + hours*60*60 + milliseconds/1000.0
-
-            if sub!="": #and i > self.last_played:
-                if LIGHTING_MSGS and DEBUG:
-                    print(i, "Light event:", sub)
-                # print("Trigger light event %s" % i)
-                self.trigger_light(sub)
-                self.last_played = i
                 if DEBUG:
-                    print('last_played: ', i)
+                    #print('Time: %s | %s | %s - %s | %s - %s | %s | %s' % (datetime.now(),t,ts,tsd,pt,ptd,pp,ptms))
+                    # print('Time: %s | %s | %s | %s | %s | %s | %s ' % (datetime.now(),t,ts,tsd,pp,pt,ptd))
+                    pass
+                ## sub, i = self.find_subtitle(subs, ts, tsd)
+                # sub, i = self.find_subtitle(self.subs, pt, ptd)
+                sub, i = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
 
-            if self.dmx_interpolator.isRunning():
-                if PLAY_DMX:
-                        if self.dmx != None:
-                            iFrame = self.dmx_interpolator.getInterpolatedFrame(pt)
-                            self.dmx.write_frame(iFrame)
+                if DEBUG:
+                    print(i, "Found Subtitle for light event:", sub, i)
 
-            # except Exception as e:
-            #     print('ERROR: It is likely the connection to the audio player has been severed...')
-            #     print('Why? --> ', e)
-            #     print('Scheduler is about to end gracefully...')
-            #     self.__del__()
+                ## hours, minutes, seconds, milliseconds = time_convert(sub.start)
+                ## t = seconds + minutes*60 + hours*60*60 + milliseconds/1000.0
+
+                if sub!="": #and i > self.last_played:
+                    if LIGHTING_MSGS and DEBUG:
+                        print(i, "Light event:", sub)
+                    # print("Trigger light event %s" % i)
+                    self.trigger_light(sub)
+                    self.last_played = i
+                    if DEBUG:
+                        print('last_played: ', i)
+
+                if self.dmx_interpolator.isRunning():
+                    if PLAY_DMX:
+                            if self.dmx != None:
+                                iFrame = self.dmx_interpolator.getInterpolatedFrame(pt)
+                                self.dmx.write_frame(iFrame)
+
+            except Exception as e:
+                print('ERROR: It is likely the connection to the audio player has been severed...')
+                print('Why? --> ', e)
+                print('Scheduler is about to end gracefully...')
+                self.__del__()
 
         # except:
         #    pass
@@ -537,6 +538,7 @@ class LushRoomsLighting():
     def start(self, audioPlayer, subs):
         self.player = audioPlayer
         self.subs = subs
+        self.dmx_interpolator.__init__()
         if subs is not None: 
             if LIGHTING_MSGS:
                 print("Lighting: Start!")
