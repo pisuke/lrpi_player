@@ -1,5 +1,5 @@
 from pysrt import SubRipFile, SubRipItem, SubRipTime # pylint: disable=import-error
-from numpy import array, ones, zeros # pylint: disable=import-error
+from numpy import array, ones, zeros, full # pylint: disable=import-error
 
 class DmxInterpolator():
     def __init__(self):
@@ -9,7 +9,9 @@ class DmxInterpolator():
         self.target_time = None
         self.duration = None
         self.running = False
-        self.twiddle = 0.5
+        self.num_channels = None
+        self.twiddle = 0.4
+        self.min_interpolation_window = 0.05
 
     def srt_to_seconds(self, t):
         block, milliseconds = str(t).split(",")
@@ -31,22 +33,32 @@ class DmxInterpolator():
         target_time
     ):
 
-        self.start_frame = self.srt_to_array(start_frame)
-        self.target_frame = self.srt_to_array(target_frame)
         self.start_time = self.srt_to_seconds(start_time)
         self.target_time = self.srt_to_seconds(target_time)
-        self.duration = target_time - start_time
-        self.running = True
-        print("Interpolator starting with duration: ", self.duration)
-        print("Starts at: ", self.start_time)
-        print("Ends at: ", self.target_time)
-        print("Running ", self.running)
+        self.duration = self.target_time - self.start_time
+
+        if self.duration > self.min_interpolation_window:
+            self.start_frame = self.srt_to_array(start_frame)
+            self.target_frame = self.srt_to_array(target_frame)
+            self.start_time = self.srt_to_seconds(start_time)
+            self.target_time = self.srt_to_seconds(target_time)
+            self.num_channels = len(self.start_frame)
+            self.running = True
+            print("Interpolator starting with duration: ", self.duration)
+            print("Starts at: ", self.start_time)
+            print("Ends at: ", self.target_time)
+            print("Running ", self.running)
 
     def isRunning(self):
         return self.running
 
     def clear(self):
-        self.__init__()
+        self.target_frame = None
+        self.start_time = None
+        self.target_time = None
+        self.duration = None
+        self.running = False
+        self.num_channels = None
 
     def findNextEvent(
         self,
@@ -60,7 +72,7 @@ class DmxInterpolator():
         lenSubs = len(subtitle)
 
         while nextI < lenSubs and not self.running:
-            if subtitle[nextI].text.find("DMX", 0, 5) > -1:
+            if subtitle[nextI].text.find("DMX", 0, 5) > -1 and subtitle[thisI].text.find("DMX", 0, 5) > -1:
                 print("Interpolation event found!")
                 print('From frame: ', subtitle[thisI].text)
                 print('at time: ', subtitle[thisI].start)
@@ -85,22 +97,29 @@ class DmxInterpolator():
         # print("Target time minus current time: ", self.target_time - ct)
         
         frame_diff = self.target_frame[0] - self.start_frame[0]
-        period = self.target_time - self.start_time
+
+        print("period: ", self.duration)
+        
         # print("Frame diff: ", frame_diff)
         # print("interpolation period: ", period)
 
         # print("ct/tt * frame diff + start: ", ((ct/self.target_time)*frame_diff) + self.start_frame[0])
         normalized_ct = ct - self.start_time
 
-        val = int(((normalized_ct/period)*frame_diff) + self.start_frame[0])
+        val = int(((normalized_ct/self.duration)*frame_diff) + self.start_frame[0])
+
+        # for channel in self.start_frame:
+        #     interpolated_frame[]
 
         print("return (1) interpolated value! :: ", val, " sf: ", self.start_frame[0], " ef: ", self.target_frame[0])
 
-        if (ct >= self.target_time - self.twiddle) or (val == self.target_frame[0]):
+        if (ct >= self.target_time - self.twiddle):
             self.running = False
             self.clear()
             print("Target reached!")
             return self.target_frame      
         else:
-            return [val, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            print("len target frame: ", len(self.target_frame))
+            print("returning: ", full(len(self.target_frame), val))
+            return full(len(self.target_frame), val)
         
