@@ -393,7 +393,9 @@ class LushRoomsLighting():
                 if DEBUG:
                     print('last_played: ', i)
 
-            if self.dmx_interpolator.isRunning():
+            pod_mode = MENU_DMX_VAL != None
+
+            if self.dmx_interpolator.isRunning() and pod_mode is False:
                 if PLAY_DMX:
                         if self.dmx != None:
                             iFrame = self.dmx_interpolator.getInterpolatedFrame(pt)
