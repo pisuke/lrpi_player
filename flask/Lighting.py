@@ -18,8 +18,8 @@ from DmxInterpolator import DmxInterpolator
 
 # dev
 
-DEBUG = True
-VERBOSE = True
+DEBUG = False
+VERBOSE = False
 LIGHTING_MSGS = True
 
 
@@ -32,10 +32,11 @@ PORT = 4223
 # lighting
 
 MAX_BRIGHTNESS = 200
+DMX_FRAME_DURATION=25
 SRT_FILENAME = "Surround_Test_Audio.srt"
 HUE_IP_ADDRESS = ""
 # HUE2_IP_ADDRESS = ""
-TICK_TIME = 0.1 # seconds
+TICK_TIME = 0.05 # seconds
 PLAY_HUE = True
 PLAY_DMX = True
 # SLEEP_TIME = 0.1 # seconds
@@ -129,6 +130,7 @@ class LushRoomsLighting():
                                 print("Registering %s as slave DMX device for playing DMX frames" % tf[0])
                                 self.dmx = BrickletDMX(tf[0], self.ipcon)
                                 self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
+                                self.dmx.set_frame_duration(DMX_FRAME_DURATION)
                                 # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512,)*255)
                                 # dmx.write_frame([255,255])
                                 sleep(1)
@@ -405,7 +407,7 @@ class LushRoomsLighting():
         # except:
         #    pass
 
-    def find_subtitle(self, subtitle, from_t, to_t, lo=0):
+    def find_subtitle(self, subtitle, from_t, to_t, lo=0, backwards=False):
         i = lo
 
         if DEBUG and VERBOSE:
@@ -592,11 +594,26 @@ class LushRoomsLighting():
         self.cleaningScene()
         self.__del__()
 
+    def triggerPreviousEvent(self):
+        print("Finding last lighting command...")
+
+        pp = self.player.getPosition()
+        pt = SubRipTime(seconds=pp)
+        ptd = SubRipTime(seconds=(pp-1*TICK_TIME))
+
+        sub, i = self.find_subtitle(self.subs, pt, ptd, backwards=True)
+
+
+
+        pass
+
     def seek(self):
         # This doesn't seem to work fully...
-        # But may be solved by LUSHDigital/lrpi_player#114
-        self.last_played = 0
-        # pass
+        # But may be solved by LUSHDigital/lrpi_player#116
+        # Get the last DMX and HUE events after a seek
+        # Then trigger that...
+
+        self.triggerPreviousEvent()
 
     def __del__(self):
         try:
