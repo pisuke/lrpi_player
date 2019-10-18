@@ -141,7 +141,7 @@ class OmxPlayer():
     def seek(self, position, syncTimestamp=None):
         if self.player.can_seek():
             self.player.set_position(self.player.duration()*(position/100.0))
-        return self.player.position()
+        return self.player.duration()*(position/100.0)
 
     def status(self, status):
         if self.player != None:
