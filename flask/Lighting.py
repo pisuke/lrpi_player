@@ -376,7 +376,7 @@ class LushRoomsLighting():
                 pass
             ## sub, i = self.find_subtitle(subs, ts, tsd)
             # sub, i = self.find_subtitle(self.subs, pt, ptd)
-            sub, i = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
+            sub, i, event_type = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
 
             if DEBUG:
                 pass
@@ -431,7 +431,9 @@ class LushRoomsLighting():
                 previous_event = subtitle[previous_i].text
 
                 if SEEK_EVENT_LOG:
-                    print("In subs, at:", previous_i, " found: ", subtitle[previous_i].text)
+                    print("In subs, at:", previous_i, " found: ", previous_event)
+
+                print('in search, omitting: ', omit)
 
                 if previous_event.find("DMX") > -1 and omit != "DMX":
                     print("DMX event found!")
@@ -445,10 +447,10 @@ class LushRoomsLighting():
                 # print(subtitle[i].start, from_t, to_t)
                 if not self.dmx_interpolator.isRunning():
                     self.dmx_interpolator.findNextEvent(i, subtitle)
-                return subtitle[i].text, i
+                return subtitle[i].text, i, None
             i += 1
 
-        return "", i
+        return "", i, "ALL"
 
     def triggerPreviousEvent(self, pos):
         print("Finding last lighting command from pos: ", pos)
@@ -468,32 +470,40 @@ class LushRoomsLighting():
         search_backwards = True
         omit_type = ""
         tries = 0
+        inject_lo = 0
 
-        while events['DMX'] == False and events['HUE'] == False:
+        while events['DMX'] == False & events['HUE'] == False:
             print("Try: ", tries, "at finding last events")
-            sub, i, event_type = self.find_subtitle(self.subs, pt, ptd, backwards=search_backwards, omit=omit_type)
+            sub, i, event_type = self.find_subtitle(self.subs, pt, ptd, lo=inject_lo, backwards=search_backwards, omit=omit_type)
+            print('event_type found: ', event_type)
             if event_type == "DMX" or event_type == "HUE":
                 events[event_type] = True
                 omit_type = event_type
+                inject_lo = i+2
 
             print('omit type: ', omit_type)
-            print('events log:')
-            print(events) 
 
-            if VERBOSE and DEBUG:
-                print("Seeking, found sub:", sub, " at pos: ", i)
+            if omit_type == "ALL":
+                events['DMX'] = True
+                events['HUE'] = True
+            else:
 
-            if sub!="": #and i > self.last_played:
-                if LIGHTING_MSGS and DEBUG:
-                    print(i, "Found last lighting event!:", sub)
-                # print("Trigger light event %s" % i)
-                self.trigger_light(sub)
-                self.last_played = i
-                if DEBUG:
-                    print('last_played: ', i)
-            print('events log:')
-            print(events) 
-            tries += 1
+                # if VERBOSE and DEBUG:
+                
+                print("Seeking, found sub:", sub, " at pos: ", inject_lo)
+
+                if sub!="": #and i > self.last_played:
+                    if LIGHTING_MSGS and DEBUG:
+                        print(i, "Found last lighting event!:", sub)
+                    # print("Trigger light event %s" % i)
+                    self.trigger_light(sub)
+                    self.last_played = i
+                    if DEBUG:
+                        print('last_played: ', i)
+                print('events log:')
+                print(events) 
+                print("dmx: ",  events['DMX'], " hue: ", events['HUE'])
+                tries += 1
 
     def end_callback(self, event):
         if LIGHTING_MSGS:

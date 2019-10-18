@@ -87,6 +87,8 @@ class DmxInterpolator():
                     print('at time: ', subtitle[thisI].start)
                     print('TO frame: ', subtitle[nextI].text)
                     print('until time: ', subtitle[nextI].start)
+
+                print("int...")
                 
                 self.start(
                     subtitle[thisI].text,
