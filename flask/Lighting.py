@@ -20,8 +20,8 @@ from DmxInterpolator import DmxInterpolator
 
 DEBUG = False
 VERBOSE = False
-SEEK_EVENT_LOG = True
-LIGHTING_MSGS = False
+SEEK_EVENT_LOG = False
+LIGHTING_MSGS = True
 
 
 # dmx
@@ -517,15 +517,7 @@ class LushRoomsLighting():
                         #lights[l].hue = hue
 
                         for hl in self.hue_list[l]:
-                            if DEBUG:
-                                pass
-                            print(hl)
-                            print("hue cmd now: ", cmd)
-                            print("hue brightness now: ", bri)
                             self.bridge.set_light(hl, cmd)
-                            if bri == 0:
-                                print("setting: ", hl, " to: on, False")
-                                self.bridge.set_light(hl, 'on', False)
 
                 if scope[0:3] == "DMX":
                     l = int(scope[3:])
@@ -631,7 +623,7 @@ class LushRoomsLighting():
 
         sub, i = self.find_subtitle(self.subs, pt, ptd, backwards=True)
 
-        if VERBOSE and DEBUG:
+        if LIGHTING_MSGS:
             print("Seeking, found sub:", sub, " at pos: ", i)
 
         if sub!="": #and i > self.last_played:
