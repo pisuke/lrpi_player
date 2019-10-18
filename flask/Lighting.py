@@ -426,10 +426,10 @@ class LushRoomsLighting():
                 break
 
             if backwards and (subtitle[i].start >= from_t):
-                last_i = max(0, i-1)
+                previous_i = max(0, i-1)
                 if SEEK_EVENT_LOG:
-                    print("In subs, at:", last_i, " found: ", subtitle[last_i].text)
-                return subtitle[last_i].text, last_i
+                    print("In subs, at:", previous_i, " found: ", subtitle[previous_i].text)
+                return subtitle[previous_i].text, previous_i
 
             # if (from_t >= subtitle[i].start) & (fro   m_t  <= subtitle[i].end):
             if (subtitle[i].start >= from_t) & (to_t  >= subtitle[i].start):
@@ -561,8 +561,8 @@ class LushRoomsLighting():
                 print("Lighting: Start!")
                 print('AudioPlayer: ', self.player)
                 print("Number of lighting events",len(self.subs))
-                # Trigger the first lighting event before the scheduler event starts
-                self.triggerPreviousEvent(0)
+            # Trigger the first lighting event before the scheduler event starts
+            self.triggerPreviousEvent(0)
             # start lighting scheduler
             self.last_played = 0
             #if self.scheduler !
