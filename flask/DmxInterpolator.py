@@ -1,7 +1,7 @@
 from pysrt import SubRipFile, SubRipItem, SubRipTime # pylint: disable=import-error
-from numpy import array, ones, zeros, full # pylint: disable=import-error
+from numpy import array, ones, zeros, full, array_equal # pylint: disable=import-error
 
-VERBOSE=True
+VERBOSE=False
 
 class DmxInterpolator():
     def __init__(self):
@@ -38,10 +38,15 @@ class DmxInterpolator():
         self.start_time = self.srt_to_seconds(start_time)
         self.target_time = self.srt_to_seconds(target_time)
         self.duration = self.target_time - self.start_time
+       
+
+        
 
         if self.duration > self.min_interpolation_window:
             self.start_frame = self.srt_to_array(start_frame)
             self.target_frame = self.srt_to_array(target_frame)
+            frames_are_equal = array_equal(self.start_frame, self.target_frame)
+
             self.start_time = self.srt_to_seconds(start_time)
             self.target_time = self.srt_to_seconds(target_time)
             self.num_channels = len(self.start_frame)
@@ -101,7 +106,8 @@ class DmxInterpolator():
         # max() is used here to account for what could
         # be rounding errors
         normalized_ct = max(0, ct - self.start_time)
-        print('normalized ct: ', normalized_ct)
+        if VERBOSE:
+            print('normalized ct: ', normalized_ct)
 
         # frame_diff = self.target_frame[0] - self.start_frame[0]
         # val = int(((normalized_ct/self.duration)*frame_diff) + self.start_frame[0])
