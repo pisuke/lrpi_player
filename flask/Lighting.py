@@ -18,9 +18,10 @@ from DmxInterpolator import DmxInterpolator
 
 # dev
 
-DEBUG = True
-VERBOSE = True
-LIGHTING_MSGS = True
+DEBUG = False
+VERBOSE = False
+SEEK_EVENT_LOG = True
+LIGHTING_MSGS = False
 
 
 # dmx
@@ -410,7 +411,7 @@ class LushRoomsLighting():
     def find_subtitle(self, subtitle, from_t, to_t, lo=0, backwards=False):
         i = lo
 
-        if backwards:
+        if backwards and SEEK_EVENT_LOG:
             print("searching backwards!")
 
         if DEBUG and VERBOSE:
@@ -426,12 +427,15 @@ class LushRoomsLighting():
 
             if backwards and (subtitle[i].start >= from_t):
                 last_i = max(0, i-1)
-                print("In subs, at:", last_i, " found: ", subtitle[last_i].text)
+                if SEEK_EVENT_LOG:
+                    print("In subs, at:", last_i, " found: ", subtitle[last_i].text)
                 return subtitle[last_i].text, last_i
 
             # if (from_t >= subtitle[i].start) & (fro   m_t  <= subtitle[i].end):
             if (subtitle[i].start >= from_t) & (to_t  >= subtitle[i].start):
                 # print(subtitle[i].start, from_t, to_t)
+                if not self.dmx_interpolator.isRunning():
+                    self.dmx_interpolator.findNextEvent(i, subtitle)
                 return subtitle[i].text, i
             i += 1
 
@@ -497,7 +501,7 @@ class LushRoomsLighting():
                     bri = int((float(bri)/255.0)*int(MAX_BRIGHTNESS))
                     # print(bri)
                     cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
-                    if DEBUG:
+                    if LIGHTING_MSGS:
                         print("Trigger HUE",l,cmd)
                     if PLAY_HUE:
                         #lights = bridge.lights
@@ -525,7 +529,7 @@ class LushRoomsLighting():
                         channels = array(items.split(",")).astype(int)
                         # channels = array(map(lambda i: int(MAX_BRIGHTNESS)*i, channels))
 
-                    if DEBUG:
+                    if LIGHTING_MSGS:
                         print("Trigger DMX:", l, channels)
 
                     if PLAY_DMX:
@@ -632,7 +636,7 @@ class LushRoomsLighting():
         # But may be solved by LUSHDigital/lrpi_player#116
         # Get the last DMX and HUE events after a seek
         # Then trigger that...
-
+        self.dmx_interpolator.__init__()
         self.triggerPreviousEvent(pos)
 
     def __del__(self):
