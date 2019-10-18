@@ -513,10 +513,15 @@ class LushRoomsLighting():
                         #lights[l].brightness = bri
                         #lights[l].saturation = sat
                         #lights[l].hue = hue
+
                         for hl in self.hue_list[l]:
                             if DEBUG:
                                 print(hl)
                             self.bridge.set_light(hl, cmd)
+                            if bri == 0 :
+                                light = self.bridge.get_light(hl)
+                                light.on = False
+
                 if scope[0:3] == "DMX":
                     l = int(scope[3:])
                     print("l: ", l)
@@ -556,6 +561,8 @@ class LushRoomsLighting():
                 print("Lighting: Start!")
                 print('AudioPlayer: ', self.player)
                 print("Number of lighting events",len(self.subs))
+                # Trigger the first lighting event before the scheduler event starts
+                self.triggerPreviousEvent(0)
             # start lighting scheduler
             self.last_played = 0
             #if self.scheduler !
