@@ -179,13 +179,14 @@ class LushRoomsPlayer():
         if not self.isSlave():
             return self.start(path, subs, subsPath)
         else:
-            return 0
+            return 0 
 
 
     def seek(self, position):
         if self.started:
-            self.lighting.seek()
-            return self.player.seek(position)
+            newPos = self.player.seek(position)
+            self.lighting.seek(newPos)
+            return newPos
 
     def getStatus(self):
         self.status["slave_url"] = self.slaveUrl

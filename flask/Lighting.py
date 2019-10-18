@@ -18,8 +18,8 @@ from DmxInterpolator import DmxInterpolator
 
 # dev
 
-DEBUG = False
-VERBOSE = False
+DEBUG = True
+VERBOSE = True
 LIGHTING_MSGS = True
 
 
@@ -410,21 +410,28 @@ class LushRoomsLighting():
     def find_subtitle(self, subtitle, from_t, to_t, lo=0, backwards=False):
         i = lo
 
+        if backwards:
+            print("searching backwards!")
+
         if DEBUG and VERBOSE:
-            print("Starting from subtitle", lo, from_t, to_t, len(subtitle))
+            pass
+            # print("Starting from subtitle", lo, from_t, to_t, len(subtitle))
 
         # Find where we are
+        subLen = len(subtitle)
 
-        while (i < len(subtitle)):
-            # print(subtitle[i])
-            if (subtitle[i].start >= to_t):
+        while (i < subLen):
+            if (subtitle[i].start >= to_t and not backwards):
                 break
+
+            if backwards and (subtitle[i].start >= from_t):
+                last_i = max(0, i-1)
+                print("In subs, at:", last_i, " found: ", subtitle[last_i].text)
+                return subtitle[last_i].text, last_i
 
             # if (from_t >= subtitle[i].start) & (fro   m_t  <= subtitle[i].end):
             if (subtitle[i].start >= from_t) & (to_t  >= subtitle[i].start):
                 # print(subtitle[i].start, from_t, to_t)
-                if not self.dmx_interpolator.isRunning():
-                    self.dmx_interpolator.findNextEvent(i, subtitle)
                 return subtitle[i].text, i
             i += 1
 
@@ -594,26 +601,39 @@ class LushRoomsLighting():
         self.cleaningScene()
         self.__del__()
 
-    def triggerPreviousEvent(self):
-        print("Finding last lighting command...")
+    def triggerPreviousEvent(self, pos):
+        print("Finding last lighting command from pos: ", pos)
 
-        pp = self.player.getPosition()
+        pp = pos
         pt = SubRipTime(seconds=pp)
-        ptd = SubRipTime(seconds=(pp-1*TICK_TIME))
+        ptd = SubRipTime(seconds=(pp+1*TICK_TIME))
+
+        if VERBOSE and DEBUG:
+            print("Finding last light event, starting from: ")
+            print("pt: ", ptd)
+            print("ptd: ", ptd)
 
         sub, i = self.find_subtitle(self.subs, pt, ptd, backwards=True)
 
+        if VERBOSE and DEBUG:
+            print("Seeking, found sub:", sub, " at pos: ", i)
 
+        if sub!="": #and i > self.last_played:
+            if LIGHTING_MSGS and DEBUG:
+                print(i, "Found last lighting event!:", sub)
+            # print("Trigger light event %s" % i)
+            self.trigger_light(sub)
+            self.last_played = i
+            if DEBUG:
+                print('last_played: ', i)
 
-        pass
-
-    def seek(self):
+    def seek(self, pos):
         # This doesn't seem to work fully...
         # But may be solved by LUSHDigital/lrpi_player#116
         # Get the last DMX and HUE events after a seek
         # Then trigger that...
 
-        self.triggerPreviousEvent()
+        self.triggerPreviousEvent(pos)
 
     def __del__(self):
         try:
