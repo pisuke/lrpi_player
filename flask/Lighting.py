@@ -521,8 +521,7 @@ class LushRoomsLighting():
 
                 if scope[0:3] == "DMX":
                     l = int(scope[3:])
-                    print("l: ", l)
-
+                
                     if items == "":
                         print("Empty DMX event found! Turning all DMX channels off...")
                         channels = self.emptyDMXFrame()
