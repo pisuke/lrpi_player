@@ -19,7 +19,7 @@ from DmxInterpolator import DmxInterpolator
 # dev
 
 DEBUG = True
-VERBOSE = False
+VERBOSE = True
 LIGHTING_MSGS = True
 
 
@@ -438,8 +438,8 @@ class LushRoomsLighting():
             print("hue lookup lights: ", lights)
     
         hue_l = [[]]
-        i = 1
-        for j in range(len(lights)+1):
+        i = 0
+        for j in range(1+len(lights)+1):
             for l in lights:
                 #print(dir(l))
                 #lname = "lamp   "+l.name+"   "
@@ -455,6 +455,8 @@ class LushRoomsLighting():
                     else:
                         hue_l[j].append(l.light_id)
             i += 1
+        if DEBUG:
+            print("hue_l: ", hue_l)
         return(hue_l)
 
     def trigger_light(self, subs):
@@ -479,11 +481,8 @@ class LushRoomsLighting():
                 if scope[0:3] == "HUE" and PLAY_HUE:
                     l = int(scope[3:])
                     #print(l)
-                    try:
-                        if VERBOSE:
-                            print(self.hue_list[l])
-                    except:
-                        continue
+                    if VERBOSE:
+                        print(self.hue_list[l])
                     hue, sat, bri, TRANSITION_TIME = items.split(',')
                     # print(perf_counter(), l, items, hue, sat, bri, TRANSITION_TIME)
                     bri = int((float(bri)/255.0)*int(MAX_BRIGHTNESS))
