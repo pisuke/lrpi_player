@@ -27,6 +27,8 @@
 # Don't make me think
 # Mantra 10:
 # Leave the host as you found it
+# Mantra 11:
+# Decentralisation is king
 
 #!/usr/bin/env python3
 
