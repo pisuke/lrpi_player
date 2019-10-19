@@ -25,6 +25,8 @@
 # Let me know where I am via environment variables
 # Mantra 9:
 # Don't make me think
+# Mantra 10:
+# Leave the host as you found it
 
 #!/usr/bin/env python3
 
