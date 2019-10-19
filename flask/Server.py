@@ -6,6 +6,26 @@
 #
 #
 
+# REARCHITECTURE NOTES:
+# Mantra 1:
+# No globals
+# Mantra 2:
+# separate concerns
+# Mantra 3
+# Encourage hacking
+# Mantra 4:
+# Concepts should be generic
+# Mantra 5:
+# Events, drivers and triggers are first class citizens
+# Mantra 6:
+# The event stream should be self healing
+# Mantra 7:
+# You should be able to simulate the event stream
+# Mantra 8:
+# Let me know where I am via environment variables
+# Mantra 9:
+# Don't make me think
+
 #!/usr/bin/env python3
 
 from os.path import splitext
@@ -146,8 +166,6 @@ class GetTrackList(Resource):
     def get(self):
 
         print(GetTrackList)
-
-
 
         global NEW_TRACK_ARRAY
         global NEW_SRT_ARRAY
