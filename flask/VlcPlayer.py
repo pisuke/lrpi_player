@@ -49,6 +49,8 @@ class VlcPlayer():
     def volumeUp(self):
         self.player.audio_set_volume(self.player.audio_get_volume() + 10)
 
+    # Volume, too, should be interpolated
+
     def volumeDown(self, interval):
         print("vlc downer: ", self.player.audio_get_volume())
         if (self.player.audio_get_volume() <= 10 or interval == 0):

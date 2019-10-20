@@ -36,6 +36,9 @@ class OmxPlayer():
         print('seek event! ' + str(b))
         return
 
+    # Triggering a start should give a response
+    # Failure here, as in other places, is silent
+
     def triggerStart(self, pathToTrack):
         # lrpi_player#105
         # Audio output can be routed through hdmi or the jack,
@@ -56,6 +59,8 @@ class OmxPlayer():
 
         print('OUTPUT: ' + normalised_output_route)
         print('Full playing args: ' + str(omxArgs))
+
+        # dbus name should be an environment variable, pending omxplayer updates
 
         self.player = OMXPlayer(pathToTrack, args=omxArgs, dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
         # Might need to set the volume to 0 a different way,
@@ -102,6 +107,9 @@ class OmxPlayer():
         self.player.play()
         return str(self.player.duration())
 
+    # FOR PETE'S SAKE USE NAMED CONSTANTS
+    # DEFINE THEM ELSEWHERE
+    
     # action 16 is emulated keypress for playPause
     def playPause(self, syncTimestamp=None):
         print("Playpausing...")
@@ -120,9 +128,13 @@ class OmxPlayer():
         print(self.player.volume())
         self.player.mute()
 
+    # Volume, too, should be interpolated
+
     def volumeUp(self):
         print("upper: ", self.player.volume())
         self.player.set_volume(self.player.volume() + 0.1)
+
+    # Volume, too, should be interpolated
 
     def volumeDown(self, interval):
         # If we're right at the end of the track, don't try to

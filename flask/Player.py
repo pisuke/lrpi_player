@@ -29,6 +29,10 @@ else:
     from VlcPlayer import VlcPlayer
 
 class LushRoomsPlayer():
+
+    # Architecture should, among other things, define the _DRIVERS_ used
+    # If the driver does not support a function, it should say so!
+
     def __init__(self, playlist, basePath):
         if uname().machine == 'armv7l':
             # we're likely on a 'Pi
@@ -193,6 +197,7 @@ class LushRoomsPlayer():
         return self.player.status(self.status)
 
     # Pair methods called by the master
+    # Replies should be sent to the control interface, whatever that might be
 
     def pairAsMaster(self, hostname):
         response = os.system("ping -c 1 " + hostname)
@@ -233,6 +238,8 @@ class LushRoomsPlayer():
 
     def setPairedAsSlave(self, val, masterIp):
         self.player.setPaired(val, masterIp)
+
+    # Do we fail silently here? YES
 
     def free(self):
         if self.player.paired:

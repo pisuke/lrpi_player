@@ -16,7 +16,7 @@
 # Mantra 4:
 # Concepts should be generic
 # Mantra 5:
-# Events, drivers and triggers are first class citizens
+# Events, drivers and triggers are first class citizens. Events, driver and triggers have responses
 # Mantra 6:
 # The event stream should be self healing
 # Mantra 7:
@@ -29,6 +29,10 @@
 # Leave the host as you found it
 # Mantra 11:
 # Decentralisation is king
+# Mantra 12:
+# The only code that should exist is the code that runs, no meaningless debug comments
+# Mantra 13:
+# Logging level should be set via the command line arg that runs the Server, à la DAQ
 
 #!/usr/bin/env python3
 
@@ -151,6 +155,9 @@ def timing(f):
 
 # serve the angular app
 
+# The API should be documented via swagger/openAPI
+# There should be an endpoint for this
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
@@ -197,6 +204,8 @@ class GetTrackList(Resource):
 
         print("track list id: " +  str(args['id']))
 
+        # Building a path on the fly is dumb, build the filetree
+        # as soon at the server starts and serve _that_ to the control interface
 
         if args['id']:
             if NEW_TRACK_ARRAY:
@@ -210,6 +219,8 @@ class GetTrackList(Resource):
         TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
         # print(TRACK_ARRAY_WITH_CONTENTS)
         NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
+
+        # Allowed formats should be parametric - they should be defined elsewhere
 
         if mpegOnly:
             NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
@@ -263,6 +274,13 @@ class PlayPause(Resource):
         duration = player.playPause()
         return jsonify(duration)
 
+# Errors should be defined by a well known code,
+# do not break the structure of the API by returning
+# a random integer
+
+# FadeDown is a _trigger_
+# It should start things and monitor them
+
 class FadeDown(Resource):
     def get(self):
         global player
@@ -297,6 +315,8 @@ class FadeDown(Resource):
 
         return jsonify(response)
 
+# Seek is also a trigger
+
 class Seek(Resource):
     def get(self):
         global player
@@ -311,6 +331,8 @@ class Seek(Resource):
 
         return jsonify(response)
 
+# Getting status is also a trigger
+
 class PlayerStatus(Resource):
     def get(self):
         global player
@@ -321,6 +343,8 @@ class PlayerStatus(Resource):
             response = 1
 
         return jsonify(response)
+
+# Pair is probably a _pair_ of triggers
 
 class Pair(Resource):
     def get(self):
@@ -407,6 +431,8 @@ class Command(Resource):
 
         return jsonify(res)
 
+# Stop, once again, is a _trigger_
+
 class Stop(Resource):
     def get(self):
         global player
@@ -423,6 +449,8 @@ class Stop(Resource):
 
 
 # URLs are defined here
+
+# These should probably be defined in a separate file/module
 
 api.add_resource(GetTrackList, '/get-track-list')
 api.add_resource(PlaySingleTrack, '/play-single-track')
