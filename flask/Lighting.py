@@ -609,7 +609,8 @@ class LushRoomsLighting():
         self.__del__()
 
     def triggerPreviousEvent(self, pos):
-        print("Finding last lighting command from pos: ", pos)
+        if LIGHTING_MSGS:
+            print("Finding last lighting command from pos: ", pos)
 
         pp = pos
         pt = SubRipTime(seconds=pp)
