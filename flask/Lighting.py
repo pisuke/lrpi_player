@@ -334,7 +334,7 @@ class LushRoomsLighting():
 
     ############################### LOW LEVEL LIGHT METHODS
 
-    def getIdentifier(self, ID):
+    def getIdentifier(self, ID): 
         deviceType = ""
         for t in range(len(self.deviceIDs)):
             if ID[1]==deviceIdentifiersList[t][0]:

@@ -1,5 +1,5 @@
 from pysrt import SubRipFile, SubRipItem, SubRipTime # pylint: disable=import-error
-from numpy import array, ones, zeros, full # pylint: disable=import-error
+from numpy import array, ones, zeros, full, array_equal # pylint: disable=import-error
 
 VERBOSE=True
 
@@ -13,7 +13,7 @@ class DmxInterpolator():
         self.running = False
         self.num_channels = None
         self.twiddle = 0.4
-        self.min_interpolation_window = 0.05
+        self.min_interpolation_window = 0.2
 
     def srt_to_seconds(self, t):
         block, milliseconds = str(t).split(",")
@@ -24,6 +24,7 @@ class DmxInterpolator():
 
     def srt_to_array(self, f):
         # print("converting frame: ", f)
+        print("result of split: ", f[0:len(f)-1].split("("))
         scope,items = f[0:len(f)-1].split("(")
         return array(items.split(",")).astype(int)   
 
@@ -94,6 +95,13 @@ class DmxInterpolator():
     # NB: this is linear interpolation only!       
 
     def getInterpolatedFrame(self, current_time):
+
+        if array_equal(self.start_frame, self.target_frame):
+            if VERBOSE:
+                print('no interpolation needed! Frames are the same!')
+            self.running = False
+            return self.target_frame
+
         # Calculate the interpolated DMX frame
         # ct is 'current time'
         ct = self.srt_to_seconds(current_time)
