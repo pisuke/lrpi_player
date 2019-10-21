@@ -1,7 +1,7 @@
 from pysrt import SubRipFile, SubRipItem, SubRipTime # pylint: disable=import-error
 from numpy import array, ones, zeros, full # pylint: disable=import-error
 
-VERBOSE=False
+VERBOSE=True
 
 class DmxInterpolator():
     def __init__(self):
