@@ -1,5 +1,6 @@
 from pysrt import SubRipFile, SubRipItem, SubRipTime # pylint: disable=import-error
-from numpy import array, ones, zeros, full # pylint: disable=import-error
+from numpy import array, ones, zeros, full, array_equal # pylint: disable=import-error
+import re
 
 VERBOSE=False
 
@@ -12,18 +13,17 @@ class DmxInterpolator():
         self.duration = None
         self.running = False
         self.num_channels = None
-        self.twiddle = 0.4
-        self.min_interpolation_window = 0.05
+        self.twiddle = 0.2
+        self.min_interpolation_window = 0.2
+        self.dmx_re = "DMX[0-9]{1}\(([0-9],?\s*)+\)"
 
     def srt_to_seconds(self, t):
         block, milliseconds = str(t).split(",")
         hours, minutes, seconds = block.split(":")
         u_ts = (int(seconds) + int(minutes)*60 + int(hours)*60*60 + int(milliseconds)/1000.0)
-        # print("converted to seconds: ", u_ts)
         return u_ts
 
     def srt_to_array(self, f):
-        # print("converting frame: ", f)
         scope,items = f[0:len(f)-1].split("(")
         return array(items.split(",")).astype(int)   
 
@@ -74,8 +74,13 @@ class DmxInterpolator():
         nextI = thisI + 1
         lenSubs = len(subtitle)
 
+
         while nextI < lenSubs and not self.running:
-            if subtitle[nextI].text.find("DMX", 0, 5) > -1 and subtitle[thisI].text.find("DMX", 0, 5) > -1:
+
+            thisCommand = re.search(self.dmx_re, subtitle[thisI].text)
+            nextCommand = re.search(self.dmx_re, subtitle[nextI].text)
+
+            if thisCommand and nextCommand:
                 if VERBOSE:
                     print("Interpolation event found!")
                     print('From frame: ', subtitle[thisI].text)
@@ -84,9 +89,9 @@ class DmxInterpolator():
                     print('until time: ', subtitle[nextI].start)
                 
                 self.start(
-                    subtitle[thisI].text,
+                    thisCommand.group(0),
                     subtitle[thisI].start,
-                    subtitle[nextI].text,
+                    nextCommand.group(0),
                     subtitle[nextI].start
                 )
             nextI += 1
@@ -94,6 +99,13 @@ class DmxInterpolator():
     # NB: this is linear interpolation only!       
 
     def getInterpolatedFrame(self, current_time):
+
+        if array_equal(self.start_frame, self.target_frame):
+            if VERBOSE:
+                print('no interpolation needed! Frames are the same!')
+            self.running = False
+            return self.target_frame
+
         # Calculate the interpolated DMX frame
         # ct is 'current time'
         ct = self.srt_to_seconds(current_time)
@@ -104,7 +116,7 @@ class DmxInterpolator():
         if VERBOSE:
             print('normalized ct: ', normalized_ct)
         else:
-            print('i')
+            print('i', end =' ')
 
         # frame_diff = self.target_frame[0] - self.start_frame[0]
         # val = int(((normalized_ct/self.duration)*frame_diff) + self.start_frame[0])

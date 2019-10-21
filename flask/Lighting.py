@@ -334,7 +334,7 @@ class LushRoomsLighting():
 
     ############################### LOW LEVEL LIGHT METHODS
 
-    def getIdentifier(self, ID):
+    def getIdentifier(self, ID): 
         deviceType = ""
         for t in range(len(self.deviceIDs)):
             if ID[1]==deviceIdentifiersList[t][0]:
@@ -609,7 +609,8 @@ class LushRoomsLighting():
         self.__del__()
 
     def triggerPreviousEvent(self, pos):
-        print("Finding last lighting command from pos: ", pos)
+        if LIGHTING_MSGS:
+            print("Finding last lighting command from pos: ", pos)
 
         pp = pos
         pt = SubRipTime(seconds=pp)
