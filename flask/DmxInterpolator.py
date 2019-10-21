@@ -1,5 +1,6 @@
 from pysrt import SubRipFile, SubRipItem, SubRipTime # pylint: disable=import-error
 from numpy import array, ones, zeros, full, array_equal # pylint: disable=import-error
+import re
 
 VERBOSE=True
 
@@ -14,17 +15,15 @@ class DmxInterpolator():
         self.num_channels = None
         self.twiddle = 0.4
         self.min_interpolation_window = 0.2
+        self.dmx_re = "DMX[0-9]{1}\(([0-9]\,?)+\)"
 
     def srt_to_seconds(self, t):
         block, milliseconds = str(t).split(",")
         hours, minutes, seconds = block.split(":")
         u_ts = (int(seconds) + int(minutes)*60 + int(hours)*60*60 + int(milliseconds)/1000.0)
-        # print("converted to seconds: ", u_ts)
         return u_ts
 
     def srt_to_array(self, f):
-        # print("converting frame: ", f)
-        print("result of split: ", f[0:len(f)-1].split("("))
         scope,items = f[0:len(f)-1].split("(")
         return array(items.split(",")).astype(int)   
 
@@ -74,23 +73,27 @@ class DmxInterpolator():
 
         nextI = thisI + 1
         lenSubs = len(subtitle)
+        thisCommand = re.search(self.dmx_re, subtitle[thisI].text)
+        nextCommand = re.search(self.dmx_re, subtitle[nextI].text)
 
-        while nextI < lenSubs and not self.running:
-            if subtitle[nextI].text.find("DMX", 0, 5) > -1 and subtitle[thisI].text.find("DMX", 0, 5) > -1:
-                if VERBOSE:
-                    print("Interpolation event found!")
-                    print('From frame: ', subtitle[thisI].text)
-                    print('at time: ', subtitle[thisI].start)
-                    print('TO frame: ', subtitle[nextI].text)
-                    print('until time: ', subtitle[nextI].start)
-                
-                self.start(
-                    subtitle[thisI].text,
-                    subtitle[thisI].start,
-                    subtitle[nextI].text,
-                    subtitle[nextI].start
-                )
-            nextI += 1
+        if thisCommand is not None and nextCommand is not None:
+
+            while nextI < lenSubs and not self.running:
+                if (subtitle[nextI].text.find("DMX", 0, 5) > -1 and subtitle[thisI].text.find("DMX", 0, 5) > -1):
+                    if VERBOSE:
+                        print("Interpolation event found!")
+                        print('From frame: ', subtitle[thisI].text)
+                        print('at time: ', subtitle[thisI].start)
+                        print('TO frame: ', subtitle[nextI].text)
+                        print('until time: ', subtitle[nextI].start)
+                    
+                    self.start(
+                        thisCommand.group(0),
+                        subtitle[thisI].start,
+                        nextCommand.group(0),
+                        subtitle[nextI].start
+                    )
+                nextI += 1
 
     # NB: this is linear interpolation only!       
 
