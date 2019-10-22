@@ -73,7 +73,7 @@ class LushRoomsPlayer():
         print("isSlave",self.player.paired,self.status["master_ip"],self.player.paired and (self.status["master_ip"] is None))
         return self.player.paired and (self.status["master_ip"] is not None)
 
-    # Returns the current position in secoends
+    # Returns the current position in seconds
     def start(self, path, subs, subsPath, syncTime=None):
         self.player.status(self.status)
         self.status["source"] = path
@@ -179,13 +179,14 @@ class LushRoomsPlayer():
         if not self.isSlave():
             return self.start(path, subs, subsPath)
         else:
-            return 0
+            return 0 
 
 
     def seek(self, position):
         if self.started:
-            self.lighting.seek()
-            return self.player.seek(position)
+            newPos = self.player.seek(position)
+            self.lighting.seek(newPos)
+            return newPos
 
     def getStatus(self):
         self.status["slave_url"] = self.slaveUrl
