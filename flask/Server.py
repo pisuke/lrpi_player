@@ -21,6 +21,7 @@ from flask_jsonpify import jsonify
 from flask_restful import reqparse
 import ntplib # pylint: disable=import-error
 from time import ctime
+from time import sleep
 import pause # pylint: disable=import-error
 
 # import sys
@@ -146,8 +147,6 @@ class GetTrackList(Resource):
     def get(self):
 
         print(GetTrackList)
-
-
 
         global NEW_TRACK_ARRAY
         global NEW_SRT_ARRAY
@@ -404,9 +403,12 @@ class ScentRoomTrigger(Resource):
     def post(self):
         global player
         body = request.get_json(force=True)
+        player = LushRoomsPlayer(None, None)
 
         print("SR Trigger received:")
         print(body)
+
+        player.start(body["upload_path"], None, "/media/usb/uploads/01_scentroom.srt")
 
         return jsonify({'response': 200, 'description': 'ok!'})
 

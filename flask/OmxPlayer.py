@@ -44,7 +44,7 @@ class OmxPlayer():
         settings_json = settings.get_settings()
         output_route = settings_json.get("audio_output")
         normalised_output_route = 'hdmi'
-        omxArgs = ['-w']
+        omxArgs = []
 
         if output_route == 'hdmi':
             normalised_output_route = 'hdmi'
