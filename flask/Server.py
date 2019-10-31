@@ -65,6 +65,7 @@ MEDIA_BASE_PATH = BASE_PATH + "tracks/"
 BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
+MENU_DMX_VAL = os.environ.get("MENU_DMX_VAL", None)
 
 TEST_TRACK = MEDIA_BASE_PATH + AUDIO_PATH_TEST_MP4
 NEW_TRACK_ARRAY = []
@@ -403,14 +404,30 @@ class ScentRoomTrigger(Resource):
     def post(self):
         global player
         body = request.get_json(force=True)
-        player = LushRoomsPlayer(None, None)
 
         print("SR Trigger received:")
         print(body)
 
-        player.start(body["upload_path"], None, "/media/usb/uploads/01_scentroom.srt")
+        if body:
+            if body['trigger'] == "start" and body["upload_path"]:
+                player = LushRoomsPlayer(None, None)
+                player.start(body["upload_path"], None, "/media/usb/uploads/01_scentroom.srt")
+                return jsonify({'response': 200, 'description': 'ok!'})
 
-        return jsonify({'response': 200, 'description': 'ok!'})
+            elif body['trigger'] == "stop":
+                # TODO: make this better
+                # Python, your flexibility is charming but also _scary_
+                player.lighting.dmx.write_frame([255, 172, 36, 50])
+                player.stop()
+                
+                return jsonify({'response': 200, 'description': 'ok!'})
+
+            else:
+                return jsonify({'response': 500, 'description': 'not ok!', "error": "Unsupported trigger"})
+
+        else:
+            return jsonify({'response': 500, 'description': 'not ok!', "error": "Incorrect body format"})
+        
 
 
 # URLs are defined here
@@ -436,4 +453,4 @@ api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
 
 if __name__ == '__main__':
     settings_json = settings.get_settings()
-    app.run(debug=settings_json["debug"], port=80, host='0.0.0.0')
+    app.run(debug=settings_json["debug"], port=os.environ.get("PORT", "80"), host='0.0.0.0')
