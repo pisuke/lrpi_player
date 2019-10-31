@@ -360,8 +360,12 @@ class LushRoomsLighting():
             tsd = SubRipTime(seconds = t + (1*TICK_TIME))
             # print(dir(player))
 
-            # try:
-            pp = self.player.getPosition()
+            try:
+                pp = self.player.getPosition()
+            except Exception as e:
+                print("Could not get the current position of the player, shutting down lighting gracefully...")
+                self.__del__()
+
 
             #ptms = player.get_time()/1000.0
             #pt = SubRipTime(seconds=(player.get_time()/1000.0))

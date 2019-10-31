@@ -21,6 +21,7 @@ from flask_jsonpify import jsonify
 from flask_restful import reqparse
 import ntplib # pylint: disable=import-error
 from time import ctime
+from time import sleep
 import pause # pylint: disable=import-error
 
 # import sys
@@ -146,8 +147,6 @@ class GetTrackList(Resource):
     def get(self):
 
         print(GetTrackList)
-
-
 
         global NEW_TRACK_ARRAY
         global NEW_SRT_ARRAY
@@ -323,7 +322,7 @@ class Unpair(Resource):
             unpairRes = player.unpairAsMaster()
         except Exception as e: 
             print('Exception: ', e)
-            pairRes = 1
+            unpairRes = 1
 
         return jsonify(unpairRes)
 
@@ -400,6 +399,20 @@ class Stop(Resource):
         return jsonify(response)
 
 
+class ScentRoomTrigger(Resource):
+    def post(self):
+        global player
+        body = request.get_json(force=True)
+        player = LushRoomsPlayer(None, None)
+
+        print("SR Trigger received:")
+        print(body)
+
+        player.start(body["upload_path"], None, "/media/usb/uploads/01_scentroom.srt")
+
+        return jsonify({'response': 200, 'description': 'ok!'})
+
+
 # URLs are defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
@@ -418,7 +431,9 @@ api.add_resource(Enslave, '/enslave')
 api.add_resource(Free, '/free')
 api.add_resource(Command, '/command') # POST
 
-if __name__ == '__main__':
+# Scentroom specific endpoints
+api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
 
+if __name__ == '__main__':
     settings_json = settings.get_settings()
     app.run(debug=settings_json["debug"], port=80, host='0.0.0.0')
