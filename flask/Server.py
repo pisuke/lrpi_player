@@ -419,6 +419,7 @@ class ScentRoomTrigger(Resource):
                 # Python, your flexibility is charming but also _scary_
                 player.lighting.dmx.write_frame([255, 172, 36, 50])
                 player.stop()
+                player.exit()
                 
                 return jsonify({'response': 200, 'description': 'ok!'})
 
