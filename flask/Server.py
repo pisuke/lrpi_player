@@ -410,16 +410,21 @@ class ScentRoomTrigger(Resource):
 
         if body:
             if body['trigger'] == "start" and body["upload_path"]:
-                player = LushRoomsPlayer(None, None)
-                player.start(body["upload_path"], None, "/media/usb/uploads/01_scentroom.srt")
-                return jsonify({'response': 200, 'description': 'ok!'})
+                if player == None:
+                    player = LushRoomsPlayer(None, None)
+                    player.start(body["upload_path"], None, "/media/usb/uploads/01_scentroom.srt")
+                    return jsonify({'response': 200, 'description': 'ok!'})
 
             elif body['trigger'] == "stop":
                 # TODO: make this better
                 # Python, your flexibility is charming but also _scary_
-                player.lighting.dmx.write_frame([255, 172, 36, 50])
-                player.stop()
-                player.exit()
+                if player:
+                    player.lighting.dmx.write_frame([0, 0, 0, 255, 255, 241, 198])
+                    player.stop()
+                    player.exit()
+                    player.__del__()
+                    player = None
+                killOmx()
                 
                 return jsonify({'response': 200, 'description': 'ok!'})
 
