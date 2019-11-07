@@ -499,9 +499,10 @@ class LushRoomsLighting():
                 'type': 'processpool',
                 'max_workers': '10'
             }})
-            self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=None, max_instances=16, coalesce=True)
-            # This could be the cause of the _very_ first event, after a cold boot, not triggering correctly:
-            self.scheduler.start(paused=False)
+            if len(self.subs > 1) :
+                self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=None, max_instances=16, coalesce=True)
+                # This could be the cause of the _very_ first event, after a cold boot, not triggering correctly:
+                self.scheduler.start(paused=False)
 
             if LIGHTING_MSGS:
                 print("-------------")

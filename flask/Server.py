@@ -23,19 +23,13 @@ import ntplib # pylint: disable=import-error
 from time import ctime
 from time import sleep
 import pause # pylint: disable=import-error
-
-# import sys
 import time
-# import subprocess
-# import json
-# import random
-# from pathlib import Path
-# from time import sleep
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
 from pysrt import stream as srtstream
 from Player import LushRoomsPlayer
 from OmxPlayer import killOmx
+import logging
 
 from content_reader import content_in_dir
 
@@ -419,10 +413,16 @@ class ScentRoomTrigger(Resource):
                 # TODO: make this better
                 # Python, your flexibility is charming but also _scary_
                 if player:
-                    if player.lighting:
-                        player.lighting.dmx.write_frame([0, 0, 0, 255, 255, 241, 198, 255])
                     player.stop()
                     player.exit()
+                    try:
+                        # RGB value for warm white for both RGBW downlight and side RGB lights
+                        # The eighth channel of 255 is needed for whatever reason, I don't have time
+                        # to find out why right now
+                        if player.lighting:
+                            player.lighting.dmx.write_frame([0, 0, 0, 255, 255, 241, 198, 255])
+                    except Exception as e:
+                        logging.error("Could not kill lighting, things have gotten out of sync...")
                     player.__del__()
                     player = None
                 killOmx()
