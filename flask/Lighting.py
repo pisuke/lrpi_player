@@ -23,7 +23,6 @@ VERBOSE = False
 SEEK_EVENT_LOG = False
 LIGHTING_MSGS = True
 
-
 # dmx
 MENU_DMX_VAL = os.environ.get("MENU_DMX_VAL", None)
 NUM_DMX_CHANNELS = os.environ.get("NUM_DMX_CHANNELS", None)
@@ -34,16 +33,13 @@ PORT = 4223
 
 MAX_BRIGHTNESS = 200
 DMX_FRAME_DURATION=25
-SRT_FILENAME = "Surround_Test_Audio.srt"
 HUE_IP_ADDRESS = ""
-# HUE2_IP_ADDRESS = ""
 TICK_TIME = 0.1 # seconds
 PLAY_HUE = True
 PLAY_DMX = True
 # SLEEP_TIME = 0.1 # seconds
 # TRANSITION_TIME = 10 # milliseconds
 
-subs = []
 player = None
 bridge = None
 dmx = None
@@ -87,12 +83,7 @@ class LushRoomsLighting():
     def emptyDMXFrame(self):
         return zeros((512,), dtype=int)
 
-    def cleaningScene(self):
-        pass
-        # self.resetHUE()
-        # self.resetDMX()
-
-         # Tinkerforge sensors enumeration
+    # Tinkerforge sensors enumeration
     def cb_enumerate(self, uid, connected_uid, position, hardware_version, firmware_version,
                     device_identifier, enumeration_type):
         self.tfIDs.append([uid, device_identifier])
@@ -111,33 +102,25 @@ class LushRoomsLighting():
             self.ipcon.enumerate()
 
             # Likely wait for the tinkerforge brickd to finish doing its thing
-            sleep(2)
+            sleep(0.5)
 
             if DEBUG:
                 print("Tinkerforge enumerated IDs", self.tfIDs)
 
             dmxcount = 0
             for tf in self.tfIDs:
-                # try:
-                if True:
-                    # print(len(tf[0]))
-
-                    if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
-                        if tf[1] in self.deviceIDs:
-                            if VERBOSE:
-                                print(tf[0],tf[1], self.getIdentifier(tf))
-                        if tf[1] == 285: # DMX Bricklet
-                            if dmxcount == 0:
-                                print("Registering %s as slave DMX device for playing DMX frames" % tf[0])
-                                self.dmx = BrickletDMX(tf[0], self.ipcon)
-                                self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
-                                self.dmx.set_frame_duration(DMX_FRAME_DURATION)
-                                # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512,)*255)
-                                # dmx.write_frame([255,255])
-                                sleep(1)
-                                # channels = int((int(MAX_BRIGHTNESS)/255.0)*zeros(512,)*255)
-                                # dmx.write_frame(channels)
-                            dmxcount += 1
+                if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
+                    if tf[1] in self.deviceIDs:
+                        if VERBOSE:
+                            print(tf[0],tf[1], self.getIdentifier(tf))
+                    if tf[1] == 285: # DMX Bricklet
+                        if dmxcount == 0:
+                            print("Registering %s as slave DMX device for playing DMX frames" % tf[0])
+                            self.dmx = BrickletDMX(tf[0], self.ipcon)
+                            self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
+                            self.dmx.set_frame_duration(DMX_FRAME_DURATION)
+                            
+                        dmxcount += 1
 
             if dmxcount < 1:
                 if LIGHTING_MSGS:
@@ -155,8 +138,8 @@ class LushRoomsLighting():
                 # print(len(tf[0]))
 
                 if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
-                    if tf[1] in self.deviceIDs:
-                        if VERBOSE:
+                    if VERBOSE:
+                        if tf[1] in self.deviceIDs:
                             print(tf[0],tf[1], self.getIdentifier(tf))
                     if tf[1] == 285: # DMX Bricklet
                         if dmxcount == 0:
@@ -187,91 +170,64 @@ class LushRoomsLighting():
                     if LIGHTING_MSGS:
                         print('dmxcount: ', dmxcount)
 
-    def pauseDMX(self):
-        dmxcount = 0
-        for tf in self.tfIDs:
-            # try:
-            if True:
-                # print(len(tf[0]))
-
-                if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
-                    if tf[1] in self.deviceIDs:
-                        if VERBOSE:
-                            print(tf[0],tf[1], self.getIdentifier(tf))
-                    if tf[1] == 285: # DMX Bricklet
-                        if dmxcount == 0:
-                            # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512)*255)
-                            # hardcoded values for lighting in LushSpa
-                            self.dmx.write_frame([int(0.65*MAX_BRIGHTNESS),
-                                                  int(0.40*MAX_BRIGHTNESS),
-                                                  int(0.40*MAX_BRIGHTNESS),
-                                                  int(0.40*MAX_BRIGHTNESS),
-                                                  int(0.40*MAX_BRIGHTNESS),
-                                                  int(0.40*MAX_BRIGHTNESS),
-                                                  int(0.40*MAX_BRIGHTNESS),
-                                                  int(0.40*MAX_BRIGHTNESS),
-                                                  int(0.40*MAX_BRIGHTNESS),
-                                                  0,0,0,int(0.40*MAX_BRIGHTNESS)])
-                        dmxcount += 1
-                    if LIGHTING_MSGS:
-                        print('dmxcount: ', dmxcount)
-
-
     def initHUE(self):
         global PLAY_HUE
 
-        HUE_IP_ADDRESS = find_hue.hue_ip()
-
         try:
             if PLAY_HUE:
+                HUE_IP_ADDRESS = find_hue.hue_ip()
+
+                if HUE_IP_ADDRESS == None:
+                    print("HUE disabled in settings.json, HUE is now disabled")
+                    PLAY_HUE = False
+                    return
                 #global hue_list
-                #try:
-                if True:
-                    # b = Bridge('lushroom-hue.local')
-                    self.bridge = Bridge(HUE_IP_ADDRESS, config_file_path="/media/usb/python_hue")
-                    # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
-                    self.bridge.connect()
-                    # Get the bridge state (This returns the full dictionary that you can explore)
-                    self.bridge.get_api()
-                    lights = self.bridge.lights
-                    # lplay-85
-                    # for l in lights:
-                    #     # print(dir(l))
-                    #     l.on = False
-                    # sleep(1)
-                    for l in lights:
-                        # print(dir(l))
-                        l.on = True
-                    # Print light names
-                    # Set brightness of each light to 100
-                    for l in lights:
-                        if LIGHTING_MSGS:
-                            print(l.name)
-                        l.brightness = 255
-                    for l in lights:
-                        ## print(l.name)
-                        l.brightness = 50
-                        ##l.colormode = 'ct'
-                        #l.colortemp_k = 2700
-                        #l.saturation = 0
-                        bri = 50
-                        sat = 100
-                        hue = 0
-                        colormode = 'ct'
-                        colortemp = 450
-                        cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
-                        self.bridge.set_light(l.light_id,cmd)
+            #try:
+                # b = Bridge('lushroom-hue.local')
+                self.bridge = Bridge(HUE_IP_ADDRESS, config_file_path="/media/usb/python_hue")
+                # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
+                self.bridge.connect()
+                # Get the bridge state (This returns the full dictionary that you can explore)
+                self.bridge.get_api()
+                lights = self.bridge.lights
+                # lplay-85
+                # for l in lights:
+                #     # print(dir(l))
+                #     l.on = False
+                # sleep(1)
+                for l in lights:
+                    # print(dir(l))
+                    l.on = True
+                # Print light names
+                # Set brightness of each light to 100
+                for l in lights:
+                    if LIGHTING_MSGS:
+                        print(l.name)
+                    l.brightness = 255
+                for l in lights:
+                    ## print(l.name)
+                    l.brightness = 50
+                    ##l.colormode = 'ct'
+                    #l.colortemp_k = 2700
+                    #l.saturation = 0
+                    bri = 50
+                    sat = 100
+                    hue = 0
+                    colormode = 'ct'
+                    colortemp = 450
+                    cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
+                    self.bridge.set_light(l.light_id,cmd)
 
 
-                    # Get a dictionary with the light name as the key
-                    light_names = self.bridge.get_light_objects('name')
-                    if LIGHTING_MSGS:
-                        print("Light names:", light_names)
-                    self.hue_list = self.hue_build_lookup_table(lights)
-                    if LIGHTING_MSGS:
-                        print(self.hue_list)
-                #except PhueRegistrationException:
-                #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
+                # Get a dictionary with the light name as the key
+                light_names = self.bridge.get_light_objects('name')
+                if LIGHTING_MSGS:
+                    print("Light names:", light_names)
+                self.hue_list = self.hue_build_lookup_table(lights)
+                if LIGHTING_MSGS:
+                    print(self.hue_list)
+            #except PhueRegistrationException:
+            #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
         except Exception as e:
             print("Could not create connection to Hue. Hue lighting is now disabled")
             print("Error: ", e)
@@ -300,37 +256,9 @@ class LushRoomsLighting():
                 bri = 50
                 sat = 100
                 hue = 0
-                colormode = 'ct'
                 colortemp = 450
                 cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
                 self.bridge.set_light(l.light_id,cmd)
-
-    def pauseHUE(self):
-        global PLAY_HUE
-        if PLAY_HUE:
-            print("Pause mode: Hue")
-            lights = self.bridge.lights
-            # print(lights)
-            sleep(0.5)
-            for l in lights:
-                # print(dir(l))
-                l.on = True
-            # Print light names
-            # Set brightness of each light to 100
-            for l in lights:
-                l.brightness = 100
-                ##l.colormode = 'ct'
-                #l.colortemp_k = 2700
-                #l.saturation = 0
-                bri = 100
-                sat = 100
-                hue = 0
-                colormode = 'ct'
-                colortemp = 450
-                cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
-                self.bridge.set_light(l.light_id,cmd)
-                if LIGHTING_MSGS:
-                    print(l.name,l.light_id,cmd)
 
     ############################### LOW LEVEL LIGHT METHODS
 
@@ -585,9 +513,6 @@ class LushRoomsLighting():
         print('Lighting PlayPause: ', status)
         if status=="Paused":
             self.scheduler.pause()
-            # lplay-86
-            # self.pauseHUE()
-            # self.pauseDMX()
         elif status=="Playing":
             self.scheduler.resume()
         if LIGHTING_MSGS:
@@ -601,15 +526,12 @@ class LushRoomsLighting():
 
         if status=="Paused":
             self.scheduler.pause()
-            # self.pauseHUE()
-            # self.pauseDMX()
         elif status=="Playing":
             self.scheduler.resume()
         if LIGHTING_MSGS:
             print("-------------")
 
     def exit(self):
-        self.cleaningScene()
         self.__del__()
 
     def triggerPreviousEvent(self, pos):
@@ -660,7 +582,6 @@ class LushRoomsLighting():
 class ExitException(Exception):
     def __init__(self, key, scheduler, ipcon):
         scheduler.shutdown()
-        #player.stop()
         if tfConnect:
             ipcon.disconnect()
         exit(0)
