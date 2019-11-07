@@ -420,7 +420,7 @@ class ScentRoomTrigger(Resource):
                 # Python, your flexibility is charming but also _scary_
                 if player:
                     if player.lighting:
-                        player.lighting.dmx.write_frame([0, 0, 0, 255, 255, 241, 198])
+                        player.lighting.dmx.write_frame([0, 0, 0, 255, 255, 241, 198, 255])
                     player.stop()
                     player.exit()
                     player.__del__()
