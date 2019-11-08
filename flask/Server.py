@@ -435,7 +435,32 @@ class ScentRoomTrigger(Resource):
 
         else:
             return jsonify({'response': 500, 'description': 'not ok!', "error": "Incorrect body format"})
-        
+
+class ScentRoomReboot(Resource):
+    def get(self):   
+        global player
+        try:
+            player = LushRoomsPlayer(None, None)
+            sleep(1)
+            if player.lighting:
+                player.lighting.dmx.write_frame([0, 150, 0, 255, 0, 150, 0, 0])
+                sleep(0.2)
+                player.lighting.dmx.write_frame([0, 0, 0, 0, 0, 0, 0, 0])
+                sleep(0.2)
+                player.lighting.dmx.write_frame([0, 150, 0, 255, 0, 150, 0, 0])
+                sleep(0.2)
+                player.lighting.dmx.write_frame([0, 0, 0, 255, 0, 0, 0, 0])
+            player.stop()
+            player.exit()
+            player.__del__()
+            player = None
+            killOmx()
+            return jsonify({'response': 200, 'description': 'ok!'})
+        except Exception as e:
+            print("Reboot sequence failed: ", e)
+            return jsonify({'response': 500, 'description': 'not ok!'})
+
+
 
 
 # URLs are defined here
@@ -458,6 +483,7 @@ api.add_resource(Command, '/command') # POST
 
 # Scentroom specific endpoints
 api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
+api.add_resource(ScentRoomReboot, '/scentroom-reboot') # POST
 
 if __name__ == '__main__':
     settings_json = settings.get_settings()
