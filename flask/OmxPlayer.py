@@ -59,6 +59,7 @@ class OmxPlayer():
 
         if not withPause:
             self.player = OMXPlayer(pathToTrack, args=omxArgs, dbus_name='org.mpris.MediaPlayer2.omxplayer0')
+            sleep(0.25)
         elif withPause:
             self.player = OMXPlayer(pathToTrack, args=omxArgs, dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
             # Might need to set the volume to 0 a different way,
@@ -79,31 +80,37 @@ class OmxPlayer():
         settings_json = settings.get_settings()
         volume = settings_json.get("audio_volume")
 
-        if not master:
-            if self.player:
-                self.player.quit()
-            self.player = None
+        try:
+            if not master:
+                if self.player:
+                    self.player.quit()
+                self.player = None
 
-        if syncTimestamp:
-            pause.until(syncTimestamp)
+            if syncTimestamp:
+                pause.until(syncTimestamp)
 
-        if self.player is None or syncTimestamp is None:
-            self.triggerStart(pathToTrack)
+            if self.player is None or syncTimestamp is None:
+                self.triggerStart(pathToTrack)
 
-        self.player.positionEvent += self.posEvent
-        self.player.seekEvent += self.seekEvent
-        # self.player.set_position(0)
+            self.player.positionEvent += self.posEvent
+            self.player.seekEvent += self.seekEvent
+            # self.player.set_position(0)
 
-        if volume is not None:
-            self.audio_volume = volume
-            print("Volume set to %s" % self.audio_volume)
+            if volume is not None:
+                self.audio_volume = volume
+                print("Volume set to %s" % self.audio_volume)
 
-        self.player.set_volume(float(self.audio_volume)/100.0)
+            self.player.set_volume(float(self.audio_volume)/100.0)
 
-        print('synctime in omxplayer: ', ctime(syncTimestamp))
+            print('synctime in omxplayer: ', ctime(syncTimestamp))
 
-        # self.player.play()
-        return str(self.player.duration())
+            # self.player.play()
+            return str(self.player.duration())
+        except Exception as e:
+            print("ERROR: Could not start player... but audio may still be playing!")
+            print("Why: ", e)
+            print("returning position 0...")
+            return str(0)
 
     # action 16 is emulated keypress for playPause
     def playPause(self, syncTimestamp=None):
@@ -191,5 +198,6 @@ class OmxPlayer():
     def __del__(self):
         if self.player:
             self.player.quit()
+        self.player = None
         killOmx()
         print("OMX died")

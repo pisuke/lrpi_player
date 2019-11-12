@@ -413,20 +413,25 @@ class ScentRoomTrigger(Resource):
                 # TODO: make this better
                 # Python, your flexibility is charming but also _scary_
                 if player:
-                    player.stop()
-                    player.exit()
                     try:
                         # RGB value for warm white for both RGBW downlight and side RGB lights
                         # The eighth channel of 255 is needed for whatever reason, I don't have time
                         # to find out why right now
                         # matched white light RGB: 255, 241, 198, 255
-                        if player.lighting:
+                        if player.lighting.dmx:
                             player.lighting.dmx.write_frame([0, 0, 0, 255, 0, 0, 0, 0])
                     except Exception as e:
                         logging.error("Could not kill lighting, things have gotten out of sync...")
+                        logging.info("Killing everything anyway!")
+                        print("Why: ", e)
+                        player.stop()
+                        player.exit()
+                        player.__del__()
+                        player = None
+                    player.stop()
+                    player.exit()
                     player.__del__()
                     player = None
-                killOmx()
                 
                 return jsonify({'response': 200, 'description': 'ok!'})
 
@@ -436,8 +441,6 @@ class ScentRoomTrigger(Resource):
         else:
             return jsonify({'response': 500, 'description': 'not ok!', "error": "Incorrect body format"})
         
-
-
 # URLs are defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
