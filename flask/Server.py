@@ -192,16 +192,13 @@ class GetTrackList(Resource):
 
 
         NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
-        # print(NEW_TRACK_ARRAY)
-        # print(NEW_SRT_ARRAY)
-        if player:
+
+        if player and player.lighting.dmx:
             player.setPlaylist(NEW_TRACK_ARRAY)
-            player.lighting.resetHUE()
-            player.lighting.resetDMX()
+            player.resetLighting()
         else:
             player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
-            player.lighting.resetHUE()
-            player.lighting.resetDMX()
+            player.resetLighting()
 
         return jsonify(NEW_TRACK_ARRAY)
 

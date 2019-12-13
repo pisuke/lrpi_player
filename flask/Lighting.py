@@ -75,11 +75,8 @@ class LushRoomsLighting():
         self.ipcon = IPConnection()
         self.deviceIDs = [i[0] for i in deviceIdentifiersList]
 
-        # init methods
-
-        if PLAY_DMX:
-            self.initDMX()
-        self.initHUE()
+        if PLAY_DMX: self.initDMX()
+        if PLAY_HUE: self.initHUE()
 
     def emptyDMXFrame(self):
         return zeros((512,), dtype=int)
