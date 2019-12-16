@@ -148,59 +148,66 @@ class GetTrackList(Resource):
         global BUILT_PATH
         global player
 
-        if useNTP:
-            c = ntplib.NTPClient()
-            try:
-                response = c.request(NTP_SERVER)
-                print('\n' + 30*'-')
-                print('ntp time: ', ctime(response.tx_time))
-                print(30*'-' + '\n')
-            except:
-                print('Could not get ntp time!')
+        try:
 
-        # return a graceful error if the usb stick isn't mounted
-        if os.path.isdir(MEDIA_BASE_PATH) == False:
-            return jsonify(1)
+            if useNTP:
+                c = ntplib.NTPClient()
+                try:
+                    response = c.request(NTP_SERVER)
+                    print('\n' + 30*'-')
+                    print('ntp time: ', ctime(response.tx_time))
+                    print(30*'-' + '\n')
+                except:
+                    print('Could not get ntp time!')
 
-        if BUILT_PATH is None:
-            BUILT_PATH = MEDIA_BASE_PATH 
-        
-        args = getInput()
+            # return a graceful error if the usb stick isn't mounted
+            if os.path.isdir(MEDIA_BASE_PATH) == False:
+                return jsonify(1)
 
-        print("track list id: " +  str(args['id']))
+            if BUILT_PATH is None:
+                BUILT_PATH = MEDIA_BASE_PATH 
+            
+            args = getInput()
 
-
-        if args['id']:
-            if NEW_TRACK_ARRAY:
-                BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
-                print(BUILT_PATH[0])
+            print("track list id: " +  str(args['id']))
 
 
-        print('BUILT_PATH: ' + str(BUILT_PATH))
+            if args['id']:
+                if NEW_TRACK_ARRAY:
+                    BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
+                    print(BUILT_PATH[0])
 
 
-        TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
-        # print(TRACK_ARRAY_WITH_CONTENTS)
-        NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
-
-        if mpegOnly:
-            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
-        elif mlpOnly:
-            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
-        elif allFormats:
-            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
+            print('BUILT_PATH: ' + str(BUILT_PATH))
 
 
-        NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
+            TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
+            # print(TRACK_ARRAY_WITH_CONTENTS)
+            NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
 
-        if player and player.lighting.dmx:
-            player.setPlaylist(NEW_TRACK_ARRAY)
-            player.resetLighting()
-        else:
-            player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
-            player.resetLighting()
+            if mpegOnly:
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
+            elif mlpOnly:
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
+            elif allFormats:
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
 
-        return jsonify(NEW_TRACK_ARRAY)
+
+            NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
+
+            if player and player.lighting.dmx:
+                player.setPlaylist(NEW_TRACK_ARRAY)
+                player.resetLighting()
+            else:
+                player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
+                player.resetLighting()
+
+            return jsonify(NEW_TRACK_ARRAY)
+        except Exception as e:
+            logging.error("Path building has probably failed. Sending error code and cleaning up...")
+            logging.error(e)
+            BUILT_PATH = None
+            return 1, 500, {'content-type': 'application/json'}
 
 
 class PlaySingleTrack(Resource):
