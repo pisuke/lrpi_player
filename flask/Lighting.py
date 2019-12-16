@@ -15,7 +15,7 @@ import json
 import settings
 import find_hue
 import logging
-from DmxInterpolator import DmxInterpolator 
+from DmxInterpolator import DmxInterpolator
 
 # dev
 
@@ -36,8 +36,6 @@ MAX_BRIGHTNESS = 200
 DMX_FRAME_DURATION=25
 HUE_IP_ADDRESS = ""
 TICK_TIME = 0.1 # seconds
-PLAY_HUE = True
-PLAY_DMX = True
 # SLEEP_TIME = 0.1 # seconds
 # TRANSITION_TIME = 10 # milliseconds
 
@@ -55,6 +53,8 @@ class LushRoomsLighting():
 
     def __init__(self):
         print('Lushroom Lighting init!')
+        self.PLAY_HUE = True
+        self.PLAY_DMX = True
         self.TRANSITION_TIME = 5 # milliseconds
         self.hue_list = [[]]
         self.player = None
@@ -75,8 +75,8 @@ class LushRoomsLighting():
         self.ipcon = IPConnection()
         self.deviceIDs = [i[0] for i in deviceIdentifiersList]
 
-        if PLAY_DMX: self.initDMX()
-        if PLAY_HUE: self.initHUE()
+        if self.PLAY_DMX: self.initDMX()
+        if self.PLAY_HUE: self.initHUE()
 
     def emptyDMXFrame(self):
         return zeros((512,), dtype=int)
@@ -126,7 +126,7 @@ class LushRoomsLighting():
         except Exception as e:
             print("Could not create connection to Tinkerforge DMX. DMX lighting is now disabled")
             print("Why: ", e)
-            PLAY_DMX = False
+            self.PLAY_DMX = False
 
     def resetDMX(self):
         dmxcount = 0
@@ -169,15 +169,14 @@ class LushRoomsLighting():
                         print('dmxcount: ', dmxcount)
 
     def initHUE(self):
-        global PLAY_HUE
 
         try:
-            if PLAY_HUE:
+            if self.PLAY_HUE:
                 HUE_IP_ADDRESS = find_hue.hue_ip()
 
                 if HUE_IP_ADDRESS == None:
                     print("HUE disabled in settings.json, HUE is now disabled")
-                    PLAY_HUE = False
+                    self.PLAY_HUE = False
                     return
                 #global hue_list
             #try:
@@ -229,11 +228,10 @@ class LushRoomsLighting():
         except Exception as e:
             print("Could not create connection to Hue. Hue lighting is now disabled")
             print("Error: ", e)
-            PLAY_HUE = False
+            self.PLAY_HUE = False
 
     def resetHUE(self):
-        global PLAY_HUE
-        if PLAY_HUE:
+        if self.PLAY_HUE:
             lights = self.bridge.lights
             # for l in lights:
             #     # print(dir(l))
@@ -326,7 +324,7 @@ class LushRoomsLighting():
             pod_mode = MENU_DMX_VAL != None
 
             if self.dmx_interpolator.isRunning() and pod_mode is False:
-                if PLAY_DMX:
+                if self.PLAY_DMX:
                         if self.dmx != None:
                             iFrame = self.dmx_interpolator.getInterpolatedFrame(pt)
                             self.dmx.write_frame(iFrame)
@@ -405,7 +403,7 @@ class LushRoomsLighting():
         return(hue_l)
 
     def trigger_light(self, subs):
-        global MAX_BRIGHTNESS, DEBUG, PLAY_HUE
+        global MAX_BRIGHTNESS, DEBUG
         if DEBUG:
             print("perf_count: ", perf_counter(), subs)
         commands = str(subs).split(";")
@@ -423,7 +421,7 @@ class LushRoomsLighting():
                 if DEBUG:
                     print("sc: ", scope, "it: ", items)
 
-                if scope[0:3] == "HUE" and PLAY_HUE:
+                if scope[0:3] == "HUE" and self.PLAY_HUE:
                     l = int(scope[3:])
                     #print(l)
                     if VERBOSE:
@@ -435,7 +433,7 @@ class LushRoomsLighting():
                     cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
                     if LIGHTING_MSGS:
                         print("Trigger HUE",l,cmd)
-                    if PLAY_HUE:
+                    if self.PLAY_HUE:
                         #lights = bridge.lights
                         #for light in lights:
                         #   print(light.name)
@@ -463,7 +461,7 @@ class LushRoomsLighting():
                     if LIGHTING_MSGS:
                         print("Trigger DMX:", l, channels)
 
-                    if PLAY_DMX:
+                    if self.PLAY_DMX:
                         if self.dmx != None:
                             self.dmx.write_frame(channels)
             except:
