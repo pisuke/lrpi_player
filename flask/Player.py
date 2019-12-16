@@ -58,7 +58,8 @@ class LushRoomsPlayer():
             "playerType": self.playerType,
             "playlist": self.playlist,
             "error" : "",
-            "slave_url": None
+            "slave_url": None,
+            "master_ip": None
         }
         self.subs = None
 

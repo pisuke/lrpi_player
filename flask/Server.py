@@ -14,7 +14,7 @@ import os.path
 os.environ["FLASK_ENV"] = "development"
 
 from flask import Flask, request, send_from_directory, render_template
-from flask_cors import CORS, cross_origin 
+from flask_cors import CORS, cross_origin
 from flask_restful import Resource, Api
 from json import dumps
 from flask_jsonpify import jsonify
@@ -242,7 +242,7 @@ class PlayPause(Resource):
 class FadeDown(Resource):
     def get(self):
         global player
-        global BUILT_PATH 
+        global BUILT_PATH
 
         args = getInput()
         print('argsid : ', args["id"])
@@ -358,10 +358,10 @@ class Enslave(Resource):
 class Free(Resource):
     def get(self):
         global player
- 
+
         try:
             freeRes = player.free()
-        except Exception as e: 
+        except Exception as e:
             print('Exception: ', e)
             freeRes = 1
 

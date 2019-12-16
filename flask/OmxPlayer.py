@@ -103,8 +103,8 @@ class OmxPlayer():
             self.player.set_volume(float(self.audio_volume)/100.0)
 
             print('synctime in omxplayer: ', ctime(syncTimestamp))
-
-            # self.player.play()
+            if master:
+                self.player.play()
             return str(self.player.duration())
         except Exception as e:
             print("ERROR: Could not start player... but audio may still be playing!")
@@ -114,7 +114,7 @@ class OmxPlayer():
 
     # action 16 is emulated keypress for playPause
     def playPause(self, syncTimestamp=None):
-        print("Playpausing...")
+        print("Playpausing with syncTimeStamp: ", syncTimestamp)
         if syncTimestamp:
             pause.until(syncTimestamp)
         self.player.action(16)

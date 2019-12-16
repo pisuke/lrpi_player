@@ -15,7 +15,7 @@ import json
 import settings
 import find_hue
 import logging
-from DmxInterpolator import DmxInterpolator 
+from DmxInterpolator import DmxInterpolator
 
 # dev
 
@@ -36,8 +36,6 @@ MAX_BRIGHTNESS = 200
 DMX_FRAME_DURATION=25
 HUE_IP_ADDRESS = ""
 TICK_TIME = 0.1 # seconds
-PLAY_HUE = True
-PLAY_DMX = True
 # SLEEP_TIME = 0.1 # seconds
 # TRANSITION_TIME = 10 # milliseconds
 
@@ -55,6 +53,8 @@ class LushRoomsLighting():
 
     def __init__(self):
         print('Lushroom Lighting init!')
+        self.PLAY_HUE = True
+        self.PLAY_DMX = True
         self.TRANSITION_TIME = 5 # milliseconds
         self.hue_list = [[]]
         self.player = None
@@ -75,8 +75,8 @@ class LushRoomsLighting():
         self.ipcon = IPConnection()
         self.deviceIDs = [i[0] for i in deviceIdentifiersList]
 
-        if PLAY_DMX: self.initDMX()
-        if PLAY_HUE: self.initHUE()
+        if self.PLAY_DMX: self.initDMX()
+        if self.PLAY_HUE: self.initHUE()
 
     def emptyDMXFrame(self):
         return zeros((512,), dtype=int)
@@ -117,7 +117,6 @@ class LushRoomsLighting():
                             self.dmx = BrickletDMX(tf[0], self.ipcon)
                             self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
                             self.dmx.set_frame_duration(DMX_FRAME_DURATION)
-                            
                         dmxcount += 1
 
             if dmxcount < 1:
@@ -126,125 +125,60 @@ class LushRoomsLighting():
         except Exception as e:
             print("Could not create connection to Tinkerforge DMX. DMX lighting is now disabled")
             print("Why: ", e)
-            PLAY_DMX = False
+            self.PLAY_DMX = False
 
     def resetDMX(self):
-        dmxcount = 0
-        for tf in self.tfIDs:
-            # try:
-            if True:
-                # print(len(tf[0]))
-
-                if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
-                    if VERBOSE:
-                        if tf[1] in self.deviceIDs:
-                            print(tf[0],tf[1], self.getIdentifier(tf))
-                    if tf[1] == 285: # DMX Bricklet
-                        if dmxcount == 0:
-                            # channels = int((int(MAX_BRIGHTNESS)/255.0)*ones(512)*255)
-                            if (MENU_DMX_VAL is not None and NUM_DMX_CHANNELS is not None):
-                                print('menu values: ', MENU_DMX_VAL)
-                                print('number of DMX channels: ', NUM_DMX_CHANNELS)
-                                frame_arr = []
-                                menu_val_arr = MENU_DMX_VAL.split(",")
-                                menu_val_arr = [int(i) for i in menu_val_arr]
-                                for i in range(int(int(NUM_DMX_CHANNELS)/3)):
-                                    frame_arr += menu_val_arr
-                                self.dmx.write_frame(frame_arr)
-                            else:
-                                print('Resetting DMX...')
-                                self.dmx_interpolator.__init__()
-                                self.dmx.write_frame([ int(0.65*MAX_BRIGHTNESS),
-                                                    int(0.40*MAX_BRIGHTNESS),
-                                                    int(0.40*MAX_BRIGHTNESS),
-                                                    int(0.40*MAX_BRIGHTNESS),
-                                                    int(0.40*MAX_BRIGHTNESS),
-                                                    int(0.40*MAX_BRIGHTNESS),
-                                                    int(0.40*MAX_BRIGHTNESS),
-                                                    int(0.40*MAX_BRIGHTNESS),
-                                                    int(0.40*MAX_BRIGHTNESS),
-                                                    0,0,0,int(0.40*MAX_BRIGHTNESS) ])
-                        dmxcount += 1
-                    if LIGHTING_MSGS:
-                        print('dmxcount: ', dmxcount)
+        print("Directly resetting DMX...")
+        if self.dmx:
+            self.dmx.write_frame([ int(0.65*MAX_BRIGHTNESS),
+                                        int(0.40*MAX_BRIGHTNESS),
+                                        int(0.40*MAX_BRIGHTNESS),
+                                        int(0.40*MAX_BRIGHTNESS),
+                                        int(0.40*MAX_BRIGHTNESS),
+                                        int(0.40*MAX_BRIGHTNESS),
+                                        int(0.40*MAX_BRIGHTNESS),
+                                        int(0.40*MAX_BRIGHTNESS),
+                                        int(0.40*MAX_BRIGHTNESS),
+                                        0,0,0,int(0.40*MAX_BRIGHTNESS) ])
+        else:
+            logging.error("Could not connect to DMX daemon to reset!")
 
     def initHUE(self):
-        global PLAY_HUE
-
         try:
-            if PLAY_HUE:
+            if self.PLAY_HUE:
                 HUE_IP_ADDRESS = find_hue.hue_ip()
 
                 if HUE_IP_ADDRESS == None:
                     print("HUE disabled in settings.json, HUE is now disabled")
-                    PLAY_HUE = False
+                    self.PLAY_HUE = False
                     return
-                #global hue_list
-            #try:
-                # b = Bridge('lushroom-hue.local')
                 self.bridge = Bridge(HUE_IP_ADDRESS, config_file_path="/media/usb/python_hue")
                 # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
                 self.bridge.connect()
                 # Get the bridge state (This returns the full dictionary that you can explore)
                 self.bridge.get_api()
+                self.resetHUE()
                 lights = self.bridge.lights
-                # lplay-85
-                # for l in lights:
-                #     # print(dir(l))
-                #     l.on = False
-                # sleep(1)
-                for l in lights:
-                    # print(dir(l))
-                    l.on = True
-                # Print light names
-                # Set brightness of each light to 100
-                for l in lights:
-                    if LIGHTING_MSGS:
-                        print(l.name)
-                    l.brightness = 255
-                for l in lights:
-                    ## print(l.name)
-                    l.brightness = 50
-                    ##l.colormode = 'ct'
-                    #l.colortemp_k = 2700
-                    #l.saturation = 0
-                    bri = 50
-                    sat = 100
-                    hue = 0
-                    colormode = 'ct'
-                    colortemp = 450
-                    cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
-                    self.bridge.set_light(l.light_id,cmd)
-
-
-                # Get a dictionary with the light name as the key
-                light_names = self.bridge.get_light_objects('name')
-                if LIGHTING_MSGS:
-                    print("Light names:", light_names)
                 self.hue_list = self.hue_build_lookup_table(lights)
+
                 if LIGHTING_MSGS:
+                    # Get a dictionary with the light name as the key
+                    light_names = self.bridge.get_light_objects('name')
+                    print("Light names:", light_names)
                     print(self.hue_list)
-            #except PhueRegistrationException:
-            #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
         except Exception as e:
             print("Could not create connection to Hue. Hue lighting is now disabled")
             print("Error: ", e)
-            PLAY_HUE = False
+            self.PLAY_HUE = False
 
     def resetHUE(self):
-        global PLAY_HUE
-        if PLAY_HUE:
-            lights = self.bridge.lights
-            # for l in lights:
-            #     # print(dir(l))
-            #     l.on = False
-            # sleep(1)
-            for l in lights:
+        if self.PLAY_HUE:
+            for l in self.bridge.lights:
                 # print(dir(l))
                 l.on = True
             # Print light names
             # Set brightness of each light to 100
-            for l in lights:
+            for l in self.bridge.lights:
                 if LIGHTING_MSGS:
                     print(l.name)
                 l.brightness = 50
@@ -290,6 +224,7 @@ class LushRoomsLighting():
                 pp = self.player.getPosition()
             except Exception as e:
                 print("Could not get the current position of the player, shutting down lighting gracefully...")
+                logging.error(e)
                 self.__del__()
 
 
@@ -326,7 +261,7 @@ class LushRoomsLighting():
             pod_mode = MENU_DMX_VAL != None
 
             if self.dmx_interpolator.isRunning() and pod_mode is False:
-                if PLAY_DMX:
+                if self.PLAY_DMX:
                         if self.dmx != None:
                             iFrame = self.dmx_interpolator.getInterpolatedFrame(pt)
                             self.dmx.write_frame(iFrame)
@@ -405,7 +340,7 @@ class LushRoomsLighting():
         return(hue_l)
 
     def trigger_light(self, subs):
-        global MAX_BRIGHTNESS, DEBUG, PLAY_HUE
+        global MAX_BRIGHTNESS, DEBUG
         if DEBUG:
             print("perf_count: ", perf_counter(), subs)
         commands = str(subs).split(";")
@@ -423,7 +358,7 @@ class LushRoomsLighting():
                 if DEBUG:
                     print("sc: ", scope, "it: ", items)
 
-                if scope[0:3] == "HUE" and PLAY_HUE:
+                if scope[0:3] == "HUE" and self.PLAY_HUE:
                     l = int(scope[3:])
                     #print(l)
                     if VERBOSE:
@@ -435,7 +370,7 @@ class LushRoomsLighting():
                     cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
                     if LIGHTING_MSGS:
                         print("Trigger HUE",l,cmd)
-                    if PLAY_HUE:
+                    if self.PLAY_HUE:
                         #lights = bridge.lights
                         #for light in lights:
                         #   print(light.name)
@@ -463,7 +398,7 @@ class LushRoomsLighting():
                     if LIGHTING_MSGS:
                         print("Trigger DMX:", l, channels)
 
-                    if PLAY_DMX:
+                    if self.PLAY_DMX:
                         if self.dmx != None:
                             self.dmx.write_frame(channels)
             except:
@@ -535,6 +470,8 @@ class LushRoomsLighting():
             print("-------------")
 
     def exit(self):
+        self.resetDMX()
+        self.resetHUE()
         self.__del__()
 
     def triggerPreviousEvent(self, pos):
