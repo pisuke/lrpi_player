@@ -21,15 +21,20 @@ from flask_jsonpify import jsonify
 from flask_restful import reqparse
 import ntplib # pylint: disable=import-error
 from time import ctime
-from time import sleep
 import pause # pylint: disable=import-error
+
+# import sys
 import time
+# import subprocess
+# import json
+# import random
+# from pathlib import Path
+# from time import sleep
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
 from pysrt import stream as srtstream
 from Player import LushRoomsPlayer
 from OmxPlayer import killOmx
-import logging
 
 from content_reader import content_in_dir
 
@@ -59,7 +64,6 @@ MEDIA_BASE_PATH = BASE_PATH + "tracks/"
 BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
-MENU_DMX_VAL = os.environ.get("MENU_DMX_VAL", None)
 
 TEST_TRACK = MEDIA_BASE_PATH + AUDIO_PATH_TEST_MP4
 NEW_TRACK_ARRAY = []
@@ -143,71 +147,69 @@ class GetTrackList(Resource):
 
         print(GetTrackList)
 
+
+
         global NEW_TRACK_ARRAY
         global NEW_SRT_ARRAY
         global BUILT_PATH
         global player
 
-        try:
+        if useNTP:
+            c = ntplib.NTPClient()
+            try:
+                response = c.request(NTP_SERVER)
+                print('\n' + 30*'-')
+                print('ntp time: ', ctime(response.tx_time))
+                print(30*'-' + '\n')
+            except:
+                print('Could not get ntp time!')
 
-            if useNTP:
-                c = ntplib.NTPClient()
-                try:
-                    response = c.request(NTP_SERVER)
-                    print('\n' + 30*'-')
-                    print('ntp time: ', ctime(response.tx_time))
-                    print(30*'-' + '\n')
-                except:
-                    print('Could not get ntp time!')
+        # return a graceful error if the usb stick isn't mounted
+        if os.path.isdir(MEDIA_BASE_PATH) == False:
+            return jsonify(1)
 
-            # return a graceful error if the usb stick isn't mounted
-            if os.path.isdir(MEDIA_BASE_PATH) == False:
-                return jsonify(1)
+        if BUILT_PATH is None:
+            BUILT_PATH = MEDIA_BASE_PATH 
+        
+        args = getInput()
 
-            if BUILT_PATH is None:
-                BUILT_PATH = MEDIA_BASE_PATH 
-            
-            args = getInput()
-
-            print("track list id: " +  str(args['id']))
+        print("track list id: " +  str(args['id']))
 
 
-            if args['id']:
-                if NEW_TRACK_ARRAY:
-                    BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
-                    print(BUILT_PATH[0])
+        if args['id']:
+            if NEW_TRACK_ARRAY:
+                BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
+                print(BUILT_PATH[0])
 
 
-            print('BUILT_PATH: ' + str(BUILT_PATH))
+        print('BUILT_PATH: ' + str(BUILT_PATH))
 
 
-            TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
-            # print(TRACK_ARRAY_WITH_CONTENTS)
-            NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
+        TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
+        # print(TRACK_ARRAY_WITH_CONTENTS)
+        NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
 
-            if mpegOnly:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
-            elif mlpOnly:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
-            elif allFormats:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
+        if mpegOnly:
+            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
+        elif mlpOnly:
+            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
+        elif allFormats:
+            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
 
 
-            NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
+        NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
+        # print(NEW_TRACK_ARRAY)
+        # print(NEW_SRT_ARRAY)
+        if player:
+            player.setPlaylist(NEW_TRACK_ARRAY)
+            player.lighting.resetHUE()
+            player.lighting.resetDMX()
+        else:
+            player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
+            player.lighting.resetHUE()
+            player.lighting.resetDMX()
 
-            if player and player.lighting.dmx:
-                player.setPlaylist(NEW_TRACK_ARRAY)
-                player.resetLighting()
-            else:
-                player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
-                player.resetLighting()
-
-            return jsonify(NEW_TRACK_ARRAY)
-        except Exception as e:
-            logging.error("Path building has probably failed. Sending error code and cleaning up...")
-            logging.error(e)
-            BUILT_PATH = None
-            return 1, 500, {'content-type': 'application/json'}
+        return jsonify(NEW_TRACK_ARRAY)
 
 
 class PlaySingleTrack(Resource):
@@ -321,7 +323,7 @@ class Unpair(Resource):
             unpairRes = player.unpairAsMaster()
         except Exception as e: 
             print('Exception: ', e)
-            unpairRes = 1
+            pairRes = 1
 
         return jsonify(unpairRes)
 
@@ -398,53 +400,6 @@ class Stop(Resource):
         return jsonify(response)
 
 
-class ScentRoomTrigger(Resource):
-    def post(self):
-        global player
-        body = request.get_json(force=True)
-
-        print("SR Trigger received:")
-        print(body)
-
-        if body:
-            if body['trigger'] == "start" and body["upload_path"]:
-                if player == None:
-                    player = LushRoomsPlayer(None, None)
-                    player.start(body["upload_path"], None, "/media/usb/uploads/01_scentroom.srt")
-                    return jsonify({'response': 200, 'description': 'ok!'})
-
-            elif body['trigger'] == "stop":
-                # TODO: make this better
-                # Python, your flexibility is charming but also _scary_
-                if player:
-                    try:
-                        # RGB value for warm white for both RGBW downlight and side RGB lights
-                        # The eighth channel of 255 is needed for whatever reason, I don't have time
-                        # to find out why right now
-                        # matched white light RGB: 255, 241, 198, 255
-                        if player.lighting.dmx:
-                            player.lighting.dmx.write_frame([0, 0, 0, 255, 0, 0, 0, 0])
-                    except Exception as e:
-                        logging.error("Could not kill lighting, things have gotten out of sync...")
-                        logging.info("Killing everything anyway!")
-                        print("Why: ", e)
-                        player.stop()
-                        player.exit()
-                        player.__del__()
-                        player = None
-                    player.stop()
-                    player.exit()
-                    player.__del__()
-                    player = None
-                
-                return jsonify({'response': 200, 'description': 'ok!'})
-
-            else:
-                return jsonify({'response': 500, 'description': 'not ok!', "error": "Unsupported trigger"})
-
-        else:
-            return jsonify({'response': 500, 'description': 'not ok!', "error": "Incorrect body format"})
-        
 # URLs are defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
@@ -463,9 +418,7 @@ api.add_resource(Enslave, '/enslave')
 api.add_resource(Free, '/free')
 api.add_resource(Command, '/command') # POST
 
-# Scentroom specific endpoints
-api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
-
 if __name__ == '__main__':
+
     settings_json = settings.get_settings()
-    app.run(debug=settings_json["debug"], port=os.environ.get("PORT", "80"), host='0.0.0.0')
+    app.run(debug=settings_json["debug"], port=80, host='0.0.0.0')

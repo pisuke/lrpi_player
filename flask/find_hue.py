@@ -22,8 +22,7 @@ def hue_ip():
     address = settings_json["hue_ip"]
     if address:
         print("found address in settings: %s" % address)
-        if address == "disabled":
-            return None
+        return address
 
     # then try zeroconf
 

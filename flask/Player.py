@@ -88,7 +88,7 @@ class LushRoomsPlayer():
             #subs = srtstream(subsPath)
             end_time = time.time()
             print("Finished loading SRT file " + subsPath + " - " + str(end_time))
-            print("Total time elapsed: " + str(end_time - start_time) + " seconds")
+            print("Total time elapsed: " + str(end_time - start_time))
 
         if self.isSlave():
             # wait until the sync time to fire everything off
@@ -152,10 +152,12 @@ class LushRoomsPlayer():
         else:
             return False
 
-    def resetLighting(self):
-        if self.lighting:
-            self.lighting.resetHUE()
-            self.lighting.resetDMX()
+    def next(self):
+        print("Skipping forward...")
+
+    def previous(self):
+        print("Skipping back...")
+
 
     def fadeDown(self, path, interval, subs, subsPath, syncTimestamp=None):
 
@@ -177,7 +179,7 @@ class LushRoomsPlayer():
         if not self.isSlave():
             return self.start(path, subs, subsPath)
         else:
-            return 0
+            return 0 
 
 
     def seek(self, position):

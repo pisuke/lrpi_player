@@ -34,4 +34,6 @@ WORKDIR /opt/code/flask
 ENTRYPOINT ["python3"]
 CMD ["Server.py"]
 
+EXPOSE 80
+
 RUN [ "cross-build-end" ]
