@@ -152,6 +152,7 @@ class LushRoomsLighting():
                     print("HUE disabled in settings.json, HUE is now disabled")
                     self.PLAY_HUE = False
                     return
+
                 self.bridge = Bridge(HUE_IP_ADDRESS, config_file_path="/media/usb/python_hue")
                 # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
                 self.bridge.connect()
