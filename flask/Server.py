@@ -14,7 +14,7 @@ import os.path
 os.environ["FLASK_ENV"] = "development"
 
 from flask import Flask, request, send_from_directory, render_template
-from flask_cors import CORS, cross_origin 
+from flask_cors import CORS, cross_origin
 from flask_restful import Resource, Api
 from json import dumps
 from flask_jsonpify import jsonify
@@ -163,8 +163,8 @@ class GetTrackList(Resource):
             return jsonify(1)
 
         if BUILT_PATH is None:
-            BUILT_PATH = MEDIA_BASE_PATH 
-        
+            BUILT_PATH = MEDIA_BASE_PATH
+
         args = getInput()
 
         print("track list id: " +  str(args['id']))
@@ -238,7 +238,7 @@ class PlayPause(Resource):
 class FadeDown(Resource):
     def get(self):
         global player
-        global BUILT_PATH 
+        global BUILT_PATH
 
         args = getInput()
         print('argsid : ', args["id"])
@@ -315,7 +315,7 @@ class Unpair(Resource):
 
         try:
             unpairRes = player.unpairAsMaster()
-        except Exception as e: 
+        except Exception as e:
             print('Exception: ', e)
             unpairRes = 1
 
@@ -354,10 +354,10 @@ class Enslave(Resource):
 class Free(Resource):
     def get(self):
         global player
- 
+
         try:
             freeRes = player.free()
-        except Exception as e: 
+        except Exception as e:
             print('Exception: ', e)
             freeRes = 1
 
@@ -406,7 +406,10 @@ class ScentRoomTrigger(Resource):
             if body['trigger'] == "start" and body["upload_path"]:
                 if player == None:
                     player = LushRoomsPlayer(None, None)
-                    player.start(body["upload_path"], None, "/media/usb/uploads/01_scentroom.srt")
+                    mp3_filename = body["upload_path"]
+                    srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
+                    print(mp3_filename, srt_filename)
+                    player.start(mp3_filename, None, srt_filename)
                     return jsonify({'response': 200, 'description': 'ok!'})
 
             elif body['trigger'] == "stop":
@@ -432,7 +435,7 @@ class ScentRoomTrigger(Resource):
                     player.exit()
                     player.__del__()
                     player = None
-                
+
                 return jsonify({'response': 200, 'description': 'ok!'})
 
             else:
@@ -440,7 +443,7 @@ class ScentRoomTrigger(Resource):
 
         else:
             return jsonify({'response': 500, 'description': 'not ok!', "error": "Incorrect body format"})
-        
+
 # URLs are defined here
 
 api.add_resource(GetTrackList, '/get-track-list')

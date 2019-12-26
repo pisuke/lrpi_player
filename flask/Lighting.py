@@ -15,7 +15,7 @@ import json
 import settings
 import find_hue
 import logging
-from DmxInterpolator import DmxInterpolator 
+from DmxInterpolator import DmxInterpolator
 
 # dev
 
@@ -120,7 +120,7 @@ class LushRoomsLighting():
                             self.dmx = BrickletDMX(tf[0], self.ipcon)
                             self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
                             self.dmx.set_frame_duration(DMX_FRAME_DURATION)
-                            
+
                         dmxcount += 1
 
             if dmxcount < 1:
@@ -263,7 +263,7 @@ class LushRoomsLighting():
 
     ############################### LOW LEVEL LIGHT METHODS
 
-    def getIdentifier(self, ID): 
+    def getIdentifier(self, ID):
         deviceType = ""
         for t in range(len(self.deviceIDs)):
             if ID[1]==deviceIdentifiersList[t][0]:
@@ -300,16 +300,17 @@ class LushRoomsLighting():
             #pt = SubRipTime(seconds=(player.get_time()/1000.0))
             #ptd = SubRipTime(seconds=(player.get_time()/1000.0+1*TICK_TIME))
 
-            pt = SubRipTime(seconds=pp)
-            ptd = SubRipTime(seconds=(pp+1*TICK_TIME))
+            if pp:
+                pt = SubRipTime(seconds=pp)
+                ptd = SubRipTime(seconds=(pp+1*TICK_TIME))
 
-            if DEBUG:
-                #print('Time: %s | %s | %s - %s | %s - %s | %s | %s' % (datetime.now(),t,ts,tsd,pt,ptd,pp,ptms))
-                # print('Time: %s | %s | %s | %s | %s | %s | %s ' % (datetime.now(),t,ts,tsd,pp,pt,ptd))
-                pass
-            ## sub, i = self.find_subtitle(subs, ts, tsd)
-            # sub, i = self.find_subtitle(self.subs, pt, ptd)
-            sub, i = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
+                if DEBUG:
+                    #print('Time: %s | %s | %s - %s | %s - %s | %s | %s' % (datetime.now(),t,ts,tsd,pt,ptd,pp,ptms))
+                    # print('Time: %s | %s | %s | %s | %s | %s | %s ' % (datetime.now(),t,ts,tsd,pp,pt,ptd))
+                    pass
+                ## sub, i = self.find_subtitle(subs, ts, tsd)
+                # sub, i = self.find_subtitle(self.subs, pt, ptd)
+                sub, i = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
 
             if DEBUG:
                 print(i, "Found Subtitle for light event:", sub, i)
@@ -384,7 +385,7 @@ class LushRoomsLighting():
     def hue_build_lookup_table(self, lights):
         if DEBUG:
             print("hue lookup lights: ", lights)
-    
+
         hue_l = [[]]
         i = 0
         for j in range(1+len(lights)+1):
@@ -454,7 +455,7 @@ class LushRoomsLighting():
 
                 if scope[0:3] == "DMX":
                     l = int(scope[3:])
-                
+
                     if items == "":
                         print("Empty DMX event found! Turning all DMX channels off...")
                         channels = self.emptyDMXFrame()
@@ -486,7 +487,7 @@ class LushRoomsLighting():
         self.subs = subs
         self.dmx_interpolator.__init__()
         subs_length = len(self.subs)
-        if subs is not None: 
+        if subs is not None:
             if LIGHTING_MSGS:
                 print("Lighting: Start!")
                 print('AudioPlayer: ', self.player)
@@ -581,7 +582,7 @@ class LushRoomsLighting():
             if self.scheduler:
                 logging.info("Shutting down scheduler...")
                 self.scheduler.shutdown()
-           
+
             logging.info("Disconnecting from tinkerforge...")
             self.ipcon.disconnect()
             self.dmx = None
