@@ -294,23 +294,22 @@ class LushRoomsLighting():
             except Exception as e:
                 print("Could not get the current position of the player, shutting down lighting gracefully...")
                 self.__del__()
-
+                return
 
             #ptms = player.get_time()/1000.0
             #pt = SubRipTime(seconds=(player.get_time()/1000.0))
             #ptd = SubRipTime(seconds=(player.get_time()/1000.0+1*TICK_TIME))
 
-            if pp:
-                pt = SubRipTime(seconds=pp)
-                ptd = SubRipTime(seconds=(pp+1*TICK_TIME))
+            pt = SubRipTime(seconds=pp)
+            ptd = SubRipTime(seconds=(pp+1*TICK_TIME))
 
-                if DEBUG:
-                    #print('Time: %s | %s | %s - %s | %s - %s | %s | %s' % (datetime.now(),t,ts,tsd,pt,ptd,pp,ptms))
-                    # print('Time: %s | %s | %s | %s | %s | %s | %s ' % (datetime.now(),t,ts,tsd,pp,pt,ptd))
-                    pass
-                ## sub, i = self.find_subtitle(subs, ts, tsd)
-                # sub, i = self.find_subtitle(self.subs, pt, ptd)
-                sub, i = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
+            if DEBUG:
+                #print('Time: %s | %s | %s - %s | %s - %s | %s | %s' % (datetime.now(),t,ts,tsd,pt,ptd,pp,ptms))
+                # print('Time: %s | %s | %s | %s | %s | %s | %s ' % (datetime.now(),t,ts,tsd,pp,pt,ptd))
+                pass
+            ## sub, i = self.find_subtitle(subs, ts, tsd)
+            # sub, i = self.find_subtitle(self.subs, pt, ptd)
+            sub, i = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
 
             if DEBUG:
                 print(i, "Found Subtitle for light event:", sub, i)
@@ -504,9 +503,9 @@ class LushRoomsLighting():
                 self.scheduler = BackgroundScheduler({
                 'apscheduler.executors.processpool': {
                     'type': 'processpool',
-                    'max_workers': '10'
+                    'max_workers': '1'
                 }})
-                self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=None, max_instances=16, coalesce=True)
+                self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=None, max_instances=1, coalesce=True)
                 # This could be the cause of the _very_ first event, after a cold boot, not triggering correctly:
                 self.scheduler.start(paused=False)
 
