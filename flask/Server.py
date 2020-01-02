@@ -1,15 +1,17 @@
-#
+#!/usr/bin/env python3
+
+# TODO:
 #
 # Clearing omxplayer temporary files sometimes solves the issue,
 # sometimes it doesn't...
 # sudo rm -rf /tmp/omxplayerdbus*
 #
-#
+# 103 -> whitelist is injected from settings.json into the logic that uses the bools below...
+# Remember to update docs/gdrive examples!
 
-#!/usr/bin/env python3
 
 from os.path import splitext
-import os
+import os, sys
 import os.path
 os.environ["FLASK_ENV"] = "development"
 
@@ -27,17 +29,21 @@ import time
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
 from pysrt import stream as srtstream
-from Player import LushRoomsPlayer
-from OmxPlayer import killOmx
 import logging
-
-from content_reader import content_in_dir
+from apscheduler.schedulers.background import BackgroundScheduler
+from tinkerforge.ip_connection import IPConnection # pylint: disable=import-error
 
 import settings
+from content_reader import content_in_dir
+from Lighting import LushRoomsLighting
+from Player import LushRoomsPlayer
+from OmxPlayer import killOmx
 
-# 103 -> whitelist is injected from settings.json into the logic that uses the bools below...
-# Remember to update docs/gdrive examples!
+# Remove initial Flask messages and warning
+cli = sys.modules['flask.cli']
+cli.show_server_banner = lambda *x: None
 
+# boolean flags
 mpegOnly = True
 mlpOnly = False
 allFormats = False
@@ -46,11 +52,20 @@ useNTP = False
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
 
+scheduler = BackgroundScheduler({
+    'apscheduler.executors.processpool': {
+        'type': 'processpool',
+        'max_workers': '1'
+    }}, timezone="Europe/London")
+scheduler.start(paused=False)
+logging.getLogger('apscheduler').setLevel(logging.CRITICAL)
+
 SENTRY_URL = os.environ.get("SENTRY_URL")
 
 if SENTRY_URL is not None:
     from raven.contrib.flask import Sentry
     sentry = Sentry(app, dsn=SENTRY_URL)
+
 
 
 NTP_SERVER = 'ns1.luns.net.uk'
@@ -60,25 +75,29 @@ BUILT_PATH = None
 AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
 MENU_DMX_VAL = os.environ.get("MENU_DMX_VAL", None)
+NUM_DMX_CHANNELS = os.environ.get("NUM_DMX_CHANNELS", None)
+HOST = os.environ.get("BRICKD_HOST", "127.0.0.1")
+PORT = 4223
 
 TEST_TRACK = MEDIA_BASE_PATH + AUDIO_PATH_TEST_MP4
 NEW_TRACK_ARRAY = []
 NEW_SRT_ARRAY = []
 
 player = None
-paused = None
+tfipcon = IPConnection() # TinkerForge IP connection
+paused = True
+status = "Paused"
+idle_lighting_player = None
 
 CORS(app)
 # killOmx as soon as the server starts...
 killOmx()
 
+
 # utils
 
-# Kill omx processes on a ctrl+c/program closure
-# to mirror the behaviour of vlc and, in turn, to
-# be more graceful
-
 def sigint_handler(signum, frame):
+    """ Kill omx processes on a ctrl+c/program closure to mirror the behaviour of vlc and, in turn, to be more graceful. """
     killOmx()
     exit()
 
@@ -102,13 +121,11 @@ def printOmxVars():
     print("OMXPLAYER_BIN" in os.environ)
 
 def loadSettings():
-    # return a graceful error if contents.json can't be found
-
+    """ Load contents.json and return a graceful error if the file can't be found. """
     settings_json = settings.get_settings()
     settings_json = settings_json.copy()
     settings_json["roomName"] = settings_json["name"]
     print("Room name: ", settings_json["name"])
-
     return settings_json
 
 def timing(f):
@@ -117,9 +134,49 @@ def timing(f):
         ret = f(*args)
         time2 = time.time()
         print('{:s} function took {:.3f} ms'.format(f.__name__, (time2-time1)*1000.0))
-
         return ret
     return wrap
+
+def idleLoop():
+    global player, paused, status, idle_lighting_player, tfipcon
+    print(time.time(), tfipcon, idle_lighting_player)
+    try:
+        if player != None:
+            status = player.getStatus()["playerState"]
+        else:
+            status = "Paused"
+    except:
+        status = "Paused"
+    if status == "Paused":
+        print("Playing idle loop", idle_lighting_player.startTime, idle_lighting_player.last_played, idle_lighting_player.job)
+        # idlePlay()
+        idle_lighting_player.startTime = time.perf_counter()
+        idle_lighting_player.last_played = 0
+        print(idle_lighting_player.startTime, idle_lighting_player.last_played, idle_lighting_player.job)
+        # idle_lighting_player.start(None, subs)
+        # idle_lighting_player.job.Job.resume()
+        # idle_lighting_player.scheduler.resume()
+    elif status == "Playing":
+        pass
+        # idle_lighting_player.playPause()
+        # idle_lighting_player.job.Job.pause()
+    print(status)
+
+def idlePlay():
+    global player, scheduler, tfipcon
+    if player == None:
+        player = LushRoomsPlayer(None, None, scheduler, tfipcon)
+    sleep(0.5)
+    mp3_filename = "/media/usb/uploads/idle.mp3"
+    srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
+    player.start(mp3_filename, None, srt_filename)
+    # sleep(5.5)
+    # player.stop()
+    # player.exit()
+    # player.__del__()
+    # player = None
+    # killOmx()
+
 
 # serve the angular app
 
@@ -139,6 +196,7 @@ class GetSettings(Resource):
 
 
 class GetTrackList(Resource):
+    global player, scheduler, tfipcon
     def get(self):
 
         print(GetTrackList)
@@ -199,7 +257,7 @@ class GetTrackList(Resource):
             player.lighting.resetHUE()
             player.lighting.resetDMX()
         else:
-            player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
+            player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH, scheduler, tfipcon)
             player.lighting.resetHUE()
             player.lighting.resetDMX()
 
@@ -208,8 +266,7 @@ class GetTrackList(Resource):
 
 class PlaySingleTrack(Resource):
     def get(self):
-        global player
-        global paused
+        global player, paused
         global BUILT_PATH
 
         args = getInput()
@@ -226,18 +283,20 @@ class PlaySingleTrack(Resource):
         print("Playing: " + pathToTrack)
 
         duration = player.start(pathToTrack, None, BUILT_PATH + srtFileName)
+        paused = False
 
         return jsonify(duration)
 
 class PlayPause(Resource):
     def get(self):
-        global player
+        global player, paused
         duration = player.playPause()
+        paused = not paused
         return jsonify(duration)
 
 class FadeDown(Resource):
     def get(self):
-        global player
+        global player, paused
         global BUILT_PATH
 
         args = getInput()
@@ -271,7 +330,7 @@ class FadeDown(Resource):
 
 class Seek(Resource):
     def get(self):
-        global player
+        global player, paused
         global BUILT_PATH
 
         args = getInput()
@@ -323,7 +382,7 @@ class Unpair(Resource):
 
 class Enslave(Resource):
     def get(self):
-        global player
+        global player, scheduler, tfipcon
 
         # If there is a player running, kill it
         # If there isnt, make one without a playlist
@@ -339,7 +398,7 @@ class Enslave(Resource):
             player.stop()
             player.exit()
         else:
-            player = LushRoomsPlayer(None, None)
+            player = LushRoomsPlayer(None, None, scheduler, tfipcon)
 
         print('Enslaving, player stopped and exited')
         print('Enslaved by: ', request.environ.get('HTTP_X_REAL_IP', request.remote_addr) )
@@ -396,7 +455,7 @@ class Stop(Resource):
 
 class ScentRoomTrigger(Resource):
     def post(self):
-        global player
+        global player, scheduler, tfipcon
         body = request.get_json(force=True)
 
         print("SR Trigger received:")
@@ -404,25 +463,41 @@ class ScentRoomTrigger(Resource):
 
         if body:
             if body['trigger'] == "start" and body["upload_path"]:
+                print("SR Trigger received: start")
+                mp3_filename = body["upload_path"]
+                srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
+                print(mp3_filename, srt_filename)
                 if player == None:
-                    player = LushRoomsPlayer(None, None)
-                    mp3_filename = body["upload_path"]
-                    srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
-                    print(mp3_filename, srt_filename)
+                    print("SR Trigger play - restarting LushRoomsPlayer")
+                    player = LushRoomsPlayer(None, None, scheduler, tfipcon)
+                    player.start(mp3_filename, None, srt_filename)
+                    return jsonify({'response': 200, 'description': 'ok!'})
+                else:
                     player.start(mp3_filename, None, srt_filename)
                     return jsonify({'response': 200, 'description': 'ok!'})
 
             elif body['trigger'] == "stop":
+                print("SR Trigger received: stop")
                 # TODO: make this better
                 # Python, your flexibility is charming but also _scary_
-                if player:
+                if player != None:
+                    print("SR Trigger received: player existing")
                     try:
-                        # RGB value for warm white for both RGBW downlight and side RGB lights
+                        # for the ScentRoom, RGB value for warm white for both RGBW downlight and side RGB lights
                         # The eighth channel of 255 is needed for whatever reason, I don't have time
                         # to find out why right now
                         # matched white light RGB: 255, 241, 198, 255
                         if player.lighting.dmx:
-                            player.lighting.dmx.write_frame([0, 0, 0, 255, 0, 0, 0, 0])
+                            player.lighting.dmx.write_frame([0, 0, 0, 255, 30, 30, 30, 0])
+                        # player.playPause()
+                        # player.stop()
+                        # player.exit()
+                        # player.__del__()
+                        # player = None
+                        # killOmx()
+                        # scheduler.print_jobs()
+                        # status = "Paused"
+                        # return jsonify({'response': 200, 'description': 'ok!'})
                     except Exception as e:
                         logging.error("Could not kill lighting, things have gotten out of sync...")
                         logging.info("Killing everything anyway!")
@@ -431,10 +506,22 @@ class ScentRoomTrigger(Resource):
                         player.exit()
                         player.__del__()
                         player = None
+                        # killOmx()
+                        # scheduler.print_jobs()
+                        # status = "Paused"
+                        # return jsonify({'response': 200, 'description': 'lighting out of sync'})
+                    # else:
                     player.stop()
                     player.exit()
                     player.__del__()
                     player = None
+
+                    # print("SR Trigger stop - restarting LushRoomsPlayer")
+                    # player = LushRoomsPlayer(None, None, scheduler, tfipcon)
+                    # if player.lighting.dmx:
+                    #     player.lighting.dmx.write_frame([0, 0, 0, 255, 30, 30, 30, 0])
+                    scheduler.print_jobs()
+                    status = "Paused"
 
                 return jsonify({'response': 200, 'description': 'ok!'})
 
@@ -443,6 +530,52 @@ class ScentRoomTrigger(Resource):
 
         else:
             return jsonify({'response': 500, 'description': 'not ok!', "error": "Incorrect body format"})
+
+class ScentRoomReboot(Resource):
+    def get(self):
+        global player, scheduler, tfipcon
+        try:
+            player = LushRoomsPlayer(None, None, scheduler, tfipcon)
+            sleep(1)
+            if player.lighting:
+                player.lighting.dmx.write_frame([0, 150, 0, 255, 0, 150, 0, 0])
+                sleep(0.2)
+                player.lighting.dmx.write_frame([0, 0, 0, 0, 0, 0, 0, 0])
+                sleep(0.2)
+                player.lighting.dmx.write_frame([0, 150, 0, 255, 0, 150, 0, 0])
+                sleep(0.2)
+                player.lighting.dmx.write_frame([0, 0, 0, 0, 0, 0, 0, 0])
+            player.stop()
+            player.exit()
+            player.__del__()
+            player = None
+            killOmx()
+            return jsonify({'response': 200, 'description': 'ok!'})
+        except Exception as e:
+            print("Reboot sequence failed: ", e)
+            return jsonify({'response': 500, 'description': 'not ok!'})
+
+class ScentRoomIdle(Resource):
+    def get(self):
+        global player, scheduler, tfipcon
+        try:
+            print("SR Trigger idle - restarting LushRoomsPlayer")
+            if player == None:
+                player = LushRoomsPlayer(None, None, scheduler, tfipcon)
+            sleep(0.5)
+            mp3_filename = "/media/usb/uploads/idle.mp3"
+            srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
+            player.start(mp3_filename, None, srt_filename)
+            sleep(5.5)
+            player.stop()
+            player.exit()
+            player.__del__()
+            player = None
+            killOmx()
+            return jsonify({'response': 200, 'description': 'ok!'})
+        except Exception as e:
+            print("Idle sequence failed: ", e)
+            return jsonify({'response': 500, 'description': 'not ok!'})
 
 # URLs are defined here
 
@@ -464,7 +597,21 @@ api.add_resource(Command, '/command') # POST
 
 # Scentroom specific endpoints
 api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
+api.add_resource(ScentRoomReboot, '/scentroom-reboot') # GET
+api.add_resource(ScentRoomIdle, '/scentroom-idle') # GET
 
 if __name__ == '__main__':
+    tfipcon.connect(HOST, PORT)
     settings_json = settings.get_settings()
-    app.run(debug=settings_json["debug"], port=os.environ.get("PORT", "80"), host='0.0.0.0')
+    if settings_json['activate_idle_loop'] == "true":
+        scheduler.add_job(idleLoop, 'interval', seconds=8, misfire_grace_time=None, max_instances=1, coalesce=False)
+
+    idle_lighting_player = LushRoomsLighting(scheduler, tfipcon)
+    srtFilename = "/media/usb/uploads/idle.srt"
+    subs = srtopen(srtFilename)
+    idle_lighting_player.start(None, subs)
+
+    sleep(8)
+
+    # app.run(use_reloader=False, debug=settings_json["debug"], port=os.environ.get("PORT", "80"), host='0.0.0.0')
+    app.run(use_reloader=False, debug="true", port=os.environ.get("PORT", "80"), host='0.0.0.0')

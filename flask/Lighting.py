@@ -24,7 +24,7 @@ VERBOSE = False
 SEEK_EVENT_LOG = False
 LIGHTING_MSGS = True
 
-# dmx
+# TinkerForge DMX
 MENU_DMX_VAL = os.environ.get("MENU_DMX_VAL", None)
 NUM_DMX_CHANNELS = os.environ.get("NUM_DMX_CHANNELS", None)
 HOST = os.environ.get("BRICKD_HOST", "127.0.0.1")
@@ -35,7 +35,7 @@ PORT = 4223
 MAX_BRIGHTNESS = 200
 DMX_FRAME_DURATION=25
 HUE_IP_ADDRESS = ""
-TICK_TIME = 0.1 # seconds
+TICK_TIME = 0.05 # Lighting frame time in seconds. Ideally for DMX this should be 0.025 (40 times/s) but the current triggering code is not quick enough
 PLAY_HUE = True
 PLAY_DMX = True
 # SLEEP_TIME = 0.1 # seconds
@@ -47,18 +47,23 @@ dmx = None
 scheduler = None
 last_played = 0
 
-tfConnect = False
+# tfConnect = False
+
+playerInstance = 0
 
 # utils
 
 class LushRoomsLighting():
 
-    def __init__(self):
+    def __init__(self, scheduler, tfIPConnection):
+        global playerInstance
         print('Lushroom Lighting init!')
         self.TRANSITION_TIME = 5 # milliseconds
         self.hue_list = [[]]
         self.player = None
-        self.scheduler = None
+        self.scheduler = scheduler
+        self.job = None
+
         self.dmx_interpolator = DmxInterpolator()
 
         # 'last_played' seems to be the last numbered lighting event
@@ -72,14 +77,18 @@ class LushRoomsLighting():
         # DMX
         self.dmx = None
         self.tfIDs = []
-        self.ipcon = IPConnection()
+        self.ipcon = tfIPConnection
         self.deviceIDs = [i[0] for i in deviceIdentifiersList]
+        self.startTime = perf_counter()
 
         # init methods
 
         if PLAY_DMX:
             self.initDMX()
         self.initHUE()
+
+        playerInstance += 1
+        self.playerInstance = playerInstance
 
     def emptyDMXFrame(self):
         return zeros((512,), dtype=int)
@@ -94,7 +103,7 @@ class LushRoomsLighting():
     def initDMX(self):
         # configure Tinkerforge DMX
         try:
-            self.ipcon.connect(HOST, PORT)
+            # self.ipcon.connect(HOST, PORT)
 
             # Register Enumerate Callback
             self.ipcon.register_callback(IPConnection.CALLBACK_ENUMERATE, self.cb_enumerate)
@@ -264,6 +273,7 @@ class LushRoomsLighting():
     ############################### LOW LEVEL LIGHT METHODS
 
     def getIdentifier(self, ID):
+        """ Get TinkerForge device identifier """
         deviceType = ""
         for t in range(len(self.deviceIDs)):
             if ID[1]==deviceIdentifiersList[t][0]:
@@ -271,30 +281,40 @@ class LushRoomsLighting():
         return(deviceType)
 
     # tick()
-    # callback that runs at every tick of the apscheduler
+
 
     def tick(self):
+        """ Callback that runs at every tick of the APScheduler to trigger lighting events """
         # Leaving the comments below in for Francesco, they could be part of
         # a mysterious but useful debug strategy
         # try:
 
+        # if self.player:
         if True:
             # print(subs[0])
+
+            # get the float value of current time in seconds
             t = perf_counter()
 
             # ts = str(timedelta(seconds=t)).replace('.',',')
             # tsd = str(timedelta(seconds=t+10*TICK_TIME)).replace('.',',')
 
+            # convert time in seconds to subtitle time
             ts = SubRipTime(seconds = t)
+            # convert time in seconds to subtitle time + the tick time increment
             tsd = SubRipTime(seconds = t + (1*TICK_TIME))
             # print(dir(player))
 
-            try:
-                pp = self.player.getPosition()
-            except Exception as e:
-                print("Could not get the current position of the player, shutting down lighting gracefully...")
-                self.__del__()
-                return
+            # get the time of the current position
+            if self.player:
+                try:
+                    pp = self.player.getPosition()
+                except Exception as e:
+                    # print("Could not get the current position of the player, shutting down lighting gracefully...")
+                    # self.__del__()
+                    return
+            else:
+                pp = t - self.startTime
 
             #ptms = player.get_time()/1000.0
             #pt = SubRipTime(seconds=(player.get_time()/1000.0))
@@ -342,6 +362,8 @@ class LushRoomsLighting():
 
         # except:
         #    pass
+        return
+
 
     def find_subtitle(self, subtitle, from_t, to_t, lo=0, backwards=False):
         i = lo
@@ -376,10 +398,10 @@ class LushRoomsLighting():
 
         return "", i
 
-    def end_callback(self, event):
-        if LIGHTING_MSGS:
-            print('End of media stream (event %s)' % event.type)
-        exit(0)
+    # def end_callback(self, event):
+    #     if LIGHTING_MSGS:
+    #         print('End of media stream (event %s)' % event.type)
+    #     exit(0)
 
     def hue_build_lookup_table(self, lights):
         if DEBUG:
@@ -408,7 +430,7 @@ class LushRoomsLighting():
         return(hue_l)
 
     def trigger_light(self, subs):
-        global MAX_BRIGHTNESS, DEBUG, PLAY_HUE
+        global MAX_BRIGHTNESS, DEBUG, PLAY_HUE, playerInstance
         if DEBUG:
             print("perf_count: ", perf_counter(), subs)
         commands = str(subs).split(";")
@@ -426,7 +448,7 @@ class LushRoomsLighting():
                 if DEBUG:
                     print("sc: ", scope, "it: ", items)
 
-                if scope[0:3] == "HUE" and PLAY_HUE:
+                if scope[0:3] == "HUE" and PLAY_HUE and self.playerInstance == playerInstance:
                     l = int(scope[3:])
                     #print(l)
                     if VERBOSE:
@@ -437,7 +459,7 @@ class LushRoomsLighting():
                     # print(bri)
                     cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
                     if LIGHTING_MSGS:
-                        print("Trigger HUE",l,cmd)
+                        print(self.playerInstance, "Trigger HUE",l,cmd)
                     if PLAY_HUE:
                         #lights = bridge.lights
                         #for light in lights:
@@ -452,7 +474,7 @@ class LushRoomsLighting():
                         for hl in self.hue_list[l]:
                             self.bridge.set_light(hl, cmd)
 
-                if scope[0:3] == "DMX":
+                if scope[0:3] == "DMX" and self.playerInstance == playerInstance:
                     l = int(scope[3:])
 
                     if items == "":
@@ -464,7 +486,7 @@ class LushRoomsLighting():
                         # channels = array(map(lambda i: int(MAX_BRIGHTNESS)*i, channels))
 
                     if LIGHTING_MSGS:
-                        print("Trigger DMX:", l, channels)
+                        print(self.playerInstance, "Trigger DMX:", l, channels)
 
                     if PLAY_DMX:
                         if self.dmx != None:
@@ -485,8 +507,9 @@ class LushRoomsLighting():
         self.player = audioPlayer
         self.subs = subs
         self.dmx_interpolator.__init__()
+        self.startTime = perf_counter()
         subs_length = len(self.subs)
-        if subs is not None:
+        if subs is not None and self.playerInstance == playerInstance:
             if LIGHTING_MSGS:
                 print("Lighting: Start!")
                 print('AudioPlayer: ', self.player)
@@ -500,14 +523,29 @@ class LushRoomsLighting():
                     print("There's only 1 lighting event, so no need to start the scheduler and unleash hell...")
             elif subs_length > 1:
                 # start lighting scheduler
-                self.scheduler = BackgroundScheduler({
-                'apscheduler.executors.processpool': {
-                    'type': 'processpool',
-                    'max_workers': '1'
-                }})
-                self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=None, max_instances=1, coalesce=True)
+                # self.scheduler = BackgroundScheduler({
+                #     'daemon': 'true',
+                #     'apscheduler.executors.threadpool': {
+                #         'type': 'threadpool',
+                #         'max_workers': '1'
+                #     }
+                # })
+
+                #https://www.joeshaw.org/python-daemon-threads-considered-harmful/
+                # self.scheduler = BackgroundScheduler({
+                #     'daemon': 'false',
+                #     'apscheduler.executors.processpool': {
+                #         'type': 'processpool',
+                #         'max_workers': '4'
+                #     }
+                # })
+                # self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=None, max_instances=16, coalesce=True)
+                self.job = self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=None, max_instances=1, coalesce=False)
+
                 # This could be the cause of the _very_ first event, after a cold boot, not triggering correctly:
-                self.scheduler.start(paused=False)
+                # self.scheduler.start(paused=False)
+
+                # logging.getLogger('apscheduler').setLevel(logging.CRITICAL)
 
             if LIGHTING_MSGS:
                 print("-------------")
@@ -578,14 +616,22 @@ class LushRoomsLighting():
     def __del__(self):
         try:
             print("ipcon: ", self.ipcon)
-            if self.scheduler:
+            if self.scheduler != None:
                 logging.info("Shutting down scheduler...")
-                self.scheduler.shutdown()
+                self.scheduler.print_jobs()
+                for job in self.scheduler.get_jobs():
+                    print(job)
+                self.job.remove()
+                sleep(.5)
+                # self.scheduler.shutdown(wait=False)
 
-            logging.info("Disconnecting from tinkerforge...")
-            self.ipcon.disconnect()
+            logging.info("Disconnecting from TinkerForge...")
+            if self.ipcon != None:
+                self.ipcon.disconnect()
+
             self.dmx = None
             self.ipcon = None
+            # self.scheduler = None
         except Exception as e:
             print('Lighting destructor failed: ', e)
         if LIGHTING_MSGS:
@@ -594,7 +640,12 @@ class LushRoomsLighting():
 
 class ExitException(Exception):
     def __init__(self, key, scheduler, ipcon):
-        scheduler.shutdown()
-        if tfConnect:
-            ipcon.disconnect()
+        if self.scheduler:
+            for job in self.scheduler.get_jobs():
+                print(job)
+                job.remove()
+            sleep(.5)
+            # self.scheduler.shutdown(wait=False)
+        # if tfConnect:
+        #     ipcon.disconnect()
         exit(0)

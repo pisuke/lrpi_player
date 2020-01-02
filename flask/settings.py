@@ -65,4 +65,7 @@ def get_evn_settings():
     settings["debug"] = os.environ.get("DEBUG") == "true"
     settings["audio_volume"] = int(os.environ.get("AUDIO_VOLUME", "100"))
     settings["audio_output"] = os.environ.get("AUDIO_OUPUT", "hdmi")
+    settings["activate_idle_loop"] = os.environ.get("ACTIVATE_IDLE_LOOP", "true")
+    settings["reset_dmx_command"] = os.environ.get("RESET_DMX_COMMAND", "DMX1(20,20,20,20,20,20,20,20)")
+    settings["reset_hue_command"] = os.environ.get("RESET_HUE_COMMAND", "{'transitiontime' : 5, 'on' : True, 'bri' : 50, 'sat' : 100, 'hue' : 0, 'ct' : 450}")
     return settings
