@@ -130,7 +130,18 @@ class LushRoomsLighting():
     def resetDMX(self):
         print("Directly resetting DMX...")
         if self.dmx:
-            self.dmx.write_frame([ int(0.65*MAX_BRIGHTNESS),
+            if (MENU_DMX_VAL is not None and NUM_DMX_CHANNELS is not None):
+                print('pod mode reset RGD menu values: ', MENU_DMX_VAL)
+                print('pod mode number of DMX channels: ', NUM_DMX_CHANNELS)
+                frame_arr = []
+                menu_val_arr = MENU_DMX_VAL.split(",")
+                menu_val_arr = [int(i) for i in menu_val_arr]
+                for i in range(int(int(NUM_DMX_CHANNELS)/3)):
+                    frame_arr += menu_val_arr
+                self.dmx.write_frame(frame_arr)
+            else:
+                print('spa mode, resetting DMX to pre-agreed constant')
+                self.dmx.write_frame([ int(0.65*MAX_BRIGHTNESS),
                                         int(0.40*MAX_BRIGHTNESS),
                                         int(0.40*MAX_BRIGHTNESS),
                                         int(0.40*MAX_BRIGHTNESS),
