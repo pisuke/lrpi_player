@@ -1,3 +1,6 @@
+# The docker-compose file starts the player on port 80
+# By default, $PORT is set to 8080 so you can run the dev code in tandem
+
 PORT=8080
 
 docker run -it --rm -p $PORT:$PORT \
@@ -8,5 +11,5 @@ docker run -it --rm -p $PORT:$PORT \
 --device /dev/fb0:/dev/fb0 \
 --entrypoint "/bin/bash" \
 --network host \
---env PORT=8080 \
+--env PORT=$PORT \
 lushdigital/lushroom-player:staging  
