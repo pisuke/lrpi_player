@@ -471,8 +471,6 @@ class LushRoomsLighting():
             print("-------------")
 
     def exit(self):
-        self.resetDMX()
-        self.resetHUE()
         self.__del__()
 
     def triggerPreviousEvent(self, pos):
