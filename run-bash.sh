@@ -1,4 +1,4 @@
-PORT=8080
+PORT=80
 
 docker run -it --rm -p $PORT:$PORT \
 -v /opt/vc:/opt/vc \
@@ -8,5 +8,5 @@ docker run -it --rm -p $PORT:$PORT \
 --device /dev/fb0:/dev/fb0 \
 --entrypoint "/bin/bash" \
 --network host \
---env PORT=8080 \
+--env PORT=$PORT \
 lushdigital/lushroom-player:staging  

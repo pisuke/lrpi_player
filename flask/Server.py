@@ -72,14 +72,12 @@ NTP_SERVER = 'ns1.luns.net.uk'
 BASE_PATH = "/media/usb/"
 MEDIA_BASE_PATH = BASE_PATH + "tracks/"
 BUILT_PATH = None
-AUDIO_PATH_TEST_MP4 = "5.1_AAC_Test.mp4"
 JSON_LIST_FILE = "content.json"
 MENU_DMX_VAL = os.environ.get("MENU_DMX_VAL", None)
 NUM_DMX_CHANNELS = os.environ.get("NUM_DMX_CHANNELS", None)
 HOST = os.environ.get("BRICKD_HOST", "127.0.0.1")
 PORT = 4223
 
-TEST_TRACK = MEDIA_BASE_PATH + AUDIO_PATH_TEST_MP4
 NEW_TRACK_ARRAY = []
 NEW_SRT_ARRAY = []
 
