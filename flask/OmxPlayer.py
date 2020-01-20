@@ -36,6 +36,9 @@ class OmxPlayer():
         print('seek event! ' + str(b))
         return
 
+    def primeForStart(self, pathToTrack):
+        self.triggerStart(pathToTrack, withPause=True)
+
     def triggerStart(self, pathToTrack, withPause=False):
         # lrpi_player#105
         # Audio output can be routed through hdmi or the jack,
@@ -49,10 +52,10 @@ class OmxPlayer():
         if output_route == 'hdmi':
             normalised_output_route = 'hdmi'
             omxArgs += ['-w', '--layout', '5.1']
-        elif output_route == 'jack': 
+        elif output_route == 'jack':
             normalised_output_route = 'local'
 
-        omxArgs += ['-o', normalised_output_route] 
+        omxArgs += ['-o', normalised_output_route]
 
         print('OUTPUT: ' + normalised_output_route)
         print('Full playing args: ' + str(omxArgs))
@@ -67,10 +70,6 @@ class OmxPlayer():
             # before setting the volume to 0
             self.player.set_volume(0)
             sleep(0.5)
-
-
-    def primeForStart(self, pathToTrack):
-        self.triggerStart(pathToTrack, withPause=True)
 
     def start(self, pathToTrack, syncTimestamp=None, master=False):
         print("Playing on omx... :", master)
@@ -94,7 +93,6 @@ class OmxPlayer():
 
             self.player.positionEvent += self.posEvent
             self.player.seekEvent += self.seekEvent
-            # self.player.set_position(0)
 
             if volume is not None:
                 self.audio_volume = volume
@@ -187,13 +185,7 @@ class OmxPlayer():
     def exit(self, syncTimestamp=None):
         if syncTimestamp:
             pause.until(syncTimestamp)
-
-        if self.player:
-            self.player.quit()
-            self.__del__()
-            killOmx()
-        else:
-            return 1
+        self.__del__()
 
     def __del__(self):
         if self.player:

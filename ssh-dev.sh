@@ -1,0 +1,1 @@
+sudo sshfs -o allow_other,IdentityFile=/home/guestsudo/Projects/lush-spa-combi/keys/lrpi_id_rsa lush@$1:/home/lush/ ./mnt

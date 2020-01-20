@@ -7,7 +7,6 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from urllib import parse
 import requests
-from Lighting import LushRoomsLighting
 import ntplib # pylint: disable=import-error
 from time import ctime
 import pause # pylint: disable=import-error
@@ -15,6 +14,8 @@ from pysrt import open as srtopen # pylint: disable=import-error
 from pysrt import stream as srtstream
 import datetime, calendar
 import json
+
+from Lighting import LushRoomsLighting
 
 # utils
 
@@ -29,7 +30,7 @@ else:
     from VlcPlayer import VlcPlayer
 
 class LushRoomsPlayer():
-    def __init__(self, playlist, basePath):
+    def __init__(self, playlist, basePath, connections):
         if uname().machine == 'armv7l':
             # we're likely on a 'Pi
             self.playerType = "OMX"
@@ -41,7 +42,7 @@ class LushRoomsPlayer():
             self.playerType = "VLC"
             self.player = VlcPlayer()
 
-        self.lighting = LushRoomsLighting()
+        self.lighting = LushRoomsLighting(connections)
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
@@ -135,8 +136,8 @@ class LushRoomsPlayer():
                 print('Master, sending stop!')
                 syncTime = self.sendSlaveCommand('stop')
 
-            self.lighting.exit()
             self.player.exit(syncTime)
+            self.lighting.exit()
 
             return 0
         except Exception as e:
@@ -155,8 +156,8 @@ class LushRoomsPlayer():
 
     def resetLighting(self):
         if self.lighting:
-            self.lighting.resetHUE()
             self.lighting.resetDMX()
+            self.lighting.resetHUE()
 
     def fadeDown(self, path, interval, subs, subsPath, syncTimestamp=None):
 
@@ -173,7 +174,6 @@ class LushRoomsPlayer():
             while self.player.volumeDown(interval):
                 sleep(1.0/interval)
         self.player.exit()
-        self.lighting.exit()
 
         if not self.isSlave():
             return self.start(path, subs, subsPath)
@@ -236,6 +236,7 @@ class LushRoomsPlayer():
     def free(self):
         if self.player.paired:
             self.player.setPaired(False, None)
+            self.resetLighting()
             self.player.exit()
             return 0
 
@@ -284,19 +285,13 @@ class LushRoomsPlayer():
     def sendSlaveCommand(self, command):
         if self.player.paired:
             print('sending command to slave: ', command)
-            # c = ntplib.NTPClient()
             try:
                 # tx_time is a unix timestamp
                 # this, among a few other things, means 'party mode'
                 # is only available on the 'Pi'/other unix like systems
-                # response = c.request(NTP_SERVER)
-                # print('\n' + 30*'-')
-                # print('ntp time: ', ctime(response.tx_time))
-                # print('ntp time raw: ', response.tx_time)
-                # print(30*'-' + '\n')
 
                 localTimestamp = calendar.timegm(datetime.datetime.now().timetuple())
-                
+
                 print('currentUnixTimestamp (local on pi: )', localTimestamp)
                 self.eventSyncTime = localTimestamp + self.slaveCommandOffset
                 print('events sync at: ', ctime(self.eventSyncTime))
@@ -327,7 +322,7 @@ class LushRoomsPlayer():
 
 
     def exit(self):
-        self.player.exit()
+        self.player.__del__()
 
     # mysterious Python destructor...
 

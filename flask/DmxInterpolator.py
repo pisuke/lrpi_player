@@ -109,18 +109,18 @@ class DmxInterpolator():
         # Calculate the interpolated DMX frame
         # ct is 'current time'
         ct = self.srt_to_seconds(current_time)
-     
+
         # max() is used here to account for what could
         # be rounding errors
         normalized_ct = max(0, ct - self.start_time)
         if VERBOSE:
             print('normalized ct: ', normalized_ct)
         else:
-            print('i', end =' ')
+            print('i', end ='->')
 
         # frame_diff = self.target_frame[0] - self.start_frame[0]
         # val = int(((normalized_ct/self.duration)*frame_diff) + self.start_frame[0])
-        
+
         # Above, the basic method for interpolating a single DMX frame.
         # Below, a lambda that does the same thing but for all DMX channels
 
