@@ -1,7 +1,7 @@
 # The docker-compose file starts the player on port 80
 # By default, $PORT is set to 8080 so you can run the dev code in tandem
 
-PORT=80
+PORT=8080
 
 docker run -it --rm -p $PORT:$PORT \
 -v /opt/vc:/opt/vc \
