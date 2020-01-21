@@ -76,12 +76,14 @@ class LushRoomsPlayer():
         return self.player.paired and (self.status["master_ip"] is not None)
 
     # Returns the current position in seconds
-    def start(self, path, subs, subsPath, syncTime=None):
+    def start(self, path, subs, subsPath, syncTime=None, loop=False):
         self.player.status(self.status)
         self.status["source"] = path
         self.status["subsPath"] = subsPath
 
         print("***************  start  ********************")
+
+        print('loopval: ', loop)
 
         if os.path.isfile(subsPath):
             start_time = time.time()
@@ -98,11 +100,11 @@ class LushRoomsPlayer():
 
         if self.isMaster():
             print('Master, sending start!')
-            self.player.primeForStart(path)
+            self.player.primeForStart(path, loop=loop)
             syncTime = self.sendSlaveCommand('start')
 
         self.started = True
-        response = self.player.start(path, syncTime, self.isMaster())
+        response = self.player.start(path, syncTime, master=self.isMaster(), loop=loop)
 
         try:
             print('In Player: ', id(self.player))

@@ -26,7 +26,7 @@ RUN sudo apt-get install libatlas-base-dev psmisc
 
 COPY flask /opt/code/flask
 COPY requirements.txt /opt/code/requirements.txt
-RUN pip3 install -r /opt/code/requirements.txt
+RUN pip3 install --no-cache-dir -r /opt/code/requirements.txt
 
 # serve Flask from 80
 WORKDIR /opt/code/flask

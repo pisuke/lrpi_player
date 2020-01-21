@@ -1,4 +1,4 @@
-zeroconf
+zeroconf>=0.24.4
 #dbus-python==1.2.8
 flask>=1.0.2
 flask-cors>=3.0.7
@@ -7,7 +7,7 @@ Flask-Jsonpify>=1.5.0
 flask-inputs>=0.3.0
 python-vlc==3.0.4106
 omxplayer-wrapper==0.3.2
-tinkerforge==2.1.20
+tinkerforge>=2.1.20
 pysrt==1.1.1
 #numpy==1.15.4
 apscheduler==3.5.3

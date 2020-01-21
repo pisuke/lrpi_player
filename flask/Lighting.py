@@ -200,6 +200,11 @@ class LushRoomsLighting():
 
         try:
             pp = self.player.getPosition()
+            if DEBUG:
+                logging.info("Player position: " + str(pp))
+            if pp < 0:
+                self.last_played = 0
+                pp = 0
         except Exception as e:
             print("Could not get the current position of the player, shutting down lighting gracefully...")
             logging.error(e)

@@ -121,7 +121,7 @@ def timing(f):
         return ret
     return wrap
 
-# serve the angular app
+# serve the angular app (https://github.com/LUSHDigital/lrpi_tablet_ui)
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -132,6 +132,8 @@ def serve(path):
         return send_from_directory('static/', 'index.html')
 
 # API endpoints
+
+# Generic endpoints
 
 class GetSettings(Resource):
     def get(self):
@@ -383,6 +385,7 @@ class Stop(Resource):
 
         return jsonify(response)
 
+# Scentroom specific functions / endpoints
 
 class ScentRoomTrigger(Resource):
     def post(self):
@@ -439,7 +442,27 @@ class ScentRoomTrigger(Resource):
 
         else:
             return jsonify({'response': 500, 'description': 'not ok!', "error": "Incorrect body format"})
-# URLs are defined hereck
+
+
+class ScentRoomIdle(Resource):
+    def get(self):
+        global player, connections
+        try:
+            print("SR Trigger idle - restarting LushRoomsPlayer")
+            if player: del player
+            player = None
+            player = LushRoomsPlayer(None, None, connections)
+            mp3_filename = "/media/usb/uploads/idle.mp3"
+            srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
+
+            player.start(mp3_filename, None, srt_filename, syncTime=None, loop=True)
+            return jsonify({'response': 200, 'description': 'ok!'})
+        except Exception as e:
+            print("Idle sequence failed: ", e)
+            return jsonify({'response': 500, 'description': 'not ok!'})
+
+
+# URLs defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
 api.add_resource(PlaySingleTrack, '/play-single-track')
@@ -459,6 +482,7 @@ api.add_resource(Command, '/command') # POST
 
 # Scentroom specific endpoints
 api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
+api.add_resource(ScentRoomIdle, '/scentroom-idle') # GET
 
 if __name__ == '__main__':
     global player, connections
