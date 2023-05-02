@@ -9,3 +9,6 @@ __pycache__/
 
 
 /venv
+
+/docker-builds
+push_to*
