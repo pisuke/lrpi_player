@@ -7,34 +7,36 @@
 # sudo rm -rf /tmp/omxplayerdbus*
 
 
+from Connections import Connections
+from OmxPlayer import killOmx
+from Player import LushRoomsPlayer
+import settings
+import logging
+from content_reader import content_in_dir
+from pysrt import stream as srtstream  # pylint: disable=import-error
+from pysrt import open as srtopen  # pylint: disable=import-error
+import signal
+import time
+import pause  # pylint: disable=import-error
+from time import sleep
+from time import ctime
+import ntplib  # pylint: disable=import-error
+from flask_restful import reqparse
+from flask_jsonpify import jsonify
+from json import dumps
+from flask_restful import Resource, Api
+from flask_cors import CORS, cross_origin
+from flask import Flask, request, send_from_directory, render_template
 from os.path import splitext
-import os, sys
+import os
+import sys
 import os.path
+import datetime
 os.environ["FLASK_ENV"] = "development"
 
 # From vendors
-from flask import Flask, request, send_from_directory, render_template
-from flask_cors import CORS, cross_origin
-from flask_restful import Resource, Api
-from json import dumps
-from flask_jsonpify import jsonify
-from flask_restful import reqparse
-import ntplib # pylint: disable=import-error
-from time import ctime
-from time import sleep
-import pause # pylint: disable=import-error
-import time
-import signal
-from pysrt import open as srtopen # pylint: disable=import-error
-from pysrt import stream as srtstream # pylint: disable=import-error
-from content_reader import content_in_dir
-import logging
 
 # From LushRooms
-import settings
-from Player import LushRoomsPlayer
-from OmxPlayer import killOmx
-from Connections import Connections
 
 # Remove initial Flask messages and warning
 cli = sys.modules['flask.cli']
@@ -85,7 +87,9 @@ def sigint_handler(signum, frame):
     connections.__del__()
     exit()
 
+
 signal.signal(signal.SIGINT, sigint_handler)
+
 
 def getInput():
     parser = reqparse.RequestParser()
@@ -94,15 +98,18 @@ def getInput():
     parser.add_argument('position', help='error with position')
     parser.add_argument('pairhostname', help='error with pairHostname')
     # command and status should definitely be sent via POST...
-    parser.add_argument('commandFromMaster', help='error with commandFromMaster')
+    parser.add_argument('commandFromMaster',
+                        help='error with commandFromMaster')
     parser.add_argument('masterStatus', help='error with masterStatus')
     args = parser.parse_args()
     return args
+
 
 def printOmxVars():
     print("OMXPLAYER_LIB" in os.environ)
     print("LD_LIBRARY_PATH" in os.environ)
     print("OMXPLAYER_BIN" in os.environ)
+
 
 def loadSettings():
     """ Load contents.json and return a graceful error if the file can't be found. """
@@ -112,16 +119,19 @@ def loadSettings():
     print("Room name: ", settings_json["name"])
     return settings_json
 
+
 def timing(f):
     def wrap(*args):
         time1 = time.time()
         ret = f(*args)
         time2 = time.time()
-        print('{:s} function took {:.3f} ms'.format(f.__name__, (time2-time1)*1000.0))
+        print('{:s} function took {:.3f} ms'.format(
+            f.__name__, (time2-time1)*1000.0))
         return ret
     return wrap
 
 # serve the angular app (https://github.com/LUSHDigital/lrpi_tablet_ui)
+
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -135,6 +145,7 @@ def serve(path):
 
 # Generic endpoints
 
+
 class GetSettings(Resource):
     def get(self):
         return jsonify(loadSettings())
@@ -143,7 +154,7 @@ class GetSettings(Resource):
 class GetTrackList(Resource):
     def get(self):
 
-        global player, connections
+        global audioPlayer, connections
         global NEW_TRACK_ARRAY
         global NEW_SRT_ARRAY
         global BUILT_PATH
@@ -159,46 +170,49 @@ class GetTrackList(Resource):
 
             args = getInput()
 
-            print("track list id: " +  str(args['id']))
-
+            print("track list id: " + str(args['id']))
 
             if args['id']:
                 if NEW_TRACK_ARRAY:
-                    BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
+                    BUILT_PATH += [x['Path']
+                                   for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
                     print(BUILT_PATH[0])
 
-
             print('BUILT_PATH: ' + str(BUILT_PATH))
-
 
             TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
             NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
 
             if mpegOnly:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (
+                    splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
             elif mlpOnly:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (
+                    splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
             elif allFormats:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if (
+                    (x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
 
+            NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[
+                1].lower() == ".srt"]
 
-            NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
-
-            if player and player.lighting.dmx:
-                logging.info("LushRoomsPlayer already exists, setting playlist...")
-                player.setPlaylist(NEW_TRACK_ARRAY)
+            if audioPlayer and audioPlayer.lighting.dmx:
+                logging.info(
+                    "LushRoomsPlayer already exists, setting playlist...")
+                audioPlayer.setPlaylist(NEW_TRACK_ARRAY)
             else:
                 logging.info("Initialising new LushRoomsPlayer...")
-                player = LushRoomsPlayer(
+                audioPlayer = LushRoomsPlayer(
                     NEW_TRACK_ARRAY,
                     MEDIA_BASE_PATH,
                     connections
                 )
-                player.resetLighting()
+                audioPlayer.resetLighting()
 
             return jsonify(NEW_TRACK_ARRAY)
         except Exception as e:
-            logging.error("Path building has probably failed. Sending error code and cleaning up...")
+            logging.error(
+                "Path building has probably failed. Sending error code and cleaning up...")
             logging.error(e)
             BUILT_PATH = None
             return 1, 500, {'content-type': 'application/json'}
@@ -206,7 +220,7 @@ class GetTrackList(Resource):
 
 class PlaySingleTrack(Resource):
     def get(self):
-        global player, connections
+        global audioPlayer, connections
         global BUILT_PATH
 
         args = getInput()
@@ -222,19 +236,22 @@ class PlaySingleTrack(Resource):
 
         print("Playing: " + pathToTrack)
 
-        duration = player.start(pathToTrack, None, BUILT_PATH + srtFileName)
+        duration = audioPlayer.start(
+            pathToTrack, None, BUILT_PATH + srtFileName)
 
         return jsonify(duration)
+
 
 class PlayPause(Resource):
     def get(self):
-        global player, connections
-        duration = player.playPause()
+        global audioPlayer, connections
+        duration = audioPlayer.playPause()
         return jsonify(duration)
+
 
 class FadeDown(Resource):
     def get(self):
-        global player, connections
+        global audioPlayer, connections
         global BUILT_PATH
 
         args = getInput()
@@ -248,10 +265,12 @@ class FadeDown(Resource):
                 if os.path.isfile(str(BUILT_PATH) + srtFileName):
                     print(srtFileName)
                     start_time = time.time()
-                    print("Loading SRT file " + srtFileName + " - " + str(start_time))
+                    print("Loading SRT file " + srtFileName +
+                          " - " + str(start_time))
                     subs = srtopen(BUILT_PATH + srtFileName)
                     end_time = time.time()
-                    print("Finished loading SRT file " + srtFileName + " - " + str(end_time))
+                    print("Finished loading SRT file " +
+                          srtFileName + " - " + str(end_time))
                     print("Total time elapsed: " + str(end_time - start_time))
                 pathToTrack = BUILT_PATH + track["Path"]
 
@@ -259,63 +278,69 @@ class FadeDown(Resource):
             print('Bad file path, will not attempt to play...')
             return jsonify(1)
 
-        response = player.fadeDown(pathToTrack, int(args["interval"]),  subs, BUILT_PATH + srtFileName)
+        response = audioPlayer.fadeDown(pathToTrack, int(
+            args["interval"]),  subs, BUILT_PATH + srtFileName)
 
         return jsonify(response)
 
+
 class Seek(Resource):
     def get(self):
-        global player, connections
+        global audioPlayer, connections
         global BUILT_PATH
 
         args = getInput()
         print('position to seek (%%): ', args["position"])
-        response = player.seek(int(args["position"]))
+        response = audioPlayer.seek(int(args["position"]))
         print('pos: ', response)
 
         return jsonify(response)
 
+
 class PlayerStatus(Resource):
     def get(self):
-        global player
+        global audioPlayer
 
         try:
-            response = player.getStatus()
+            response = audioPlayer.getStatus()
         except:
             response = 1
 
         return jsonify(response)
 
+
 class Pair(Resource):
     def get(self):
-        global player, connections
+        global audioPlayer, connections
 
         args = getInput()
         print('Pair with: ', args["pairhostname"])
 
         try:
-            pairRes = player.pairAsMaster(args["pairhostname"])
+            pairRes = audioPlayer.pairAsMaster(args["pairhostname"])
         except Exception as e:
             print('Exception: ', e)
             pairRes = 1
 
         return jsonify(pairRes)
 
+
 class Unpair(Resource):
     def get(self):
-        global player, connections
+        global audioPlayer, connections
 
         try:
-            unpairRes = player.unpairAsMaster()
+            unpairRes = audioPlayer.unpairAsMaster()
         except Exception as e:
             print('Exception: ', e)
             unpairRes = 1
 
         return jsonify(unpairRes)
 
+
 class Enslave(Resource):
     def get(self):
-        global player, connections
+        global audioPlayer, connections
 
         # If there is a player running, kill it
         # If there isnt, make one without a playlist
@@ -327,28 +352,30 @@ class Enslave(Resource):
         # it is paired: we can easily lock the UI and stop it
         # sending any control commands
 
-        if player:
-            player.stop()
-            player.exit()
+        if audioPlayer:
+            audioPlayer.stop()
+            audioPlayer.exit()
         else:
-            player = LushRoomsPlayer(None, None, connections)
+            audioPlayer = LushRoomsPlayer(None, None, connections)
 
         print('Enslaving, player stopped and exited')
-        print('Enslaved by: ', request.environ.get('HTTP_X_REAL_IP', request.remote_addr) )
+        print('Enslaved by: ', request.environ.get(
+            'HTTP_X_REAL_IP', request.remote_addr))
 
         # set paired to true
         masterIp = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
 
-        player.setPairedAsSlave(True, masterIp)
+        audioPlayer.setPairedAsSlave(True, masterIp)
 
         return jsonify(0)
 
+
 class Free(Resource):
     def get(self):
-        global player, connections
+        global audioPlayer, connections
 
         try:
-            freeRes = player.free()
+            freeRes = audioPlayer.free()
         except Exception as e:
             print('Exception: ', e)
             freeRes = 1
@@ -358,28 +385,32 @@ class Free(Resource):
 # POST body Should have the command, status of the master
 # and the desired trigger time
 
+
 class Command(Resource):
     def post(self):
-        global player, connections
+        global audioPlayer, connections
         command = request.get_json(force=True)
 
-        res = player.commandFromMaster(
+        res = audioPlayer.commandFromMaster(
             command["master_status"],
             command["command"],
-            command["sync_timestamp"]
+            command["position"],
+            datetime.datetime.strptime(
+                command["sync_timestamp"], '%Y-%m-%d %H:%M:%S.%f')
         )
 
         return jsonify(res)
 
+
 class Stop(Resource):
     def get(self):
-        global player, connections
+        global audioPlayer, connections
         global BUILT_PATH
 
         BUILT_PATH = None
 
         try:
-            response = player.stop()
+            response = audioPlayer.stop()
         except:
             response = 1
 
@@ -387,9 +418,10 @@ class Stop(Resource):
 
 # Scentroom specific functions / endpoints
 
+
 class ScentRoomTrigger(Resource):
     def post(self):
-        global player, connections
+        global audioPlayer, connections
         body = request.get_json(force=True)
 
         print("SR Trigger received:")
@@ -401,37 +433,39 @@ class ScentRoomTrigger(Resource):
                 mp3_filename = body["upload_path"]
                 srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
                 print(mp3_filename, srt_filename)
-                if player == None:
+                if audioPlayer == None:
                     print("SR Trigger play - restarting LushRoomsPlayer")
-                    player = LushRoomsPlayer(None, None, connections)
-                    player.start(mp3_filename, None, srt_filename)
+                    audioPlayer = LushRoomsPlayer(None, None, connections)
+                    audioPlayer.start(mp3_filename, None, srt_filename)
                     return jsonify({'response': 200, 'description': 'ok!'})
                 else:
-                    player.start(mp3_filename, None, srt_filename)
+                    audioPlayer.start(mp3_filename, None, srt_filename)
                     return jsonify({'response': 200, 'description': 'ok!'})
 
             elif body['trigger'] == "stop":
                 print("SR Trigger received: stop")
                 # TODO: make this better
                 # Python, your flexibility is charming but also _scary_
-                if player != None:
+                if audioPlayer != None:
                     print("SR Trigger received: player existing")
                     try:
                         # for the ScentRoom, RGB value for warm white for both RGBW downlight and side RGB lights
                         # The eighth channel of 255 is needed for whatever reason, I don't have time
                         # to find out why right now
                         # matched white light RGB: 255, 241, 198, 255
-                        if player.lighting.dmx:
-                            player.lighting.dmx.write_frame([0, 0, 0, 255, 30, 30, 30, 0])
+                        if audioPlayer.lighting.dmx:
+                            audioPlayer.lighting.dmx.write_frame(
+                                [0, 0, 0, 255, 30, 30, 30, 0])
                     except Exception as e:
-                        logging.error("Could not kill lighting, things have gotten out of sync...")
+                        logging.error(
+                            "Could not kill lighting, things have gotten out of sync...")
                         logging.info("Killing everything anyway!")
                         print("Why: ", e)
 
-                    player.stop()
-                    player.exit()
-                    del player
-                    player = None
+                    audioPlayer.stop()
+                    audioPlayer.exit()
+                    del audioPlayer
+                    audioPlayer = None
 
                     connections.scheduler.print_jobs()
 
@@ -446,16 +480,18 @@ class ScentRoomTrigger(Resource):
 
 class ScentRoomIdle(Resource):
     def get(self):
-        global player, connections
+        global audioPlayer, connections
         try:
             print("SR Trigger idle - restarting LushRoomsPlayer")
-            if player: del player
-            player = None
-            player = LushRoomsPlayer(None, None, connections)
+            if audioPlayer:
+                del audioPlayer
+            audioPlayer = None
+            audioPlayer = LushRoomsPlayer(None, None, connections)
             mp3_filename = "/media/usb/uploads/idle.mp3"
             srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
 
-            player.start(mp3_filename, None, srt_filename, syncTime=None, loop=True)
+            audioPlayer.start(mp3_filename, None, srt_filename,
+                              syncTime=None, loop=True)
             return jsonify({'response': 200, 'description': 'ok!'})
         except Exception as e:
             print("Idle sequence failed: ", e)
@@ -478,18 +514,19 @@ api.add_resource(Unpair, '/unpair')
 # Slave endpoints
 api.add_resource(Enslave, '/enslave')
 api.add_resource(Free, '/free')
-api.add_resource(Command, '/command') # POST
+api.add_resource(Command, '/command')  # POST
 
 # Scentroom specific endpoints
-api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
-api.add_resource(ScentRoomIdle, '/scentroom-idle') # GET
+api.add_resource(ScentRoomTrigger, '/scentroom-trigger')  # POST
+api.add_resource(ScentRoomIdle, '/scentroom-idle')  # GET
 
 if __name__ == '__main__':
-    global player, connections
+    global audioPlayer, connections
 
     # Initialise the player/connections singletons
-    player = None
+    audioPlayer = None
     connections = Connections()
 
     settings_json = settings.get_settings()
-    app.run(use_reloader=False, debug=settings_json["debug"], port=os.environ.get("PORT", "80"), host='0.0.0.0')
+    app.run(use_reloader=False, debug=settings_json["debug"], port=os.environ.get(
+        "PORT", "80"), host='0.0.0.0')

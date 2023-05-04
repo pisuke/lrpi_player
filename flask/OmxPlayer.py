@@ -1,13 +1,14 @@
 from os import uname, system
 from time import sleep
-from omxplayer.player import OMXPlayer # pylint: disable=import-error
-import ntplib # pylint: disable=import-error
+from omxplayer.player import OMXPlayer  # pylint: disable=import-error
+import ntplib  # pylint: disable=import-error
 from time import ctime
-import pause # pylint: disable=import-error
+import pause  # pylint: disable=import-error
 import datetime
 import os
 import json
 import settings
+
 
 def killOmx():
     # This will only work on Unix-like (just Linux?) systems...
@@ -17,6 +18,7 @@ def killOmx():
     except:
         print('How are you NOT running omxplayer on Linux?')
         exit(0)
+
 
 class OmxPlayer():
     def __init__(self):
@@ -35,9 +37,6 @@ class OmxPlayer():
     def seekEvent(self, a, b):
         print('seek event! ' + str(b))
         return
-
-    def primeForStart(self, pathToTrack, loop=False):
-        self.triggerStart(pathToTrack, withPause=True, loop=loop)
 
     def triggerStart(self, pathToTrack, withPause=False, loop=False):
         # lrpi_player#105
@@ -64,18 +63,25 @@ class OmxPlayer():
         print('Full playing args: ' + str(omxArgs))
 
         if not withPause:
-            self.player = OMXPlayer(pathToTrack, args=omxArgs, dbus_name='org.mpris.MediaPlayer2.omxplayer0')
-            sleep(0.25)
+            self.player = OMXPlayer(
+                pathToTrack, args=omxArgs, dbus_name='org.mpris.MediaPlayer2.omxplayer0')
+            sleep(0.3)
         elif withPause:
-            self.player = OMXPlayer(pathToTrack, args=omxArgs, dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
+            self.player = OMXPlayer(
+                pathToTrack, args=omxArgs, dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
             # Might need to set the volume to 0 a different way,
             # for some tracks omxplayer plays a short, sharp, shock
             # before setting the volume to 0
             self.player.set_volume(0)
-            sleep(0.5)
+            # TODO - THIS PAUSE MIGHT BE CRUCIAL FOR the 'position' to be returned correctly?
+            # sleep(0.5)
 
-    def start(self, pathToTrack, syncTimestamp=None, master=False, loop=False):
-        print("Playing on omx... :", master)
+    def primeForStart(self, pathToTrack, loop=False):
+        self.triggerStart(pathToTrack, withPause=True, loop=loop)
+
+    def start(self, pathToTrack, syncTimestamp=None, master=False, slave=False, loop=False):
+        print("************* IN OMX START: master = " +
+              str(master) + " slave = " + str(slave))
         print("Looping? :", loop)
         print("\n")
         print(pathToTrack)
@@ -84,15 +90,16 @@ class OmxPlayer():
         volume = settings_json.get("audio_volume")
 
         try:
-            if not master:
+            if master or slave:
+                # we're in pairing mode, the player is already
+                # primed and loaded. We just need to press play
+                # todo: it's not yet primed and loaded for Mpv...
+                print("*** Attempting to unpause playing after priming ***")
+                self.player.play()
+            else:
                 if self.player:
                     self.player.quit()
                 self.player = None
-
-            if syncTimestamp:
-                pause.until(syncTimestamp)
-
-            if self.player is None or syncTimestamp is None:
                 self.triggerStart(pathToTrack, loop=loop)
 
             self.player.positionEvent += self.posEvent
@@ -104,9 +111,6 @@ class OmxPlayer():
 
             self.player.set_volume(float(self.audio_volume)/100.0)
 
-            print('synctime in omxplayer: ', ctime(syncTimestamp))
-            if master:
-                self.player.play()
             return str(self.player.duration())
         except Exception as e:
             print("ERROR: Could not start player... but audio may still be playing!")
@@ -117,8 +121,8 @@ class OmxPlayer():
     # action 16 is emulated keypress for playPause
     def playPause(self, syncTimestamp=None):
         print("Playpausing with syncTimeStamp: ", syncTimestamp)
-        if syncTimestamp:
-            pause.until(syncTimestamp)
+        # if syncTimestamp:
+        #     pause.until(syncTimestamp)
         self.player.action(16)
         return str(self.player.duration())
 
@@ -146,14 +150,17 @@ class OmxPlayer():
             if (self.player.volume() <= 0.07 or interval == 0):
                 return False
             else:
-                self.player.set_volume(self.player.volume() - ((1.0/interval)/4.0))
+                self.player.set_volume(
+                    self.player.volume() - ((1.0/interval)/4.0))
                 return True
         return False
 
-    def seek(self, position, syncTimestamp=None):
+    def seek(self, position0_to_100, syncTimestamp=None):
+        position_as_float = float(position0_to_100)
+        new_position = self.player.duration()*(position_as_float/100.0)
         if self.player.can_seek():
-            self.player.set_position(self.player.duration()*(position/100.0))
-        return self.player.duration()*(position/100.0)
+            self.player.set_position(new_position)
+        return new_position
 
     def status(self, status):
         if self.player != None:
@@ -168,7 +175,8 @@ class OmxPlayer():
             except Exception as e:
                 status["playerState"] = ""
                 status["canControl"] = False
-                status["error"] = "Something went wrong with player status request: " + str(e)
+                status["error"] = "Something went wrong with player status request: " + \
+                    str(e)
 
         else:
             status["playerState"] = ""
@@ -187,8 +195,8 @@ class OmxPlayer():
         print('master_ip set to: ', masterIp)
 
     def exit(self, syncTimestamp=None):
-        if syncTimestamp:
-            pause.until(syncTimestamp)
+        # if syncTimestamp:
+        #     pause.until(syncTimestamp)
         self.__del__()
 
     def __del__(self):
