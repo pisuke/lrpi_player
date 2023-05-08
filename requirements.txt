@@ -1,5 +1,5 @@
 ifaddr==0.1.6
-zeroconf==0.21.3
+zeroconf==0.20.0
 #dbus-python==1.2.8
 flask>=1.0.2
 flask-cors>=3.0.7

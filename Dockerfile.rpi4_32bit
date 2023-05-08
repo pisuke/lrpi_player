@@ -43,12 +43,13 @@ RUN sudo apt-get install psmisc
 
 COPY flask /opt/code/flask
 COPY requirements.txt /opt/code/requirements.txt
-RUN pip3 install -r /opt/code/requirements.txt
+RUN pip3 install -r /opt/code/requirements.txt --no-cache-dir
 
 # serve Flask from 80
 WORKDIR /opt/code/flask
 
 ENTRYPOINT ["python3"]
 CMD ["Server.py"]
+#CMD sleep 7200
 
 RUN [ "cross-build-end" ]

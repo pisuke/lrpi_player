@@ -21,7 +21,9 @@ import json
 NTP_SERVER = 'ns1.luns.net.uk'
 
 def findArm():
-    return uname().machine == 'armv7l'
+    is_arm = uname().machine == 'armv7l' or uname().machine == 'aarch64'
+    print("is arm = ",is_arm)
+    return is_arm
 
 if findArm():
     from OmxPlayer import OmxPlayer
@@ -30,7 +32,7 @@ else:
 
 class LushRoomsPlayer():
     def __init__(self, playlist, basePath):
-        if uname().machine == 'armv7l':
+        if uname().machine == 'armv7l' or uname().machine == 'aarch64':
             # we're likely on a 'Pi
             self.playerType = "OMX"
             print('Spawning omxplayer')

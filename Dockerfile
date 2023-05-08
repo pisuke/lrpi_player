@@ -31,7 +31,7 @@ RUN pip3 install -r /opt/code/requirements.txt
 # serve Flask from 80
 WORKDIR /opt/code/flask
 
-ENTRYPOINT ["python3"]
-CMD ["Server.py"]
+#ENTRYPOINT ["python3"]
+#CMD ["Server.py"]
 
 RUN [ "cross-build-end" ]
