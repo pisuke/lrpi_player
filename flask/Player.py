@@ -52,20 +52,21 @@ class LushRoomsPlayer():
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
-        self.slaveCommandOffset = 4  # seconds
+        self.slaveCommandOffset = 2.5  # seconds
         self.slaveUrl = None
         self.paired = False
+        self.masterIp = None
         self.status = {
             "source": "",
             "subsPath": "",
             "playerState": "",
             "canControl": "",
-            "paired": self.paired,
             "position": "",
             "trackDuration": "",
             "playerType": self.playerType,
             "playlist": self.playlist,
             "error": "",
+            "paired": self.paired,
             "slave_url": None,
             "master_ip": None
         }
@@ -76,11 +77,11 @@ class LushRoomsPlayer():
 
     def isMaster(self):
         # todo - ideally audioPlayer shouldn't care about pairing
-        return self.audioPlayer.paired and (self.status["master_ip"] is None)
+        return self.paired and (self.status["master_ip"] is None)
 
     def isSlave(self):
         # todo - ideally audioPlayer shouldn't care about pairing
-        return self.audioPlayer.paired and (self.status["master_ip"] is not None)
+        return self.paired and (self.status["master_ip"] is not None)
 
     def loadSubtitles(self, subsPath):
         if os.path.isfile(subsPath):
@@ -222,6 +223,8 @@ class LushRoomsPlayer():
 
     def getStatus(self):
         self.status["slave_url"] = self.slaveUrl
+        self.status["paired"] = self.paired
+        self.status["master_ip"] = self.masterIp
         return self.audioPlayer.status(self.status)
 
     # Pair methods called by the master
@@ -240,7 +243,7 @@ class LushRoomsPlayer():
                 enslaveRes = urllib.request.urlopen(
                     self.slaveUrl + "/enslave").read()
                 print('res from enslave: ', enslaveRes)
-                self.audioPlayer.setPaired(True, None)
+                self.setPairedAsMaster(True, self.slaveUrl)
 
         else:
             print(hostname, 'is down! Cannot pair!')
@@ -256,21 +259,28 @@ class LushRoomsPlayer():
             freeRes = urllib.request.urlopen(self.slaveUrl + "/free").read()
             print('res from free: ', freeRes)
             if freeRes:
-                self.audioPlayer.setPaired(False, None)
+                self.setPairedAsMaster(False, None)
             else:
-                print('Error freeing the slave')
+                print('Error freeing the slave, pairing may be stuck!')
                 return 1
 
         return 0
 
+    def setPairedAsMaster(self, val, slaveUrl):
+        self.slaveUrl = slaveUrl
+        self.paired = val
+        self.masterIp = None
+
     # Methods called by the slave
 
     def setPairedAsSlave(self, val, masterIp):
-        self.audioPlayer.setPaired(val, masterIp)
+        self.masterIp = masterIp
+        self.paired = val
+        self.slaveUrl = None
 
     def free(self):
-        if self.audioPlayer.paired:
-            self.audioPlayer.setPaired(False, None)
+        if self.paired:
+            self.setPairedAsSlave(False, None)
             self.resetLighting()
             self.audioPlayer.exit()
             return 0
@@ -301,7 +311,7 @@ class LushRoomsPlayer():
 
         res = 1
         # TODO: this should be based on self.paired, NOT self.audioPlayer
-        if self.audioPlayer.paired:
+        if self.paired:
 
             print('command from master: ', command)
             print('master status: ', masterStatus)
@@ -361,7 +371,7 @@ class LushRoomsPlayer():
     # the slave with a 'start' timestamp
 
     def sendSlaveCommand(self, command, position=None):
-        if self.audioPlayer.paired:
+        if self.paired:
             print('sending command to slave: ', command)
             try:
                 localTimestamp = self.getLocalTimestamp()
@@ -419,10 +429,11 @@ class LushRoomsPlayer():
         return None
 
     def exit(self):
+        print("LushRoomsPlayer exiting...")
         self.audioPlayer.__del__()
 
     # mysterious Python destructor...
 
     def __del__(self):
         self.audioPlayer.__del__()
-        print("LRPlayer died")
+        print("LushRoomsPlayer died")

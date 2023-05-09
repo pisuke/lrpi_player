@@ -23,8 +23,6 @@ def killOmx():
 class OmxPlayer():
     def __init__(self):
         self.player = None
-        self.paired = False
-        self.masterIp = None
         self.settings_json = settings.get_settings()
         self.initialVolumeFromSettings = int(
             self.settings_json["audio_volume"])
@@ -180,16 +178,7 @@ class OmxPlayer():
             status["canControl"] = False
             status["error"] = "Player is not initialized!"
 
-        status["paired"] = self.paired
-        status["master_ip"] = self.masterIp
-
         return status
-
-    def setPaired(self, val, masterIp):
-        self.paired = val
-        self.masterIp = masterIp
-        print('paired set to: ', val)
-        print('master_ip set to: ', masterIp)
 
     def exit(self):
         self.__del__()
