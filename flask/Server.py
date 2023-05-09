@@ -48,6 +48,10 @@ mlpOnly = False
 allFormats = False
 useNTP = False
 
+if useNTP:
+    import Ntp
+    Ntp.set_os_time_with_ntp()
+
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
 
@@ -59,8 +63,6 @@ if SENTRY_URL is not None:
     from raven.contrib.flask import Sentry
     sentry = Sentry(app, dsn=SENTRY_URL)
 
-
-NTP_SERVER = 'ns1.luns.net.uk'
 BASE_PATH = "/media/usb/"
 MEDIA_BASE_PATH = BASE_PATH + "tracks/"
 BUILT_PATH = None

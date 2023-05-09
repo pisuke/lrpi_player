@@ -25,26 +25,27 @@ class OmxPlayer():
         self.player = None
         self.paired = False
         self.masterIp = None
-        self.audio_volume = 100.0
+        self.settings_json = settings.get_settings()
+        self.initialVolumeFromSettings = int(
+            self.settings_json["audio_volume"])
 
-    # omxplayer callbacks
+    def setVolume(self, value_0_to_100):
+        print("setVolume: Setting volume to: " + str(value_0_to_100))
+        value_0_to_10_f = float(value_0_to_100)/100.0
+        self.player.set_volume(value_0_to_10_f)
+        return value_0_to_100
 
-    def posEvent(self, a, b):
-        print('Position event!' + str(a) + " " + str(b))
-        # print('Position: ' + str(player.position()) + "s")
-        return
-
-    def seekEvent(self, a, b):
-        print('seek event! ' + str(b))
-        return
+    def setDefaultVolumeFromSettings(self):
+        print(
+            "setDefaultVolumeFromSettings: Setting volume to: " + str(self.initialVolumeFromSettings))
+        return self.setVolume(self.initialVolumeFromSettings)
 
     def triggerStart(self, pathToTrack, withPause=False, loop=False):
         # lrpi_player#105
         # Audio output can be routed through hdmi or the jack,
         # if settings.json is corrupted, default to the hdmi
 
-        settings_json = settings.get_settings()
-        output_route = settings_json.get("audio_output")
+        output_route = self.settings_json.get("audio_output")
         normalised_output_route = 'hdmi'
         omxArgs = []
 
@@ -73,21 +74,21 @@ class OmxPlayer():
             # for some tracks omxplayer plays a short, sharp, shock
             # before setting the volume to 0
             self.player.set_volume(0)
-            # TODO - THIS PAUSE MIGHT BE CRUCIAL FOR the 'position' to be returned correctly?
-            # sleep(0.5)
+            while self.player.is_playing():
+                # TODO - THIS PAUSE MIGHT BE CRUCIAL FOR the 'position' to be returned correctly?
+                sleep(0.01)
+            self.seek(0)
+            sleep(0.1)
 
     def primeForStart(self, pathToTrack, loop=False):
         self.triggerStart(pathToTrack, withPause=True, loop=loop)
 
-    def start(self, pathToTrack, syncTimestamp=None, master=False, slave=False, loop=False):
+    def start(self, pathToTrack, master=False, slave=False, loop=False):
         print("************* IN OMX START: master = " +
               str(master) + " slave = " + str(slave))
         print("Looping? :", loop)
         print("\n")
         print(pathToTrack)
-
-        settings_json = settings.get_settings()
-        volume = settings_json.get("audio_volume")
 
         try:
             if master or slave:
@@ -95,21 +96,18 @@ class OmxPlayer():
                 # primed and loaded. We just need to press play
                 # todo: it's not yet primed and loaded for Mpv...
                 print("*** Attempting to unpause playing after priming ***")
-                self.player.play()
+                self.playPause()
             else:
+                print("*** RESETTING AUDIO PLAYER ***")
                 if self.player:
                     self.player.quit()
                 self.player = None
                 self.triggerStart(pathToTrack, loop=loop)
 
-            self.player.positionEvent += self.posEvent
-            self.player.seekEvent += self.seekEvent
+            self.setDefaultVolumeFromSettings()
 
-            if volume is not None:
-                self.audio_volume = volume
-                print("Volume set to %s" % self.audio_volume)
-
-            self.player.set_volume(float(self.audio_volume)/100.0)
+            while not self.player.is_playing():
+                sleep(0.01)
 
             return str(self.player.duration())
         except Exception as e:
@@ -119,11 +117,10 @@ class OmxPlayer():
             return str(0)
 
     # action 16 is emulated keypress for playPause
-    def playPause(self, syncTimestamp=None):
-        print("Playpausing with syncTimeStamp: ", syncTimestamp)
-        # if syncTimestamp:
-        #     pause.until(syncTimestamp)
-        self.player.action(16)
+    def playPause(self):
+        print("OMX Playpausing")
+        PLAY_PAUSE_EMULATED_KEY = 16
+        self.player.action(PLAY_PAUSE_EMULATED_KEY)
         return str(self.player.duration())
 
     def getPosition(self):
@@ -155,7 +152,7 @@ class OmxPlayer():
                 return True
         return False
 
-    def seek(self, position0_to_100, syncTimestamp=None):
+    def seek(self, position0_to_100):
         position_as_float = float(position0_to_100)
         new_position = self.player.duration()*(position_as_float/100.0)
         if self.player.can_seek():
@@ -194,9 +191,7 @@ class OmxPlayer():
         print('paired set to: ', val)
         print('master_ip set to: ', masterIp)
 
-    def exit(self, syncTimestamp=None):
-        # if syncTimestamp:
-        #     pause.until(syncTimestamp)
+    def exit(self):
         self.__del__()
 
     def __del__(self):

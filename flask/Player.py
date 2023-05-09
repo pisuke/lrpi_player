@@ -2,6 +2,7 @@ import os
 from os import uname, system
 from time import sleep
 import time
+from time import perf_counter
 import urllib.request
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -51,14 +52,15 @@ class LushRoomsPlayer():
         self.basePath = basePath
         self.started = False
         self.playlist = playlist
-        self.slaveCommandOffset = 2.5  # seconds
+        self.slaveCommandOffset = 4  # seconds
         self.slaveUrl = None
+        self.paired = False
         self.status = {
             "source": "",
             "subsPath": "",
             "playerState": "",
             "canControl": "",
-            "paired": False,
+            "paired": self.paired,
             "position": "",
             "trackDuration": "",
             "playerType": self.playerType,
@@ -73,13 +75,11 @@ class LushRoomsPlayer():
         return self.playerType
 
     def isMaster(self):
-        print("isMaster", self.audioPlayer.paired, self.status["master_ip"], self.audioPlayer.paired and (
-            self.status["master_ip"] is None))
+        # todo - ideally audioPlayer shouldn't care about pairing
         return self.audioPlayer.paired and (self.status["master_ip"] is None)
 
     def isSlave(self):
-        print("isSlave", self.audioPlayer.paired, self.status["master_ip"], self.audioPlayer.paired and (
-            self.status["master_ip"] is None))
+        # todo - ideally audioPlayer shouldn't care about pairing
         return self.audioPlayer.paired and (self.status["master_ip"] is not None)
 
     def loadSubtitles(self, subsPath):
@@ -100,7 +100,7 @@ class LushRoomsPlayer():
             return None
 
     # Returns the current position in seconds
-    def start(self, path, subs, subsPath, syncTime=None, loop=False):
+    def start(self, path, subs, subsPath, loop=False):
         self.audioPlayer.status(self.status)
         self.status["source"] = path
         self.status["subsPath"] = subsPath
@@ -114,28 +114,29 @@ class LushRoomsPlayer():
         if not self.isMaster() and not self.isSlave():
             self.subs = self.loadSubtitles(subsPath)
 
-        if self.isSlave():
-            # wait until the sync time to fire everything off
-            print('Slave: Syncing start!')
-
         if self.isMaster():
             print('Master, sending start!')
             self.subs = self.loadSubtitles(subsPath)
             self.audioPlayer.primeForStart(path, loop=loop)
+            print('Master :: PLAYER IS PRIMED')
             self.sendSlaveCommand('primeForStart')
             syncTime = self.sendSlaveCommand('start')
             self.pauseIfSync(syncTime)
 
         self.started = True
-        response = self.audioPlayer.start(
-            path, syncTime, master=self.isMaster(), slave=self.isSlave(), loop=loop)
+        t1_start = perf_counter()
+        track_length_seconds = self.audioPlayer.start(
+            path,
+            master=self.isMaster(), slave=self.isSlave(), loop=loop)
+        t1_stop = perf_counter()
+        print("LushRooms audioPlayer start() took:", t1_stop - t1_start)
 
         try:
             self.lighting.start(self.audioPlayer, self.subs)
         except Exception as e:
             print('Lighting start failed: ', e)
 
-        return response
+        return track_length_seconds
 
     def playPause(self, syncTime=None):
 
@@ -144,7 +145,7 @@ class LushRoomsPlayer():
             syncTime = self.sendSlaveCommand('playPause')
             self.pauseIfSync(syncTime)
 
-        response = self.audioPlayer.playPause(syncTime)
+        response = self.audioPlayer.playPause()
 
         try:
             print('In Player: ', id(self.audioPlayer))
@@ -163,7 +164,7 @@ class LushRoomsPlayer():
                 syncTime = self.sendSlaveCommand('stop')
                 self.pauseIfSync(syncTime)
 
-            self.audioPlayer.exit(syncTime)
+            self.audioPlayer.exit()
             self.lighting.exit()
 
             return 0
@@ -299,6 +300,7 @@ class LushRoomsPlayer():
               localTimestamp)
 
         res = 1
+        # TODO: this should be based on self.paired, NOT self.audioPlayer
         if self.audioPlayer.paired:
 
             print('command from master: ', command)
@@ -320,15 +322,16 @@ class LushRoomsPlayer():
                 print('Slave :: priming slave player with track ' + pathToAudioTrack)
                 self.audioPlayer.primeForStart(pathToAudioTrack)
                 print('Slave :: PLAYER IS PRIMED')
-            else:
+
+            # LushRooms player is presumed primed for all other commands!
+            if command != "primeForStart":
                 self.pauseIfSync(startTime)
 
             if command == "start":
                 self.start(
                     masterStatus["source"],
                     None,
-                    masterStatus["subsPath"],
-                    startTime
+                    masterStatus["subsPath"]
                 )
 
             if command == "playPause":
@@ -366,7 +369,7 @@ class LushRoomsPlayer():
                 print('currentUnixTimestamp (local on pi: )', localTimestamp)
 
                 self.eventSyncTime = localTimestamp + \
-                    datetime.timedelta(0, self.slaveCommandOffset)
+                    datetime.timedelta(seconds=self.slaveCommandOffset)
 
                 # print("*" * 30)
                 # print(
@@ -374,7 +377,7 @@ class LushRoomsPlayer():
                 # print("*" * 30)
 
                 # send the event sync time to the slave...
-                # if we don't get a response don't try and trigger the event!
+
                 self.audioPlayer.status(self.status)
                 postFields = {
                     'command': str(command),
@@ -386,19 +389,23 @@ class LushRoomsPlayer():
                 def slaveRequest():
                     slaveRes = requests.post(
                         self.slaveUrl + '/command', json=postFields)
-                    print('command from slave, res: ', slaveRes.json)
+                    print('command from slave, res: ', slaveRes.json())
 
                 if command == "primeForStart":
                     # we only want the primeForStart command to be blocking.
                     # This way we can be absolutely sure that the play button
                     # on the slave player is ready to be pushed...
+                    print("sending primeForStart command to slave")
                     slaveRequest()
+                    print("after primeForStart response...")
                 else:
                     # The slave might take an arbitrary amount of time to complete
                     # the command (e.g. fadeDown, lots of sleeps).
                     # Therefore, start it in a thread
                     # we don't often care about the result
+                    print("sending command to slave")
                     Thread(target=slaveRequest).start()
+                    print("after thread finish...")
 
                 return self.eventSyncTime
 
