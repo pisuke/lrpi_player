@@ -36,7 +36,7 @@ else:
 
 
 class LushRoomsPlayer():
-    def __init__(self, playlist, basePath, connections):
+    def __init__(self, connections):
         if uname().machine == 'armv7l':
             # we're likely on a 'Pi
             self.playerType = "OMX"
@@ -49,9 +49,9 @@ class LushRoomsPlayer():
             self.audioPlayer = VlcPlayer()
 
         self.lighting = LushRoomsLighting(connections)
-        self.basePath = basePath
+        self.basePath = "NONE SET"
         self.started = False
-        self.playlist = playlist
+        self.playlist = []
         self.slaveCommandOffset = 2.5  # seconds
         self.slaveUrl = None
         self.paired = False
@@ -59,6 +59,7 @@ class LushRoomsPlayer():
         self.status = {
             "source": "",
             "subsPath": "",
+            "mediaBasePath": "",
             "playerState": "",
             "canControl": "",
             "position": "",
@@ -173,9 +174,15 @@ class LushRoomsPlayer():
             print("stop failed: ", e)
             return 1
 
+    def setMediaBasePath(self, basePath):
+        self.basePath = basePath
+        self.status["mediaBasePath"] = self.basePath
+        return self
+
     def setPlaylist(self, playlist):
         self.playlist = playlist
         self.status["playlist"] = playlist
+        return self
 
     def getPlaylist(self):
         if len(self.status["playlist"]):
@@ -430,10 +437,14 @@ class LushRoomsPlayer():
 
     def exit(self):
         print("LushRoomsPlayer exiting...")
-        self.audioPlayer.__del__()
+        self.stop()
 
     # mysterious Python destructor...
 
     def __del__(self):
-        self.audioPlayer.__del__()
-        print("LushRoomsPlayer died")
+        try:
+            self.stop()
+            print("LushRoomsPlayer died via __del__")
+        except Exception as e:
+            print("Could not __del__ LushRoomsPlayer")
+            print(e)

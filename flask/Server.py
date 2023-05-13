@@ -80,13 +80,17 @@ CORS(app)
 killOmx()
 
 
+def get_connections():
+    global connections
+    return connections
+
 # utils
 
+
 def sigint_handler(signum, frame):
-    global connections
     """ Kill omx processes on a ctrl+c/program closure to mirror the behaviour of vlc and, in turn, to be more graceful. """
     killOmx()
-    connections.__del__()
+    get_connections().__del__()
     exit()
 
 
@@ -132,9 +136,31 @@ def timing(f):
         return ret
     return wrap
 
+# LushRoomsPlayer singleton (to avoid messing up state with the 'global' keyword everywhere...)
+
+
+class LushRoomsPlayerWrapped():
+    _instance = None
+
+    def __init__(self):
+        raise RuntimeError(
+            'For safety reasons, only call instance() or destroy(), e.g. LushRoomsPlayerWrapper.destroy() - only one set of parentheses!')
+
+    @classmethod
+    def instance(cls, *args, **kwargs):
+        if cls._instance is None:
+            print('Creating new LushRoomsPlayer')
+            connections = get_connections()
+            cls._instance = LushRoomsPlayer(connections, *args, **kwargs)
+        return cls._instance
+
+    @classmethod
+    def destroy(cls):
+        if cls._instance is not None:
+            cls._instance.exit()
+            del cls._instance
+
 # serve the angular app (https://github.com/LUSHDigital/lrpi_tablet_ui)
-
-
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
@@ -155,8 +181,8 @@ class GetSettings(Resource):
 
 class GetTrackList(Resource):
     def get(self):
-
-        global lushroomsPlayer, connections
+        # note: these globals could also be folded into
+        # 'LushRoomsPlayer' internal state
         global NEW_TRACK_ARRAY
         global NEW_SRT_ARRAY
         global BUILT_PATH
@@ -165,6 +191,8 @@ class GetTrackList(Resource):
 
             # return a graceful error if the usb stick isn't mounted
             if os.path.isdir(MEDIA_BASE_PATH) == False:
+                logging.error(
+                    MEDIA_BASE_PATH + " is not a valid os file path - cannot load media from this directory!")
                 return jsonify(1)
 
             if BUILT_PATH is None:
@@ -198,18 +226,10 @@ class GetTrackList(Resource):
             NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[
                 1].lower() == ".srt"]
 
-            if lushroomsPlayer and lushroomsPlayer.lighting.dmx:
-                logging.info(
-                    "LushRoomsPlayer already exists, setting playlist...")
-                lushroomsPlayer.setPlaylist(NEW_TRACK_ARRAY)
-            else:
-                logging.info("Initialising new LushRoomsPlayer...")
-                lushroomsPlayer = LushRoomsPlayer(
-                    NEW_TRACK_ARRAY,
-                    MEDIA_BASE_PATH,
-                    connections
-                )
-                lushroomsPlayer.resetLighting()
+            LushRoomsPlayerWrapped.instance() \
+                .setPlaylist(NEW_TRACK_ARRAY) \
+                .setMediaBasePath(MEDIA_BASE_PATH) \
+                .resetLighting()
 
             return jsonify(NEW_TRACK_ARRAY)
         except Exception as e:
@@ -222,7 +242,6 @@ class GetTrackList(Resource):
 
 class PlaySingleTrack(Resource):
     def get(self):
-        global lushroomsPlayer, connections
         global BUILT_PATH
 
         args = getInput()
@@ -234,11 +253,11 @@ class PlaySingleTrack(Resource):
 
         if os.path.isfile(pathToTrack) == False:
             print('Bad file path, will not attempt to play...')
-            return jsonify("(Playing) File not found!")
+            return jsonify("(Playing) File not found! " + str(pathToTrack))
 
         print("Playing: " + pathToTrack)
 
-        duration = lushroomsPlayer.start(
+        duration = LushRoomsPlayerWrapped.instance().start(
             pathToTrack, None, BUILT_PATH + srtFileName)
 
         return jsonify(duration)
@@ -246,14 +265,12 @@ class PlaySingleTrack(Resource):
 
 class PlayPause(Resource):
     def get(self):
-        global lushroomsPlayer, connections
-        duration = lushroomsPlayer.playPause()
+        duration = LushRoomsPlayerWrapped.instance().playPause()
         return jsonify(duration)
 
 
 class FadeDown(Resource):
     def get(self):
-        global lushroomsPlayer, connections
         global BUILT_PATH
 
         args = getInput()
@@ -280,7 +297,7 @@ class FadeDown(Resource):
             print('Bad file path, will not attempt to play...')
             return jsonify(1)
 
-        response = lushroomsPlayer.fadeDown(pathToTrack, int(
+        response = LushRoomsPlayerWrapped.instance().fadeDown(pathToTrack, int(
             args["interval"]),  subs, BUILT_PATH + srtFileName)
 
         return jsonify(response)
@@ -288,12 +305,12 @@ class FadeDown(Resource):
 
 class Seek(Resource):
     def get(self):
-        global lushroomsPlayer, connections
         global BUILT_PATH
 
         args = getInput()
         print('position to seek (%%): ', args["position"])
-        response = lushroomsPlayer.seek(int(args["position"]))
+        response = LushRoomsPlayerWrapped.instance().seek(
+            int(args["position"]))
         print('pos: ', response)
 
         return jsonify(response)
@@ -301,10 +318,9 @@ class Seek(Resource):
 
 class PlayerStatus(Resource):
     def get(self):
-        global lushroomsPlayer
 
         try:
-            response = lushroomsPlayer.getStatus()
+            response = LushRoomsPlayerWrapped.instance().getStatus()
         except:
             response = 1
 
@@ -313,13 +329,12 @@ class PlayerStatus(Resource):
 
 class Pair(Resource):
     def get(self):
-        global lushroomsPlayer, connections
-
         args = getInput()
         print('Pair with: ', args["pairhostname"])
 
         try:
-            pairRes = lushroomsPlayer.pairAsMaster(args["pairhostname"])
+            pairRes = LushRoomsPlayerWrapped.instance(
+            ).pairAsMaster(args["pairhostname"])
         except Exception as e:
             print('Exception: ', e)
             pairRes = 1
@@ -329,10 +344,8 @@ class Pair(Resource):
 
 class Unpair(Resource):
     def get(self):
-        global lushroomsPlayer, connections
-
         try:
-            unpairRes = lushroomsPlayer.unpairAsMaster()
+            unpairRes = LushRoomsPlayerWrapped.instance().unpairAsMaster()
         except Exception as e:
             print('Exception: ', e)
             unpairRes = 1
@@ -342,8 +355,6 @@ class Unpair(Resource):
 
 class Enslave(Resource):
     def get(self):
-        global lushroomsPlayer, connections
-
         # If there is a player running, kill it
         # If there isnt, make one without a playlist
         # since we'll be getting the path of the audio/srt
@@ -354,11 +365,7 @@ class Enslave(Resource):
         # it is paired: we can easily lock the UI and stop it
         # sending any control commands
 
-        if lushroomsPlayer:
-            lushroomsPlayer.stop()
-            lushroomsPlayer.exit()
-        else:
-            lushroomsPlayer = LushRoomsPlayer(None, None, connections)
+        LushRoomsPlayerWrapped.destroy()
 
         print('Enslaving, player stopped and exited')
         print('Enslaved by: ', request.environ.get(
@@ -367,17 +374,17 @@ class Enslave(Resource):
         # set paired to true
         masterIp = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
 
-        lushroomsPlayer.setPairedAsSlave(True, masterIp)
+        LushRoomsPlayerWrapped \
+            .instance() \
+            .setPairedAsSlave(True, masterIp)
 
         return jsonify(0)
 
 
 class Free(Resource):
     def get(self):
-        global lushroomsPlayer, connections
-
         try:
-            freeRes = lushroomsPlayer.free()
+            freeRes = LushRoomsPlayerWrapped.instance().free()
         except Exception as e:
             print('Exception: ', e)
             freeRes = 1
@@ -390,10 +397,9 @@ class Free(Resource):
 
 class Command(Resource):
     def post(self):
-        global lushroomsPlayer, connections
         command = request.get_json(force=True)
 
-        res = lushroomsPlayer.commandFromMaster(
+        res = LushRoomsPlayerWrapped.instance().commandFromMaster(
             command["master_status"],
             command["command"],
             command["position"],
@@ -406,13 +412,12 @@ class Command(Resource):
 
 class Stop(Resource):
     def get(self):
-        global lushroomsPlayer, connections
         global BUILT_PATH
 
         BUILT_PATH = None
 
         try:
-            response = lushroomsPlayer.stop()
+            response = LushRoomsPlayerWrapped.instance().stop()
         except:
             response = 1
 
@@ -423,7 +428,6 @@ class Stop(Resource):
 
 class ScentRoomTrigger(Resource):
     def post(self):
-        global lushroomsPlayer, connections
         body = request.get_json(force=True)
 
         print("SR Trigger received:")
@@ -435,28 +439,23 @@ class ScentRoomTrigger(Resource):
                 mp3_filename = body["upload_path"]
                 srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
                 print(mp3_filename, srt_filename)
-                if lushroomsPlayer == None:
-                    print("SR Trigger play - restarting LushRoomsPlayer")
-                    lushroomsPlayer = LushRoomsPlayer(None, None, connections)
-                    lushroomsPlayer.start(mp3_filename, None, srt_filename)
-                    return jsonify({'response': 200, 'description': 'ok!'})
-                else:
-                    lushroomsPlayer.start(mp3_filename, None, srt_filename)
-                    return jsonify({'response': 200, 'description': 'ok!'})
+                LushRoomsPlayerWrapped.instance() \
+                    .start(mp3_filename, None, srt_filename)
+                return jsonify({'response': 200, 'description': 'ok!'})
 
             elif body['trigger'] == "stop":
                 print("SR Trigger received: stop")
                 # TODO: make this better
                 # Python, your flexibility is charming but also _scary_
-                if lushroomsPlayer != None:
+                if LushRoomsPlayerWrapped.instance() != None:
                     print("SR Trigger received: player existing")
                     try:
                         # for the ScentRoom, RGB value for warm white for both RGBW downlight and side RGB lights
                         # The eighth channel of 255 is needed for whatever reason, I don't have time
                         # to find out why right now
                         # matched white light RGB: 255, 241, 198, 255
-                        if lushroomsPlayer.lighting.dmx:
-                            lushroomsPlayer.lighting.dmx.write_frame(
+                        if LushRoomsPlayerWrapped.instance().lighting.dmx:
+                            LushRoomsPlayerWrapped.instance().lighting.dmx.write_frame(
                                 [0, 0, 0, 255, 30, 30, 30, 0])
                     except Exception as e:
                         logging.error(
@@ -464,12 +463,10 @@ class ScentRoomTrigger(Resource):
                         logging.info("Killing everything anyway!")
                         print("Why: ", e)
 
-                    lushroomsPlayer.stop()
-                    lushroomsPlayer.exit()
-                    del lushroomsPlayer
-                    lushroomsPlayer = None
+                    LushRoomsPlayerWrapped.instance().stop()
+                    LushRoomsPlayerWrapped.destroy()
 
-                    connections.scheduler.print_jobs()
+                    get_connections().scheduler.print_jobs()
 
                 return jsonify({'response': 200, 'description': 'ok!'})
 
@@ -482,18 +479,17 @@ class ScentRoomTrigger(Resource):
 
 class ScentRoomIdle(Resource):
     def get(self):
-        global lushroomsPlayer, connections
         try:
             print("SR Trigger idle - restarting LushRoomsPlayer")
-            if lushroomsPlayer:
-                del lushroomsPlayer
-            lushroomsPlayer = None
-            lushroomsPlayer = LushRoomsPlayer(None, None, connections)
+            LushRoomsPlayerWrapped.destroy()
+
             mp3_filename = "/media/usb/uploads/idle.mp3"
             srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
 
-            lushroomsPlayer.start(mp3_filename, None, srt_filename,
-                                  syncTime=None, loop=True)
+            LushRoomsPlayerWrapped \
+                .instance() \
+                .start(mp3_filename, None, srt_filename,
+                       syncTime=None, loop=True)
             return jsonify({'response': 200, 'description': 'ok!'})
         except Exception as e:
             print("Idle sequence failed: ", e)
@@ -523,10 +519,9 @@ api.add_resource(ScentRoomTrigger, '/scentroom-trigger')  # POST
 api.add_resource(ScentRoomIdle, '/scentroom-idle')  # GET
 
 if __name__ == '__main__':
-    global lushroomsPlayer, connections
+    global connections
 
-    # Initialise the player/connections singletons
-    lushroomsPlayer = None
+    # Initialise the connections singletons
     connections = Connections()
 
     settings_json = settings.get_settings()
