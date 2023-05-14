@@ -139,6 +139,7 @@ class LushRoomsPlayerWrapped():
 
     @classmethod
     def instance(cls, *args, **kwargs):
+        print("LushRoomsPlayerWrapped count :: ", str(cls._instance_count))
         if cls._instance is None:
             print('Creating new LushRoomsPlayer')
             connections = get_connections()
@@ -374,16 +375,19 @@ class Enslave(Resource):
             .setMasterIp(masterIp) \
             .setPaired()
 
+        LushRoomsPlayerWrapped.instance().isSlave = True
+
         return jsonify(0)
 
 
 class Free(Resource):
     def get(self):
         try:
+            print('Freeing slave! :: ')
             freeRes = LushRoomsPlayerWrapped.instance().free()
             LushRoomsPlayerWrapped.destroy()
         except Exception as e:
-            print('Exception: ', e)
+            print('Could not Free: ', e)
             freeRes = 1
 
         return jsonify(freeRes)

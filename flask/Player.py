@@ -56,6 +56,8 @@ class LushRoomsPlayer():
         self.slaveCommandOffset = 2.5  # seconds
         self.slaveUrl = None
         self.paired = False
+        self.isMaster = False
+        self.isSlave = False
         self.masterIp = None
         self.status = {
             "source": "",
@@ -76,18 +78,6 @@ class LushRoomsPlayer():
 
     def getPlayerType(self):
         return self.playerType
-
-    def isMaster(self):
-        slaveUrlIsSet = self.slaveUrl != ""
-        isSetAsMaster = self.paired and slaveUrlIsSet
-        print("isMaster :: ", isSetAsMaster)
-        return isSetAsMaster
-
-    def isSlave(self):
-        masterIpIsSet = self.masterIp is not None
-        isSetAsSlave = self.paired and masterIpIsSet
-        print("isSlave :: ", isSetAsSlave)
-        return isSetAsSlave
 
     def loadSubtitles(self, subsPath):
         if os.path.isfile(subsPath):
@@ -254,6 +244,7 @@ class LushRoomsPlayer():
                     self.slaveUrl + "/enslave").read()
                 print('res from enslave: ', enslaveRes)
                 self.setSlaveUrl(self.slaveUrl).setPaired()
+                self.isMaster = True
 
         else:
             print(hostname, 'is down! Cannot pair!')
@@ -271,6 +262,7 @@ class LushRoomsPlayer():
             print('res from free: ', freeRes)
             if freeRes:
                 self.setSlaveUrl(None).setUnpaired()
+                self.isMaster = False
             else:
                 print('Error freeing the slave, pairing may be stuck!')
                 return 1
@@ -293,14 +285,15 @@ class LushRoomsPlayer():
 
     def setUnpaired(self):
         self.paired = False
+        self.isMaster = False
+        self.isSlave = False
         return self
 
     def free(self):
-        if self.paired:
-            self.setMasterIp(None).setUnpaired()
-            self.resetLighting()
-            self.audioPlayer.exit()
-            return 0
+        self.setMasterIp(None).setUnpaired()
+        self.resetLighting()
+        self.audioPlayer.exit()
+        return 0
 
     def pauseIfSync(self, syncTimestamp=None):
         print('synctime in LushRoomsPlayer: ',
