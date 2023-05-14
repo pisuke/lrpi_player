@@ -126,21 +126,12 @@ def loadSettings():
     return settings_json
 
 
-def timing(f):
-    def wrap(*args):
-        time1 = time.time()
-        ret = f(*args)
-        time2 = time.time()
-        print('{:s} function took {:.3f} ms'.format(
-            f.__name__, (time2-time1)*1000.0))
-        return ret
-    return wrap
-
 # LushRoomsPlayer singleton (to avoid messing up state with the 'global' keyword everywhere...)
 
 
 class LushRoomsPlayerWrapped():
     _instance = None
+    _instance_count = 0
 
     def __init__(self):
         raise RuntimeError(
@@ -152,6 +143,7 @@ class LushRoomsPlayerWrapped():
             print('Creating new LushRoomsPlayer')
             connections = get_connections()
             cls._instance = LushRoomsPlayer(connections, *args, **kwargs)
+            cls._instance_count += 1
         return cls._instance
 
     @classmethod
@@ -159,6 +151,8 @@ class LushRoomsPlayerWrapped():
         if cls._instance is not None:
             cls._instance.exit()
             del cls._instance
+            cls._instance = None
+            cls._instance_count -= 0
 
 # serve the angular app (https://github.com/LUSHDigital/lrpi_tablet_ui)
 @app.route('/', defaults={'path': ''})
@@ -305,8 +299,6 @@ class FadeDown(Resource):
 
 class Seek(Resource):
     def get(self):
-        global BUILT_PATH
-
         args = getInput()
         print('position to seek (%%): ', args["position"])
         response = LushRoomsPlayerWrapped.instance().seek(
@@ -338,6 +330,8 @@ class Pair(Resource):
         except Exception as e:
             print('Exception: ', e)
             pairRes = 1
+            LushRoomsPlayerWrapped.instance(
+            ).setUnpaired()
 
         return jsonify(pairRes)
 
@@ -376,7 +370,9 @@ class Enslave(Resource):
 
         LushRoomsPlayerWrapped \
             .instance() \
-            .setPairedAsSlave(True, masterIp)
+            .setSlaveUrl(None) \
+            .setMasterIp(masterIp) \
+            .setPaired()
 
         return jsonify(0)
 
@@ -385,6 +381,7 @@ class Free(Resource):
     def get(self):
         try:
             freeRes = LushRoomsPlayerWrapped.instance().free()
+            LushRoomsPlayerWrapped.destroy()
         except Exception as e:
             print('Exception: ', e)
             freeRes = 1

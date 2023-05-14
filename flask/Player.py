@@ -16,6 +16,7 @@ from pysrt import stream as srtstream
 import datetime
 import calendar
 import json
+import Profiling
 from threading import Thread
 
 from Lighting import LushRoomsLighting
@@ -77,24 +78,21 @@ class LushRoomsPlayer():
         return self.playerType
 
     def isMaster(self):
-        # todo - ideally audioPlayer shouldn't care about pairing
-        return self.paired and (self.status["master_ip"] is None)
+        slaveUrlIsSet = self.slaveUrl != ""
+        isSetAsMaster = self.paired and slaveUrlIsSet
+        print("isMaster :: ", isSetAsMaster)
+        return isSetAsMaster
 
     def isSlave(self):
-        # todo - ideally audioPlayer shouldn't care about pairing
-        return self.paired and (self.status["master_ip"] is not None)
+        masterIpIsSet = self.masterIp is not None
+        isSetAsSlave = self.paired and masterIpIsSet
+        print("isSlave :: ", isSetAsSlave)
+        return isSetAsSlave
 
     def loadSubtitles(self, subsPath):
         if os.path.isfile(subsPath):
-            start_time = time.time()
-            print("Loading SRT file " + subsPath + " - " + str(start_time))
-            subs = srtopen(subsPath)
-            # subs = srtstream(subsPath)
-            end_time = time.time()
-            print("Finished loading SRT file " +
-                  subsPath + " - " + str(end_time))
-            print("Total time elapsed: " +
-                  str(end_time - start_time) + " seconds")
+            profiledSrtOpen = Profiling.timing(srtopen, "Loading SRT file :: ")
+            subs = profiledSrtOpen(subsPath)
             return subs
         else:
             print(
@@ -126,12 +124,14 @@ class LushRoomsPlayer():
             self.pauseIfSync(syncTime)
 
         self.started = True
-        t1_start = perf_counter()
-        track_length_seconds = self.audioPlayer.start(
+        profiledAudioStarter = Profiling.timing(
+            self.audioPlayer.start, "LushRoomsPlayer::Start")
+        track_length_seconds = profiledAudioStarter(
             path,
-            master=self.isMaster(), slave=self.isSlave(), loop=loop)
-        t1_stop = perf_counter()
-        print("LushRooms audioPlayer start() took:", t1_stop - t1_start)
+            master=self.isMaster(),
+            slave=self.isSlave(),
+            loop=loop
+        )
 
         try:
             self.lighting.start(self.audioPlayer, self.subs)
@@ -218,7 +218,6 @@ class LushRoomsPlayer():
 
     def seek(self, position):
         if self.started:
-
             if self.isMaster():
                 print('Master, sending seek!')
                 syncTime = self.sendSlaveCommand('seek', position)
@@ -227,11 +226,15 @@ class LushRoomsPlayer():
             newPos = self.audioPlayer.seek(position)
             self.lighting.seek(newPos)
             return newPos
+        else:
+            print("LushRoomsPlayer is NOT started - cannot seek!")
 
     def getStatus(self):
         self.status["slave_url"] = self.slaveUrl
         self.status["paired"] = self.paired
         self.status["master_ip"] = self.masterIp
+        # todo - could add lighting status here too
+        # current frame, tick info, etc?
         return self.audioPlayer.status(self.status)
 
     # Pair methods called by the master
@@ -250,10 +253,11 @@ class LushRoomsPlayer():
                 enslaveRes = urllib.request.urlopen(
                     self.slaveUrl + "/enslave").read()
                 print('res from enslave: ', enslaveRes)
-                self.setPairedAsMaster(True, self.slaveUrl)
+                self.setSlaveUrl(self.slaveUrl).setPaired()
 
         else:
             print(hostname, 'is down! Cannot pair!')
+            self.setSlaveUrl(None).setUnpaired()
 
         return 0
 
@@ -266,28 +270,34 @@ class LushRoomsPlayer():
             freeRes = urllib.request.urlopen(self.slaveUrl + "/free").read()
             print('res from free: ', freeRes)
             if freeRes:
-                self.setPairedAsMaster(False, None)
+                self.setSlaveUrl(None).setUnpaired()
             else:
                 print('Error freeing the slave, pairing may be stuck!')
                 return 1
 
         return 0
 
-    def setPairedAsMaster(self, val, slaveUrl):
-        self.slaveUrl = slaveUrl
-        self.paired = val
-        self.masterIp = None
-
-    # Methods called by the slave
-
-    def setPairedAsSlave(self, val, masterIp):
+    def setMasterIp(self, masterIp):
         self.masterIp = masterIp
-        self.paired = val
         self.slaveUrl = None
+        return self
+
+    def setSlaveUrl(self, slaveUrl):
+        self.slaveUrl = slaveUrl
+        self.masterIp = None
+        return self
+
+    def setPaired(self):
+        self.paired = True
+        return self
+
+    def setUnpaired(self):
+        self.paired = False
+        return self
 
     def free(self):
         if self.paired:
-            self.setPairedAsSlave(False, None)
+            self.setMasterIp(None).setUnpaired()
             self.resetLighting()
             self.audioPlayer.exit()
             return 0
@@ -310,6 +320,9 @@ class LushRoomsPlayer():
     # master to a method
 
     def commandFromMaster(self, masterStatus, command, position, startTime):
+        if not self.paired:
+            print('Not paired, cannot accept master commands')
+            res = 1
 
         localTimestamp = self.getLocalTimestamp()
 
@@ -318,61 +331,63 @@ class LushRoomsPlayer():
 
         res = 1
         # TODO: this should be based on self.paired, NOT self.audioPlayer
-        if self.paired:
 
-            print('command from master: ', command)
-            print('master status: ', masterStatus)
-            print('startTime: ', startTime)
+        # try:
 
-            # All commands are mutually exclusive
+        print('command from master: ', command)
+        print('master status: ', masterStatus)
+        print('startTime: ', startTime)
 
-            # We do not have a startTime for primeForStart, it is the precursor to
-            # all other waits. The master will wait patiently until the slave
-            # has been primed
+        # All commands are mutually exclusive
 
-            if command == "primeForStart":
-                pathToAudioTrack = masterStatus["source"]
-                pathToSubsTrack = masterStatus["subsPath"]
-                print("Slave :: priming slave player subtitles from " +
-                      pathToSubsTrack)
-                self.subs = self.loadSubtitles(pathToSubsTrack)
-                print('Slave :: priming slave player with track ' + pathToAudioTrack)
-                self.audioPlayer.primeForStart(pathToAudioTrack)
-                print('Slave :: PLAYER IS PRIMED')
+        # We do not have a startTime for primeForStart, it is the precursor to
+        # all other waits. The master will wait patiently until the slave
+        # has been primed
 
-            # LushRooms player is presumed primed for all other commands!
-            if command != "primeForStart":
-                self.pauseIfSync(startTime)
+        if command == "primeForStart":
+            pathToAudioTrack = masterStatus["source"]
+            pathToSubsTrack = masterStatus["subsPath"]
+            print("Slave :: priming slave player subtitles from " +
+                  pathToSubsTrack)
+            self.subs = self.loadSubtitles(pathToSubsTrack)
+            print('Slave :: priming slave player with track ' + pathToAudioTrack)
+            self.audioPlayer.primeForStart(pathToAudioTrack)
+            print('Slave :: PLAYER IS PRIMED')
 
-            if command == "start":
-                self.start(
-                    masterStatus["source"],
-                    None,
-                    masterStatus["subsPath"]
-                )
+        # LushRooms player is presumed primed for all other commands!
+        if command != "primeForStart":
+            self.pauseIfSync(startTime)
 
-            if command == "playPause":
-                self.playPause(startTime)
+        if command == "start":
+            self.start(
+                masterStatus["source"],
+                None,
+                masterStatus["subsPath"]
+            )
 
-            if command == "stop":
-                self.stop(startTime)
+        if command == "playPause":
+            self.playPause(startTime)
 
-            if command == "seek":
-                self.seek(position)
+        if command == "stop":
+            self.stop(startTime)
 
-            if command == "fadeDown":
-                self.fadeDown(masterStatus["source"],
-                              masterStatus["interval"],
-                              None,
-                              masterStatus["subsPath"],
-                              startTime)
-            res = 0
+        if command == "seek":
+            self.seek(position)
 
-        else:
-            print('Not paired, cannot accept master commands')
-            res = 1
+        if command == "fadeDown":
+            self.fadeDown(masterStatus["source"],
+                          masterStatus["interval"],
+                          None,
+                          masterStatus["subsPath"],
+                          startTime)
+        res = 0
 
         return res
+        # except Exception as e:
+        #     print("Could not process command " +
+        #           str(command) + " from " + str(self.masterIp))
+        #     print("Why :: ", e)
+        #     return 1
 
     # When this player is acting as master, send commands to
     # the slave with a 'start' timestamp
@@ -388,10 +403,10 @@ class LushRoomsPlayer():
                 self.eventSyncTime = localTimestamp + \
                     datetime.timedelta(seconds=self.slaveCommandOffset)
 
-                # print("*" * 30)
-                # print(
-                #     f"MASTER COMMAND SENT {command}, events sync at: {self.eventSyncTime}")
-                # print("*" * 30)
+                print("*" * 30)
+                print("MASTER SENDING COMMAND -> " + str(command) +
+                      ", events sync at: " + str(self.eventSyncTime))
+                print("*" * 30)
 
                 # send the event sync time to the slave...
 
@@ -420,7 +435,8 @@ class LushRoomsPlayer():
                     # the command (e.g. fadeDown, lots of sleeps).
                     # Therefore, start it in a thread
                     # we don't often care about the result
-                    print("sending command to slave")
+                    print(
+                        "sending command to slave where self.slaveUrl :: ", self.slaveUrl)
                     Thread(target=slaveRequest).start()
                     print("after thread finish...")
 
