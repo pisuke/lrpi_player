@@ -8,16 +8,13 @@
 
 
 from Connections import Connections
-from OmxPlayer import killOmx
 from Player import LushRoomsPlayer
 import settings
 import logging
 from content_reader import content_in_dir
-from pysrt import stream as srtstream  # pylint: disable=import-error
 from pysrt import open as srtopen  # pylint: disable=import-error
 import signal
 import time
-import pause  # pylint: disable=import-error
 from time import sleep
 from time import ctime
 import ntplib  # pylint: disable=import-error
@@ -25,13 +22,14 @@ from flask_restful import reqparse
 from flask_jsonpify import jsonify
 from json import dumps
 from flask_restful import Resource, Api
-from flask_cors import CORS, cross_origin
-from flask import Flask, request, send_from_directory, render_template
+from flask_cors import CORS
+from flask import Flask, request, send_from_directory
 from os.path import splitext
 import os
 import sys
 import os.path
 import datetime
+from platform_helpers import killOmx
 os.environ["FLASK_ENV"] = "development"
 
 # From vendors
@@ -65,8 +63,6 @@ if SENTRY_URL is not None:
     from raven.contrib.flask import Sentry
     sentry = Sentry(app, dsn=SENTRY_URL)
 
-BASE_PATH = "/media/usb/"
-MEDIA_BASE_PATH = BASE_PATH + "tracks/"
 BUILT_PATH = None
 JSON_LIST_FILE = "content.json"
 MENU_DMX_VAL = os.environ.get("MENU_DMX_VAL", None)
@@ -197,6 +193,8 @@ class GetTrackList(Resource):
         global NEW_SRT_ARRAY
         global BUILT_PATH
 
+        MEDIA_BASE_PATH = loadSettings()["media_base_path"]
+
         try:
 
             # return a graceful error if the usb stick isn't mounted
@@ -241,6 +239,8 @@ class GetTrackList(Resource):
                 .setMediaBasePath(MEDIA_BASE_PATH) \
                 .resetLighting()
 
+            print("LushRoomsPlayerWrapped created!")
+
             return jsonify(NEW_TRACK_ARRAY)
         except Exception as e:
             logging.error(
@@ -253,6 +253,8 @@ class GetTrackList(Resource):
 class PlaySingleTrack(Resource):
     def get(self):
         global BUILT_PATH
+
+        pathToTrack = "/not/valid/path/at/all"
 
         args = getInput()
 
@@ -533,6 +535,19 @@ api.add_resource(Command, '/command')  # POST
 # Scentroom specific endpoints
 api.add_resource(ScentRoomTrigger, '/scentroom-trigger')  # POST
 api.add_resource(ScentRoomIdle, '/scentroom-idle')  # GET
+
+
+def appFactory():
+    print("In app factory")
+    global connections
+
+    # killOmx as soon as the server starts...
+    killOmx()
+
+    # Initialise the connections singletons
+    connections = Connections()
+    return app
+
 
 if __name__ == '__main__':
     global connections

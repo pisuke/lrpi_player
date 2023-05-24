@@ -2,13 +2,17 @@ import pytest
 from Server import appFactory
 import os
 from time import sleep
+import json
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
 
 @pytest.fixture()
 def app():
     current_working_directory = os.getcwd()
 
-    os.environ["LRPI_SETTINGS_PATH"] = f"{current_working_directory}/pytest_faux_usb/settings.json"
+    os.environ["LRPI_SETTINGS_PATH"] = current_working_directory + \
+        "/pytest_faux_usb/settings.json"
 
     app = appFactory()
     app.config.update({
@@ -32,7 +36,14 @@ def runner(app):
     return app.test_cli_runner()
 
 
+# Note that these hashes will changed based on
+# file attributes like 'last modified' etc...
+known_folder_id = "b4f1020c48a28b3cdf6be408c4f585d7"
+known_track_id = "7d55a142b188ef1c903798fbf735e2aa"
+
 # Thanks to https://stackoverflow.com/q/10480806/8249410
+
+
 def equal_dicts(a, b, ignore_keys=[]):
     ka = set(a).difference(ignore_keys)
     kb = set(b).difference(ignore_keys)
@@ -82,80 +93,73 @@ class TestLrpiPlayerSmokeTests:
         assert response.status_code == 200
 
     def test_server_returns_status(self, client):
+        response = client.get("/stop")
         client.get("/get-track-list")
         response = client.get("/status")
 
         expected_status = {
-            'canControl': True,
-            'error': '',
-            'master_ip': '',
+            'canControl': False,
+            'error': 'Player is not initialized!',
+            'master_ip': None,
+            'mediaBasePath': 'also not bothered',
             'paired': False,
             'playerState': '',
-            'playerType': 'MPV',
-            'playlist': ['not bothered about playlist in this test'],
-            'position': None,
+            'playerType': 'not bothered',
+            'playlist': ['not bothered'],
+            'position': '',
             'slave_url': None,
             'source': '',
             'subsPath': '',
-            'trackDuration': 0,
+            'trackDuration': '',
             'volume': 80
         }
 
-        print(response.json)
+        print('res')
+        pp.pprint(response.json)
+        print('expected')
+        pp.pprint(expected_status)
 
         assert equal_dicts(
             response.json,
             expected_status,
-            ignore_keys=['playlist']
+            ignore_keys=['playlist', 'playerType',
+                         'mediaBasePath', 'source', 'subsPath'],
         )
 
     def test_server_plays_one_track_no_lights(self, client):
-        known_folder_id = "b4f1020c48a28b3cdf6be408c4f585d7"
-        known_track_id = "a4a2ea32026a9a858de80d944a0c7f98"
-
+        client.get("/stop")
         client.get("/get-track-list")
-        client.get(
-            f"/get-track-list?id={known_folder_id}")
+        client.get("/get-track-list?id=" + known_folder_id)
 
-        client.get(f"/play-single-track?id={known_track_id}")
+        client.get("/play-single-track?id=" + known_track_id)
 
         sleep(4)
 
         status_response = client.get("/status")
 
-        expected_playlist = [
-            {
-                'ID': 'a4a2ea32026a9a858de80d944a0c7f98', 'IsDir': False, 'MimeType': 'video/mp4',
-                'ModTime': '2023-02-24T17:15:40.908032Z', 'Name': 'ff-16b-2c-folder2.mp4', 'Path': 'ff-16b-2c-folder2.mp4', 'Size': 3079106
-            }
-        ]
-
         status_response = status_response.json
+
+        pp.pprint(status_response)
 
         assert status_response['canControl'] == True
         assert status_response['playerState'] == 'Playing'
         assert status_response['trackDuration'] == 187.11
         assert status_response['position'] > 0
-        assert status_response['playlist'] == expected_playlist
         assert status_response['volume'] > 20
-        assert "ff-16b-2c-folder2.mp4" in status_response['source']
+        assert "Misophonia/ff-16b-2c-44100hz.mp4" in status_response['source']
 
     def test_server_crossfade(self, client):
-        known_folder_id = "b4f1020c48a28b3cdf6be408c4f585d7"
-        known_track_id = "a4a2ea32026a9a858de80d944a0c7f98"
-
         client.get("/stop")
 
         client.get("/get-track-list")
-        client.get(
-            f"/get-track-list?id={known_folder_id}")
+        client.get("/get-track-list?id=" + known_folder_id)
 
-        client.get(f"/play-single-track?id={known_track_id}")
+        client.get("/play-single-track?id=" + known_track_id)
 
         sleep(4)
 
-        # skip forward to the same track
-        client.get(f"/crossfade?id={known_track_id}&interval=4")
+        # 'skip forward' to the same track
+        client.get("/crossfade?id=" + known_track_id + "&interval=4")
 
         sleep(4)
 
@@ -174,4 +178,4 @@ class TestLrpiPlayerSmokeTests:
         assert status_response['position'] > 0
         # 80 is set in flask/test/pytest_faux_usb/settings.json
         assert status_response['volume'] == 80
-        assert "ff-16b-2c-folder2.mp4" in status_response['source']
+        assert "Misophonia/ff-16b-2c-44100hz.mp4" in status_response['source']

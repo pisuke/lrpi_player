@@ -60,8 +60,8 @@ def get_combined_settings():
 
 def get_json_settings():
 
-    if os.path.exists(SETTINGS_PATH):
-        with open(SETTINGS_PATH) as f:
+    if os.path.exists(get_settings_path()):
+        with open(get_settings_path()) as f:
             return json.loads(f.read())
     return None
 
@@ -87,4 +87,6 @@ def get_evn_settings():
         "RESET_DMX_COMMAND", "DMX1(20,20,20,20,20,20,20,20)")
     settings["reset_hue_command"] = os.environ.get(
         "RESET_HUE_COMMAND", "{'transitiontime' : 5, 'on' : True, 'bri' : 50, 'sat' : 100, 'hue' : 0, 'ct' : 450}")
+    settings["media_base_path"] = os.environ.get(
+        "MEDIA_BASE_PATH", "/media/usb/tracks/")
     return settings

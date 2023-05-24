@@ -1,5 +1,6 @@
 from os import uname, system
 from time import sleep
+from platform_helpers import killOmx
 from omxplayer.player import OMXPlayer  # pylint: disable=import-error
 import ntplib  # pylint: disable=import-error
 from time import ctime
@@ -8,16 +9,6 @@ import datetime
 import os
 import json
 import settings
-
-
-def killOmx():
-    # This will only work on Unix-like (just Linux?) systems...
-    try:
-        system("killall omxplayer.bin")
-        print('omxplayer processes killed!')
-    except:
-        print('How are you NOT running omxplayer on Linux?')
-        exit(0)
 
 
 class OmxPlayer():
@@ -32,6 +23,9 @@ class OmxPlayer():
         value_0_to_10_f = float(value_0_to_100)/100.0
         self.player.set_volume(value_0_to_10_f)
         return value_0_to_100
+
+    def getVolume(self):
+        return int(self.player.volume() * 100)
 
     def setDefaultVolumeFromSettings(self):
         print(
@@ -167,6 +161,7 @@ class OmxPlayer():
                 status["position"] = self.player.position()
                 status["trackDuration"] = self.player.duration()
                 status["error"] = ""
+                status["volume"] = self.getVolume()
             except Exception as e:
                 status["playerState"] = ""
                 status["canControl"] = False
@@ -177,6 +172,8 @@ class OmxPlayer():
             status["playerState"] = ""
             status["canControl"] = False
             status["error"] = "Player is not initialized!"
+            status["position"] = ''
+            status["trackDuration"] = ''
 
         return status
 

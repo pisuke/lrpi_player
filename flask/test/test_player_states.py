@@ -31,7 +31,8 @@ from time import sleep
 def app():
     current_working_directory = os.getcwd()
 
-    os.environ["LRPI_SETTINGS_PATH"] = f"{current_working_directory}/pytest_faux_usb/settings.json"
+    os.environ["LRPI_SETTINGS_PATH"] = current_working_directory + \
+        "/pytest_faux_usb/settings.json"
 
     app = appFactory()
     app.config.update({
@@ -62,18 +63,20 @@ def equal_dicts(a, b, ignore_keys=[]):
     return ka == kb and all(a[k] == b[k] for k in ka)
 
 
+# Note that these hashes will changed based on
+# file attributes like 'last modified' etc...
+known_folder_id = "b4f1020c48a28b3cdf6be408c4f585d7"
+known_track_id = "7d55a142b188ef1c903798fbf735e2aa"
+
+
 class TestLrpiPlayerStates:
     def test_play_pause(self, client):
         client.get("/stop")
 
-        known_folder_id = "b4f1020c48a28b3cdf6be408c4f585d7"
-        known_track_id = "a4a2ea32026a9a858de80d944a0c7f98"
-
         client.get("/get-track-list")
-        client.get(
-            f"/get-track-list?id={known_folder_id}")
+        client.get("/get-track-list?id=" + known_folder_id)
 
-        client.get(f"/play-single-track?id={known_track_id}")
+        client.get("/play-single-track?id=" + known_track_id)
 
         # around two seconds of track played
         sleep(2)
@@ -91,14 +94,10 @@ class TestLrpiPlayerStates:
     def test_stop(self, client):
         client.get("/stop")
 
-        known_folder_id = "b4f1020c48a28b3cdf6be408c4f585d7"
-        known_track_id = "a4a2ea32026a9a858de80d944a0c7f98"
-
         client.get("/get-track-list")
-        client.get(
-            f"/get-track-list?id={known_folder_id}")
+        client.get("/get-track-list?id=" + known_folder_id)
 
-        client.get(f"/play-single-track?id={known_track_id}")
+        client.get("/play-single-track?id=" + known_track_id)
 
         # around two seconds of track played
         sleep(2)
@@ -113,4 +112,4 @@ class TestLrpiPlayerStates:
         print(status_response)
 
         assert status_response['playerState'] == ''
-        assert status_response['position'] == None
+        assert status_response['position'] == ''

@@ -20,14 +20,11 @@ import Profiling
 from threading import Thread
 
 from Lighting import LushRoomsLighting
+from platform_helpers import findArm
 
 # utils
 
 NTP_SERVER = 'ns1.luns.net.uk'
-
-
-def findArm():
-    return uname().machine == 'armv7l'
 
 
 if findArm():

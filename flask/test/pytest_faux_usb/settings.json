@@ -9,9 +9,10 @@
   "reset_hue_command": "{'transitiontime' : 5, 'on' : True, 'bri' : 50, 'sat' : 100, 'hue' : 0, 'ct' : 450}",
   "fade_interval": "5",
   "audio_output": "jack",
-  "audio_volume": "55",
+  "audio_volume": "80",
   "activate_idle_loop": "true",
   "hue_brightness": "254",
   "reset_dmx_command": "DMX1(20,20,20,20,20,20,20,20)",
-  "hue_ip": "disabled"
+  "hue_ip": "disabled",
+  "media_base_path": "/opt/code/flask/test/pytest_faux_usb/tracks/"
 }
