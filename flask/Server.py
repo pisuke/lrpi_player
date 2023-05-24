@@ -50,6 +50,8 @@ useNTP = False
 
 if useNTP:
     import Ntp
+    # Could we do this on every 'pair' or 'free'?
+    # Would that be silly and/or dumb?
     Ntp.set_os_time_with_ntp()
 
 app = Flask(__name__,  static_folder='static')
@@ -76,8 +78,6 @@ NEW_TRACK_ARRAY = []
 NEW_SRT_ARRAY = []
 
 CORS(app)
-# killOmx as soon as the server starts...
-killOmx()
 
 
 def get_connections():
@@ -118,7 +118,9 @@ def printOmxVars():
 
 
 def loadSettings():
-    """ Load contents.json and return a graceful error if the file can't be found. """
+    """ 
+        Load contents.json and return a graceful error if the file can't be found. 
+    """
     settings_json = settings.get_settings()
     settings_json = settings_json.copy()
     settings_json["roomName"] = settings_json["name"]
@@ -143,6 +145,15 @@ class LushRoomsPlayerWrapped():
         if cls._instance is None:
             print('Creating new LushRoomsPlayer')
             connections = get_connections()
+            # to avoid race conditions, we set cls._instance to a
+            # string so that any HTTP calls that arrive before
+            # the LushRoomsPlayer constructor exits fail
+            #
+            # This ensures that there will only ever be ONE instance of
+            # LushRoomsPlayer. This, in turn, means that only one omx process
+            # will be spawned and allows us to keep the 'paired' state within
+            # LushRoomsPlayer
+            cls._instance = "PLAYER_IS_SETTING_UP"
             cls._instance = LushRoomsPlayer(connections, *args, **kwargs)
             cls._instance_count += 1
         return cls._instance
@@ -153,7 +164,7 @@ class LushRoomsPlayerWrapped():
             cls._instance.exit()
             del cls._instance
             cls._instance = None
-            cls._instance_count -= 0
+            cls._instance_count -= 1
 
 # serve the angular app (https://github.com/LUSHDigital/lrpi_tablet_ui)
 @app.route('/', defaults={'path': ''})
@@ -521,6 +532,9 @@ api.add_resource(ScentRoomIdle, '/scentroom-idle')  # GET
 
 if __name__ == '__main__':
     global connections
+
+    # killOmx as soon as the server starts...
+    killOmx()
 
     # Initialise the connections singletons
     connections = Connections()

@@ -101,10 +101,10 @@ class LushRoomsPlayer():
         # in party mode - these subs need to be loaded _before_ playback start
         # on the slave. Otherwise audio will _always_ play 'Total time elapsed'
         # seconds BEHIND on the slave
-        if not self.isMaster() and not self.isSlave():
+        if not self.isMaster and not self.isSlave:
             self.subs = self.loadSubtitles(subsPath)
 
-        if self.isMaster():
+        if self.isMaster:
             print('Master, sending start!')
             self.subs = self.loadSubtitles(subsPath)
             self.audioPlayer.primeForStart(path, loop=loop)
@@ -118,8 +118,8 @@ class LushRoomsPlayer():
             self.audioPlayer.start, "LushRoomsPlayer::Start")
         track_length_seconds = profiledAudioStarter(
             path,
-            master=self.isMaster(),
-            slave=self.isSlave(),
+            master=self.isMaster,
+            slave=self.isSlave,
             loop=loop
         )
 
@@ -132,7 +132,7 @@ class LushRoomsPlayer():
 
     def playPause(self, syncTime=None):
 
-        if self.isMaster():
+        if self.isMaster:
             print('Master, sending playPause!')
             syncTime = self.sendSlaveCommand('playPause')
             self.pauseIfSync(syncTime)
@@ -151,7 +151,7 @@ class LushRoomsPlayer():
         try:
             print('Stopping...')
 
-            if self.isMaster():
+            if self.isMaster:
                 print('Master, sending stop!')
                 syncTime = self.sendSlaveCommand('stop')
                 self.pauseIfSync(syncTime)
@@ -188,7 +188,7 @@ class LushRoomsPlayer():
     def fadeDown(self, path, interval, subs, subsPath, syncTimestamp=None):
 
         self.status["interval"] = interval
-        if self.isMaster():
+        if self.isMaster:
             print('Master, sending fadeDown!')
             syncTime = self.sendSlaveCommand('fadeDown')
             self.pauseIfSync(syncTime)
@@ -201,14 +201,14 @@ class LushRoomsPlayer():
                 sleep(1.0/interval)
         self.audioPlayer.exit()
 
-        if not self.isSlave():
+        if not self.isSlave:
             return self.start(path, subs, subsPath)
         else:
             return 0
 
     def seek(self, position):
         if self.started:
-            if self.isMaster():
+            if self.isMaster:
                 print('Master, sending seek!')
                 syncTime = self.sendSlaveCommand('seek', position)
                 self.pauseIfSync(syncTime)
@@ -336,6 +336,9 @@ class LushRoomsPlayer():
         # We do not have a startTime for primeForStart, it is the precursor to
         # all other waits. The master will wait patiently until the slave
         # has been primed
+        #
+        # Note that _starting_ a track might take longer or shorted depending
+        # on the implementation of self.audioPlayer. For the best pairing results, pair identical implementations
 
         if command == "primeForStart":
             pathToAudioTrack = masterStatus["source"]
