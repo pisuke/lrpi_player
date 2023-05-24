@@ -12,3 +12,11 @@ __pycache__/
 
 /docker-builds
 push_to*
+
+# allow unit / system test related files
+
+!flask/test/pytest_faux_usb/*
+!flask/test/pytest_faux_usb/settings.json
+
+!flask/test/pytest_faux_usb/tracks/**/*.mp4
+!flask/test/pytest_faux_usb/tracks/**/*.srt

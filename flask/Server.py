@@ -128,10 +128,14 @@ def loadSettings():
     return settings_json
 
 
-# LushRoomsPlayer singleton (to avoid messing up state with the 'global' keyword everywhere...)
-
-
 class LushRoomsPlayerWrapped():
+    """
+        LushRoomsPlayer singleton (to avoid messing up state with the 'global' keyword everywhere...)
+
+        The also allows us to handle race conditions on startup
+
+        Every time instance() is accessed, _instance_count is printed 
+    """
     _instance = None
     _instance_count = 0
 
@@ -206,7 +210,7 @@ class GetTrackList(Resource):
 
             args = getInput()
 
-            print("track list id: " + str(args['id']))
+            print("track list id from args: " + str(args['id']))
 
             if args['id']:
                 if NEW_TRACK_ARRAY:

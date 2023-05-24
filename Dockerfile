@@ -24,6 +24,8 @@ RUN mkdir -p /media/usb
 
 RUN sudo apt-get install libatlas-base-dev psmisc
 
+# TODO: do not copy in flask/test!
+
 COPY flask /opt/code/flask
 COPY requirements.txt /opt/code/requirements.txt
 RUN pip3 install --no-cache-dir -r /opt/code/requirements.txt
