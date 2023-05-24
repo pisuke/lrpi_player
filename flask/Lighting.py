@@ -168,7 +168,7 @@ class LushRoomsLighting():
             logging.error("Could not connect to DMX daemon to reset!")
             logging.error(e)
             ########## TODO - THINK ABOUT THIS CAREFULLY #############
-            logging.warn("Disabling DMX")
+            logging.warning("Disabling DMX")
             self.PLAY_DMX = False
             ########## TODO - THINK ABOUT THIS CAREFULLY #############
 

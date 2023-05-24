@@ -31,7 +31,7 @@ class Connections():
             # Likely wait for the tinkerforge brickd to finish doing its thing
             sleep(0.7)
         except Exception as e:
-            logging.warn(
+            logging.warning(
                 "Could not create IPConnection to Tinkerforge, assigning stub to self.tfIpCon")
             self.tfIpCon = None
             self.tfIDs = []
