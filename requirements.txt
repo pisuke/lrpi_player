@@ -16,3 +16,5 @@ ntplib>=0.3.3
 pause>=0.2
 phue>=1.1
 raven[flask]
+requests-mock
+pytest

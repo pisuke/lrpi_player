@@ -15,6 +15,7 @@ Caveats:
 - These tests only run on Rpi3 with omxplayer installed
 - Best to run them inside the docker container (which makes NOT including the tests inside the container difficult, hm)
 - Also, `pip3 install pytest` if the `pytest` command isn't found
+  - also, `pip3 install requests-mock`
 - the `media_base_path` var in settings.json needs thinking about in a repeatable testing context...
   - Maybe symlinks are the way to go here?
 

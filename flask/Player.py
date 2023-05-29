@@ -36,7 +36,7 @@ else:
 class LushRoomsPlayer():
     def __init__(self, connections):
         if uname().machine == 'armv7l':
-            # we're likely on a 'Pi
+            # we're likely on a 'Pi 3
             self.playerType = "OMX"
             print('Spawning omxplayer')
             self.audioPlayer = OmxPlayer()
@@ -306,10 +306,11 @@ class LushRoomsPlayer():
     def getLocalTimestamp(self):
         return datetime.datetime.now()
 
-    # When this player is enslaved, map the status of the
-    # master to a method
-
     def commandFromMaster(self, masterStatus, command, position, startTime):
+        """
+            When this player is enslaved, map the status of the
+            master to a method
+        """
         if not self.paired:
             print('Not paired, cannot accept master commands')
             res = 1
@@ -320,72 +321,75 @@ class LushRoomsPlayer():
               localTimestamp)
 
         res = 1
-        # TODO: this should be based on self.paired, NOT self.audioPlayer
 
-        # try:
+        try:
 
-        print('command from master: ', command)
-        print('master status: ', masterStatus)
-        print('startTime: ', startTime)
+            print('command from master: ', command)
+            print('master status: ', masterStatus)
+            print('startTime: ', startTime)
 
-        # All commands are mutually exclusive
+            # All commands are mutually exclusive
 
-        # We do not have a startTime for primeForStart, it is the precursor to
-        # all other waits. The master will wait patiently until the slave
-        # has been primed
-        #
-        # Note that _starting_ a track might take longer or shorted depending
-        # on the implementation of self.audioPlayer. For the best pairing results, pair identical implementations
+            # We do not have a startTime for primeForStart, it is the precursor to
+            # all other waits. The master will wait patiently until the slave
+            # has been primed
+            #
+            # Note that _starting_ a track might take longer or shorted depending
+            # on the implementation of self.audioPlayer. For the best pairing results, pair identical implementations
 
-        if command == "primeForStart":
-            pathToAudioTrack = masterStatus["source"]
-            pathToSubsTrack = masterStatus["subsPath"]
-            print("Slave :: priming slave player subtitles from " +
-                  pathToSubsTrack)
-            self.subs = self.loadSubtitles(pathToSubsTrack)
-            print('Slave :: priming slave player with track ' + pathToAudioTrack)
-            self.audioPlayer.primeForStart(pathToAudioTrack)
-            print('Slave :: PLAYER IS PRIMED')
+            if command == "primeForStart":
+                pathToAudioTrack = masterStatus["source"]
+                pathToSubsTrack = masterStatus["subsPath"]
+                print("Slave :: priming slave player subtitles from " +
+                      pathToSubsTrack)
+                self.subs = self.loadSubtitles(pathToSubsTrack)
+                print('Slave :: priming slave player with track ' + pathToAudioTrack)
+                self.audioPlayer.primeForStart(pathToAudioTrack)
+                print('Slave :: PLAYER IS PRIMED')
 
-        # LushRooms player is presumed primed for all other commands!
-        if command != "primeForStart":
-            self.pauseIfSync(startTime)
+            # LushRooms player is presumed primed for all other commands!
+            if command != "primeForStart":
+                self.pauseIfSync(startTime)
 
-        if command == "start":
-            self.start(
-                masterStatus["source"],
-                None,
-                masterStatus["subsPath"]
-            )
+            if command == "start":
+                self.start(
+                    masterStatus["source"],
+                    None,
+                    masterStatus["subsPath"]
+                )
 
-        if command == "playPause":
-            self.playPause(startTime)
+            if command == "playPause":
+                self.playPause(startTime)
 
-        if command == "stop":
-            self.stop(startTime)
+            if command == "stop":
+                self.stop(startTime)
 
-        if command == "seek":
-            self.seek(position)
+            if command == "seek":
+                self.seek(position)
 
-        if command == "fadeDown":
-            self.fadeDown(masterStatus["source"],
-                          masterStatus["interval"],
-                          None,
-                          masterStatus["subsPath"],
-                          startTime)
-        res = 0
+            if command == "fadeDown":
+                self.fadeDown(masterStatus["source"],
+                              masterStatus["interval"],
+                              None,
+                              masterStatus["subsPath"],
+                              startTime)
+            res = 0
 
-        return res
-        # except Exception as e:
-        #     print("Could not process command " +
-        #           str(command) + " from " + str(self.masterIp))
-        #     print("Why :: ", e)
-        #     return 1
-
-    # When this player is acting as master, send commands to
-    # the slave with a 'start' timestamp
+            return res
+        except Exception as e:
+            print("Could not process command " +
+                  str(command) + " from " + str(self.masterIp))
+            print("Why :: ", e)
+            # returning 0 here because I'm not sure what will
+            # happen to the UI if a 1 is returned
+            # TODO: test this!
+            return 0
 
     def sendSlaveCommand(self, command, position=None):
+        """
+            When this player is acting as master, send commands to
+            the slave with a 'sync_timestamp' timestamp
+        """
         if self.paired:
             print('sending command to slave: ', command)
             try:
@@ -448,9 +452,10 @@ class LushRoomsPlayer():
         print("LushRoomsPlayer exiting...")
         self.stop()
 
-    # mysterious Python destructor...
-
     def __del__(self):
+        """
+            Called on `del lushroomsPlayerInstance`
+        """
         try:
             self.stop()
             print("LushRoomsPlayer died via __del__")
