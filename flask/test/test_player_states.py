@@ -45,6 +45,8 @@ def app():
 
     # clean up / reset resources here
 
+    app.test_client().get("/stop")
+
 
 @pytest.fixture()
 def client(app):
@@ -71,8 +73,6 @@ known_track_id = "7d55a142b188ef1c903798fbf735e2aa"
 
 class TestLrpiPlayerStates:
     def test_play_pause(self, client):
-        client.get("/stop")
-
         client.get("/get-track-list")
         client.get("/get-track-list?id=" + known_folder_id)
 
@@ -92,8 +92,6 @@ class TestLrpiPlayerStates:
         assert status_response['position'] > 1
 
     def test_stop(self, client):
-        client.get("/stop")
-
         client.get("/get-track-list")
         client.get("/get-track-list?id=" + known_folder_id)
 

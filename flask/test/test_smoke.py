@@ -25,6 +25,8 @@ def app():
 
     # clean up / reset resources here
 
+    app.test_client().get("/stop")
+
 
 @pytest.fixture()
 def client(app):
@@ -93,7 +95,6 @@ class TestLrpiPlayerSmokeTests:
         assert response.status_code == 200
 
     def test_server_returns_status(self, client):
-        response = client.get("/stop")
         client.get("/get-track-list")
         response = client.get("/status")
 
@@ -127,7 +128,6 @@ class TestLrpiPlayerSmokeTests:
         )
 
     def test_server_plays_one_track_no_lights(self, client):
-        client.get("/stop")
         client.get("/get-track-list")
         client.get("/get-track-list?id=" + known_folder_id)
 
@@ -149,8 +149,6 @@ class TestLrpiPlayerSmokeTests:
         assert "Misophonia/ff-16b-2c-44100hz.mp4" in status_response['source']
 
     def test_server_crossfade(self, client):
-        client.get("/stop")
-
         client.get("/get-track-list")
         client.get("/get-track-list?id=" + known_folder_id)
 

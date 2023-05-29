@@ -126,7 +126,8 @@ def loadSettings():
 
 class LushRoomsPlayerWrapped():
     """
-        LushRoomsPlayer singleton (to avoid messing up state with the 'global' keyword everywhere...)
+        LushRoomsPlayer singleton 
+        (to avoid messing up state with the 'global' keyword everywhere...)
 
         The also allows us to handle race conditions on startup
 
@@ -409,11 +410,14 @@ class Free(Resource):
 
         return jsonify(freeRes)
 
-# POST body Should have the command, status of the master
-# and the desired trigger time
-
 
 class Command(Resource):
+    """
+        POST body Should have the command, status of the master, 
+        desired position of the player (for 'seek' commands)
+        and the desired trigger time (sync_timestamp)
+    """
+
     def post(self):
         command = request.get_json(force=True)
 
