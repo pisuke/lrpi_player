@@ -225,9 +225,6 @@ class TestPartyPairingModeSlave:
         print('command from slave, res: ')
         pp.pprint(slaveCommandRes.json)
 
-        sleep(2)
-        # syncTime is 5s, so after 2s the player should still be paused
-
         slaveStatus = client.get('/status')
         slaveStatus = slaveStatus.json
 
@@ -245,11 +242,12 @@ class TestPartyPairingModeSlave:
 
         assert slaveStatus['paired'] == True
         assert slaveStatus['playerState'] == 'Playing'
-        assert slaveStatus['position'] > 3
+        # Very, very loose test for synchronisation here!
+        assert slaveStatus['position'] > 2
+        assert slaveStatus['position'] < 6
 
     def test_pause_when_slave(self, client):
         # note - we MUST primeForStart before playing
-        client.get("/status")
         client.get("/enslave")
 
         master_status = {
@@ -278,55 +276,242 @@ class TestPartyPairingModeSlave:
             "volume": 55
         }
 
-        commandPostFields = {
+        primeCommand = {
             'master_status': master_status,
             'command': "primeForStart",
             'position': str(0),
-            'sync_timestamp': str(getSyncTime(3))
+            'sync_timestamp': str(getSyncTime(2))
         }
+        client.post('/command', json=primeCommand)
 
-        client.post('/command', json=commandPostFields)
-
-        commandPostFields = {
+        startCommand = {
             'master_status': master_status,
             'command': "start",
             'position': str(0),
-            'sync_timestamp': str(getSyncTime(5))
+            'sync_timestamp': str(getSyncTime(2))
         }
+        client.post('/command', json=startCommand)
 
-        slaveCommandRes = client.post('/command', json=commandPostFields)
+        playPauseCommand = {
+            'master_status': master_status,
+            'command': "playPause",
+            'position': str(0),
+            'sync_timestamp': str(getSyncTime(2))
+        }
+        slaveCommandRes = client.post('/command', json=playPauseCommand)
 
         print('command from slave, res: ')
         pp.pprint(slaveCommandRes.json)
 
-        sleep(3)
-        # syncTime is 5s, so after 2s the player should still be paused
-
         slaveStatus = client.get('/status')
         slaveStatus = slaveStatus.json
 
         assert slaveStatus['paired'] == True
-        assert slaveStatus['playerState'] == 'Playing'
-        # assert slaveStatus['position'] == 0
-
-        sleep(4)
-        # syncTime is 5s, so after another 2s the player should be playing
-
-        slaveStatus = client.get('/status')
-        slaveStatus = slaveStatus.json
-
-        assert slaveStatus['paired'] == True
-        assert slaveStatus['playerState'] == 'Playing'
+        assert slaveStatus['playerState'] == 'Paused'
         assert slaveStatus['position'] > 0
 
     def test_stop_when_slave(self, client):
-        # based on self.slaveCommandOffset = 2.5
-        pass
+        # note - we MUST primeForStart before playing
+        client.get("/enslave")
 
-    def test_crossfade_when_slave(self, client):
-        # based on self.slaveCommandOffset = 2.5
-        pass
+        master_status = {
+            "canControl": True,
+            "error": "",
+            "master_ip": "",
+            "paired": True,
+            "playerState": "Paused",
+            "playerType": "MPV",
+            "playlist": [
+                {
+                    "ID": "bc1e0c153609b9abdad741fbb13d9623",
+                    "IsDir": False,
+                    "MimeType": "video/mp4",
+                    "ModTime": "2023-05-04T20:35:03.216627Z",
+                    "Name": "ff-16b-2c-44100hz.mp4",
+                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+                    "Size": 3079106
+                },
+            ],
+            "position": 2.32589569160998,
+            "slave_url": None,
+            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt",
+            "trackDuration": 187.11,
+            "volume": 55
+        }
+
+        primeCommand = {
+            'master_status': master_status,
+            'command': "primeForStart",
+            'position': str(0),
+            'sync_timestamp': str(getSyncTime(2))
+        }
+        client.post('/command', json=primeCommand)
+
+        startCommand = {
+            'master_status': master_status,
+            'command': "start",
+            'position': str(0),
+            'sync_timestamp': str(getSyncTime(2))
+        }
+        client.post('/command', json=startCommand)
+
+        stopCommand = {
+            'master_status': master_status,
+            'command': "stop",
+            'position': str(0),
+            'sync_timestamp': str(getSyncTime(2))
+        }
+        slaveCommandRes = client.post('/command', json=stopCommand)
+
+        print('command from slave, res: ')
+        pp.pprint(slaveCommandRes.json)
+
+        slaveStatus = client.get('/status')
+        slaveStatus = slaveStatus.json
+
+        assert slaveStatus['paired'] == True
+        assert slaveStatus['playerState'] == ''
+        assert slaveStatus['position'] == ''
 
     def test_seek_when_slave(self, client):
-        # based on self.slaveCommandOffset = 2.5
-        pass
+        # note - we MUST primeForStart before playing
+        client.get("/enslave")
+
+        master_status = {
+            "canControl": True,
+            "error": "",
+            "master_ip": "",
+            "paired": True,
+            "playerState": "Paused",
+            "playerType": "MPV",
+            "playlist": [
+                {
+                    "ID": "bc1e0c153609b9abdad741fbb13d9623",
+                    "IsDir": False,
+                    "MimeType": "video/mp4",
+                    "ModTime": "2023-05-04T20:35:03.216627Z",
+                    "Name": "ff-16b-2c-44100hz.mp4",
+                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+                    "Size": 3079106
+                },
+            ],
+            "position": 2.32589569160998,
+            "slave_url": None,
+            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt",
+            "trackDuration": 187.11,
+            "volume": 55
+        }
+
+        primeCommand = {
+            'master_status': master_status,
+            'command': "primeForStart",
+            'position': str(0),
+            'sync_timestamp': str(getSyncTime(2))
+        }
+        client.post('/command', json=primeCommand)
+
+        startCommand = {
+            'master_status': master_status,
+            'command': "start",
+            'position': str(0),
+            'sync_timestamp': str(getSyncTime(2))
+        }
+        client.post('/command', json=startCommand)
+
+        sleep(2)
+
+        seekCommand = {
+            'master_status': master_status,
+            'command': "seek",
+            'position': str(50),
+            'sync_timestamp': str(getSyncTime(1))
+        }
+        slaveCommandRes = client.post('/command', json=seekCommand)
+
+        sleep(1.5)
+
+        print('command from slave, res AFTER SEEK: ')
+        pp.pprint(slaveCommandRes.json)
+
+        slaveStatusAfterSeek = client.get('/status')
+        slaveStatusAfterSeek = slaveStatusAfterSeek.json
+
+        print('status from slave, res AFTER SEEK: ')
+        pp.pprint(slaveStatusAfterSeek)
+
+        assert slaveStatusAfterSeek['paired'] == True
+        assert slaveStatusAfterSeek['playerState'] == 'Playing'
+        assert slaveStatusAfterSeek['position'] > 187.11 / 2
+
+    def test_crossfade_when_slave(self, client):
+        # note - we MUST primeForStart before playing
+        client.get("/enslave")
+
+        master_status = {
+            "canControl": True,
+            "error": "",
+            "master_ip": "",
+            "paired": True,
+            "playerState": "Paused",
+            "playerType": "MPV",
+            "interval": 2,  # interval must be int!
+            "playlist": [
+                {
+                    "ID": "bc1e0c153609b9abdad741fbb13d9623",
+                    "IsDir": False,
+                    "MimeType": "video/mp4",
+                    "ModTime": "2023-05-04T20:35:03.216627Z",
+                    "Name": "ff-16b-2c-44100hz.mp4",
+                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+                    "Size": 3079106
+                },
+            ],
+            "position": 2.32589569160998,
+            "slave_url": None,
+            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt",
+            "trackDuration": 187.11,
+            "volume": 55
+        }
+
+        primeCommand = {
+            'master_status': master_status,
+            'command': "primeForStart",
+            'position': str(0),
+            'sync_timestamp': str(getSyncTime(2))
+        }
+        client.post('/command', json=primeCommand)
+
+        startCommand = {
+            'master_status': master_status,
+            'command': "start",
+            'position': str(0),
+            'sync_timestamp': str(getSyncTime(2))
+        }
+        client.post('/command', json=startCommand)
+
+        sleep(2)
+
+        # note: crossfades to the same track!
+        fadeDownCommand = {
+            'master_status': master_status,
+            'command': "fadeDown",
+            'position': str(50),
+            'sync_timestamp': str(getSyncTime(2))
+        }
+        slaveCommandRes = client.post('/command', json=fadeDownCommand)
+
+        print('command from slave, res AFTER FADE DOWN: ')
+        pp.pprint(slaveCommandRes.json)
+
+        slaveStatusAfterFadeDown = client.get('/status')
+        slaveStatusAfterFadeDown = slaveStatusAfterFadeDown.json
+
+        print('status from slave, res FADE DOWN: ')
+        pp.pprint(slaveStatusAfterFadeDown)
+
+        assert slaveStatusAfterFadeDown['paired'] == True
+        assert slaveStatusAfterFadeDown['playerState'] == ''
+        assert slaveStatusAfterFadeDown['volume'] == 0
