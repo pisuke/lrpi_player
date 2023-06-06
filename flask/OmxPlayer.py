@@ -32,6 +32,15 @@ class OmxPlayer():
             "setDefaultVolumeFromSettings: Setting volume to: " + str(self.initialVolumeFromSettings))
         return self.setVolume(self.initialVolumeFromSettings)
 
+    def waitUntilPlaying(self):
+        while not self.player.is_playing():
+            # TODO - THIS PAUSE MIGHT BE CRUCIAL FOR the 'position' to be returned correctly?
+            sleep(0.0001)
+
+    def waitUntilNotPlaying(self):
+        while self.player.is_playing():
+            sleep(0.0001)
+
     def triggerStart(self, pathToTrack, withPause=False, loop=False):
         # lrpi_player#105
         # Audio output can be routed through hdmi or the jack,
@@ -58,19 +67,18 @@ class OmxPlayer():
         if not withPause:
             self.player = OMXPlayer(
                 pathToTrack, args=omxArgs, dbus_name='org.mpris.MediaPlayer2.omxplayer0')
-            sleep(0.3)
+            self.waitUntilPlaying()
         elif withPause:
             self.player = OMXPlayer(
                 pathToTrack, args=omxArgs, dbus_name='org.mpris.MediaPlayer2.omxplayer0', pause=True)
             # Might need to set the volume to 0 a different way,
-            # for some tracks omxplayer plays a short, sharp, shock
+            # i.e. via the OS driver
+            #
+            # omxplayer plays a short, sharp, shock
             # before setting the volume to 0
             self.player.set_volume(0)
-            while self.player.is_playing():
-                # TODO - THIS PAUSE MIGHT BE CRUCIAL FOR the 'position' to be returned correctly?
-                sleep(0.01)
+            self.waitUntilNotPlaying()
             self.seek(0)
-            sleep(0.1)
 
     def primeForStart(self, pathToTrack, loop=False):
         self.triggerStart(pathToTrack, withPause=True, loop=loop)
@@ -98,8 +106,7 @@ class OmxPlayer():
 
             self.setDefaultVolumeFromSettings()
 
-            while not self.player.is_playing():
-                sleep(0.0001)
+            self.waitUntilPlaying()
 
             return str(self.player.duration())
         except Exception as e:

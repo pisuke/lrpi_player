@@ -93,6 +93,7 @@ class TestLrpiPlayerSmokeTests:
         response = client.get("/tracks")
 
         assert response.status_code == 200
+        assert "LushRoom Pi</title>" in str(response.data)
 
     def test_server_returns_status(self, client):
         client.get("/get-track-list")

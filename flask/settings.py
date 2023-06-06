@@ -4,16 +4,7 @@ import json
 _SETTINGS = None
 
 
-# when usb stick is not installed, start with:
-# sudo LRPI_SETTINGS_PATH=/home/inbrewj/workshop/LushRooms/faux_usb/settings.json python3 -u flask/Server.py
-
-#
-# on, e.g. a Pi running Raspbian Lite (the tempcube)
-# sudo LRPI_SETTINGS_PATH=~/workshop/LushRooms/faux_usb/settings.json python3 -u flask/Server.py
-
-
 def get_settings_path():
-
     # when usb stick is not installed (e.g. for pytest), start with:
     # sudo LRPI_SETTINGS_PATH=/home/inbrewj/workshop/LushRooms/faux_usb/settings.json python3 -u flask/Server.py
 
