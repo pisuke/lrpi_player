@@ -10,6 +10,8 @@ omxplayer-wrapper==0.3.2
 tinkerforge>=2.1.20
 pysrt==1.1.1
 #numpy==1.15.4
+# just this if numpy fails to install...
+# numpy
 apscheduler==3.5.3
 keyboard==0.13.2
 ntplib>=0.3.3

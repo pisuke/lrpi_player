@@ -110,7 +110,6 @@ class LushRoomsPlayer():
             syncTime = self.sendSlaveCommand('start')
             self.pauseIfSync(syncTime)
 
-        self.started = True
         profiledAudioStarter = Profiling.timing(
             self.audioPlayer.start, "LushRoomsPlayer::Start")
         track_length_seconds = profiledAudioStarter(
@@ -119,6 +118,7 @@ class LushRoomsPlayer():
             slave=self.isSlave,
             loop=loop
         )
+        self.started = True
 
         try:
             self.lighting.start(self.audioPlayer, self.subs)
@@ -203,14 +203,14 @@ class LushRoomsPlayer():
         else:
             return 0
 
-    def seek(self, position):
+    def seek(self, position_0_to_100):
         if self.started:
             if self.isMaster:
                 print('Master, sending seek!')
-                syncTime = self.sendSlaveCommand('seek', position)
+                syncTime = self.sendSlaveCommand('seek', position_0_to_100)
                 self.pauseIfSync(syncTime)
 
-            newPos = self.audioPlayer.seek(position)
+            newPos = self.audioPlayer.seek(position_0_to_100)
             self.lighting.seek(newPos)
             return newPos
         else:

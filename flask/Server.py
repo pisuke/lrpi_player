@@ -129,12 +129,15 @@ class LushRoomsPlayerWrapped():
         LushRoomsPlayer singleton 
         (to avoid messing up state with the 'global' keyword everywhere...)
 
-        The also allows us to handle race conditions on startup
+        This also allows us to handle race conditions on startup, e.g. if some
+        route is called before LushRoomsPlayer has finished starting up, we can
+        do something graceful(ish).
 
         Every time instance() is accessed, _instance_count is printed 
     """
     _instance = None
     _instance_count = 0
+    _RACE_CONDITION_GUARD = "PLAYER_IS_SETTING_UP"
 
     def __init__(self):
         raise RuntimeError(
@@ -143,6 +146,14 @@ class LushRoomsPlayerWrapped():
     @classmethod
     def instance(cls, *args, **kwargs):
         print("LushRoomsPlayerWrapped count :: ", str(cls._instance_count))
+
+        if cls._instance == cls._RACE_CONDITION_GUARD:
+            # bit of a hack here
+            # ideally we need to test if the lighting init
+            # (which is the thing taking the time in the LushRoomsPlayer
+            # init sequence) can be folded into the 'connections' object...
+            sleep(3.5)
+
         if cls._instance is None:
             print('Creating new LushRoomsPlayer')
             connections = get_connections()
@@ -154,7 +165,7 @@ class LushRoomsPlayerWrapped():
             # LushRoomsPlayer. This, in turn, means that only one omx process
             # will be spawned and allows us to keep the 'paired' state within
             # LushRoomsPlayer
-            cls._instance = "PLAYER_IS_SETTING_UP"
+            cls._instance = cls._RACE_CONDITION_GUARD
             cls._instance = LushRoomsPlayer(connections, *args, **kwargs)
             cls._instance_count += 1
         return cls._instance
@@ -329,7 +340,6 @@ class Seek(Resource):
 
 class PlayerStatus(Resource):
     def get(self):
-
         try:
             response = LushRoomsPlayerWrapped.instance().getStatus()
         except:
@@ -367,17 +377,20 @@ class Unpair(Resource):
 
 
 class Enslave(Resource):
+    """
+        If there is a player running, kill it
+
+        If there isnt, make one without a playlist
+        since we'll be getting the path of the audio/srt
+        from the status object from the master
+
+        If the Angular app is accessed while a LRPi is
+        in slave mode, we know from the status object that
+        it is paired: we can easily lock the UI and stop it
+        sending any control commands
+    """
+
     def get(self):
-        # If there is a player running, kill it
-        # If there isnt, make one without a playlist
-        # since we'll be getting the path of the audio/srt
-        # from the status object from the master
-
-        # If the Angular app is accessed while a LRPi is
-        # in slave mode, we know from the status object that
-        # it is paired: we can easily lock the UI and stop it
-        # sending any control commands
-
         LushRoomsPlayerWrapped.destroy()
 
         print('Enslaving, player stopped and exited')
@@ -399,6 +412,14 @@ class Enslave(Resource):
 
 
 class Free(Resource):
+    """
+        Free is nominally for unpairing 'slaved'
+        LushRoomsPis - a controller Pi releases a
+        'slaved' Pi
+
+        It can also be used as a hard reset at any point.
+    """
+
     def get(self):
         try:
             print('Freeing slave! :: ')
@@ -518,7 +539,7 @@ class ScentRoomIdle(Resource):
             return jsonify({'response': 500, 'description': 'not ok!'})
 
 
-# URLs defined here
+# URLs / routes defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
 api.add_resource(PlaySingleTrack, '/play-single-track')
@@ -542,6 +563,10 @@ api.add_resource(ScentRoomIdle, '/scentroom-idle')  # GET
 
 
 def appFactory():
+    """
+        appFactory should only be
+        used by pytest!
+    """
     print("In app factory")
     global connections
 

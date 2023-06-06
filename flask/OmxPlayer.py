@@ -99,7 +99,7 @@ class OmxPlayer():
             self.setDefaultVolumeFromSettings()
 
             while not self.player.is_playing():
-                sleep(0.01)
+                sleep(0.0001)
 
             return str(self.player.duration())
         except Exception as e:

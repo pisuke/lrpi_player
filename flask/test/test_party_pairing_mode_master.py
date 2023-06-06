@@ -37,7 +37,7 @@
 
 from Player import LushRoomsPlayer
 from Connections import Connections
-import requests_mock
+# import requests_mock
 import requests
 import datetime
 import pprint
@@ -108,7 +108,8 @@ known_srt_path = "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-
 
 
 class TestPartyPairingModeMaster:
-    @requests_mock.Mocker(kw='http_mocker', real_http=True)
+    # todo: learn more about pythonic, nock-like interfaces
+    # @requests_mock.Mocker(kw='http_mocker', real_http=True)
     def test_can_pair_with_slave(self, client, **kwargs):
         # these tests ABSOLUTELY need to exist
         # in a format where the /pair /unpair /free routes are tested

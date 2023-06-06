@@ -52,7 +52,8 @@ docker run -it --rm -p 80:80 -v /opt/vc:/opt/vc -v /media/usb:/media/usb --devic
 ## Notes on running a dev environment in 2023
 
 - Burn SD image using Rpi imager - Raspbian Legacy (buster) 32 bit
-- install docker with
+  - The required static libs in /opt/vc/lib are NOT THERE on bullseye+
+- install docker with:
 
 ```
 curl -fsSL https://get.docker.com -o get-docker.sh
@@ -60,7 +61,7 @@ sh get-docker.sh
 ```
 
 - then the usual https://docs.docker.com/engine/install/linux-postinstall/
-- install docker compose [with](https://dev.to/elalemanyo/how-to-install-docker-and-docker-compose-on-raspberry-pi-1mo)
+- install docker compose [with this](https://dev.to/elalemanyo/how-to-install-docker-and-docker-compose-on-raspberry-pi-1mo)
 
 ```
 sudo apt-get install libffi-dev libssl-dev
@@ -81,3 +82,15 @@ sudo apt install -y sshfs
 ```
 sudo sshfs -o allow_other,default_permissions inbrewj@pop-os:/home/inbrewj/workshop/LushRooms/lrpi_player ~/workshop/LushRooms/lrpi_player
 ```
+
+unount remote code with, e.g.
+
+https://askubuntu.com/a/1046832
+
+```
+sudo fusermount -u ~/workshop/LushRooms/lrpi_player
+```
+
+## Notes on cloning SD cards / volumes in general
+
+https://beebom.com/how-clone-raspberry-pi-sd-card-windows-linux-macos/

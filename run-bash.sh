@@ -4,6 +4,7 @@
 PORT=80
 
 docker run -it --rm -p $PORT:$PORT \
+--privileged \
 -v /opt/vc:/opt/vc \
 -v /media/usb:/media/usb \
 -v /home/jib/workshop/LushRooms/lrpi_player/flask:/opt/code/flask \

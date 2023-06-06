@@ -11,6 +11,20 @@ PORT = 4223
 
 
 class Connections():
+    """
+        {apscheduler BackgroundScheduler} and {Tinkerforge IPConnection} 
+        instances.
+
+        We were seeing very troubling behaviour concerning
+        multiple BackgroundScheduler instances and many, MANY
+        tinkerforge.ip_connection(s). In the latter case, this 
+        would eventually end in too many connections and therefore
+        Linux file handles - this crashed the entire system
+
+        This wrapper class, instantiated just once on Server.py boot,
+        helps to keep things tidy, fine and dandy
+    """
+
     def __init__(self):
         self.scheduler = BackgroundScheduler({
             'apscheduler.executors.processpool': {
