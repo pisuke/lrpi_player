@@ -22,9 +22,21 @@ RUN [ "cross-build-start" ]
 RUN mkdir /opt/code
 RUN mkdir -p /media/usb
 
-RUN sudo apt-get install libatlas-base-dev psmisc
+# Update stretch repositories
+# see https://stackoverflow.com/questions/76094428/debian-stretch-repositories-404-not-found/76094521#76094521
+RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
+    -e 's|security.debian.org|archive.debian.org/|g' \
+    -e '/stretch-updates/d' /etc/apt/sources.list
 
-# TODO: do not copy in flask/test!
+# install a version of python that supports f strings (3.6)
+# otherwise some dependency of zeroconf breaks everything
+
+# deps for pyenv: https://github.com/pyenv/pyenv/wiki#suggested-build-environment
+
+# RUN apt update 
+# RUN apt-get install python3
+
+RUN sudo apt-get install libatlas-base-dev psmisc
 
 COPY flask /opt/code/flask
 COPY requirements.txt /opt/code/requirements.txt
