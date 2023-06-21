@@ -24,3 +24,21 @@ to run specific tests:
 ```
 pytest -vv -k "test_play_pause"
 ```
+
+to run a specific file:
+
+```
+pytest -vv test_smoke.py
+```
+
+to fail at the first hurdle:
+
+```
+pytest -vv -x
+```
+
+for max failures:
+
+```
+pytest -vv --maxfail=2
+```
