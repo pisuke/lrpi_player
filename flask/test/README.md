@@ -42,3 +42,9 @@ for max failures:
 ```
 pytest -vv --maxfail=2
 ```
+
+re run, start with last failed
+
+```
+pytest --ff
+```
