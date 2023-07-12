@@ -41,6 +41,8 @@ from time import sleep
 import json
 import pprint
 import datetime
+from threading import Thread
+
 pp = pprint.PrettyPrinter(indent=4)
 
 
@@ -515,3 +517,86 @@ class TestPartyPairingModeSlave:
         assert slaveStatusAfterFadeDown['paired'] == True
         assert slaveStatusAfterFadeDown['playerState'] == ''
         assert slaveStatusAfterFadeDown['volume'] == 0
+
+    def test_does_not_error_after_free(self, client):
+        # enslave
+        client.get("/enslave")
+
+        # prime for start
+        master_status = {
+            "canControl": True,
+            "error": "",
+            "master_ip": "",
+            "paired": True,
+            "playerState": "Paused",
+            "playerType": "MPV",
+            "interval": 2,  # interval must be int!
+            "playlist": [
+                {
+                    "ID": "bc1e0c153609b9abdad741fbb13d9623",
+                    "IsDir": False,
+                    "MimeType": "video/mp4",
+                    "ModTime": "2023-05-04T20:35:03.216627Z",
+                    "Name": "ff-16b-2c-44100hz.mp4",
+                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+                    "Size": 3079106
+                },
+            ],
+            "position": 2.32589569160998,
+            "slave_url": None,
+            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt",
+            "trackDuration": 187.11,
+            "volume": 55
+        }
+
+        primeCommand = {
+            'master_status': master_status,
+            'command': "primeForStart",
+            'position': str(0),
+            'sync_timestamp': str(getSyncTime(2))
+        }
+        client.post('/command', json=primeCommand)
+
+        # play for a bit
+
+        startCommand = {
+            'master_status': master_status,
+            'command': "start",
+            'position': str(0),
+            'sync_timestamp': str(getSyncTime(2))
+        }
+        client.post('/command', json=startCommand)
+
+        sleep(5)
+
+        # free randomly (during playback, should stop the player)
+
+        client.get("/free")
+
+        # ask for tracks after some rapid fire status / settings / status
+
+        def _statusReq():
+            client.get('/status')
+            print('status finished')
+
+        def _settingsReq():
+            client.get('/settings')
+            print('settings finished')
+
+        Thread(target=_statusReq).start()
+        Thread(target=_settingsReq).start()
+        Thread(target=_statusReq).start()
+
+        sleep(1)
+
+        slaveTracksAfterFree = client.get('/get-track-list')
+
+        slaveTracksAfterFree = slaveTracksAfterFree.json
+
+        print('status from slave, tracks AFTER FREE: ')
+        pp.pprint(slaveTracksAfterFree)
+
+        # should NOT get an error result
+
+        assert slaveTracksAfterFree != 1
