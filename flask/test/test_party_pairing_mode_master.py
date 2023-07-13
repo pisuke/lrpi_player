@@ -110,6 +110,7 @@ known_srt_path = "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-
 class TestPartyPairingModeMaster:
     # todo: learn more about pythonic, nock-like interfaces
     # @requests_mock.Mocker(kw='http_mocker', real_http=True)
+    @pytest.mark.pair_master
     def test_can_pair_with_slave(self, client, **kwargs):
         # these tests ABSOLUTELY need to exist
         # in a format where the /pair /unpair /free routes are tested
@@ -138,6 +139,7 @@ class TestPartyPairingModeMaster:
         assert status["position"] > 0
 
     @pytest.mark.skip(reason="Need to (somehow...) intercept the request to urawizard.com")
+    @pytest.mark.pair_master
     def test_can_pair_then_unpair(self, client):
         connections = Connections()
         player = LushRoomsPlayer(connections)
@@ -165,6 +167,7 @@ class TestPartyPairingModeMaster:
         assert status["playerState"] == "Playing"
         assert status["position"] > 0
 
+    @pytest.mark.pair_master
     def test_stays_paired_after_complex_interaction(self, client):
         # This is best tested using the HTTP routes,
         # especially what happens after:

@@ -102,6 +102,7 @@ testSlaveCommandOffsetSeconds = 3
 
 
 class TestPartyPairingModeSlave:
+    @pytest.mark.pair_slave
     def test_can_be_paired_with(self, client):
         client.get("/enslave")
 
@@ -111,6 +112,7 @@ class TestPartyPairingModeSlave:
         assert status_response['paired'] == True
         assert status_response['master_ip'] == "127.0.0.1"
 
+    @pytest.mark.pair_slave
     def test_can_be_paired_with_then_freed(self, client):
         client.get("/enslave")
 
@@ -122,7 +124,7 @@ class TestPartyPairingModeSlave:
         assert status_response['paired'] == False
         assert status_response['master_ip'] == None
 
-    # @pytest.mark.skip(reason="hmm")
+    @pytest.mark.pair_slave
     def test_primeForStart_when_slave(self, client):
         client.get("/status")
         client.get("/enslave")
@@ -175,6 +177,7 @@ class TestPartyPairingModeSlave:
         assert slaveStatus['paired'] == True
         assert slaveStatus['playerState'] == 'Paused'
 
+    @pytest.mark.pair_slave
     def test_start_when_slave(self, client):
         # note - we MUST primeForStart before playing
         client.get("/status")
@@ -248,6 +251,7 @@ class TestPartyPairingModeSlave:
         assert slaveStatus['position'] > 2
         assert slaveStatus['position'] < 6
 
+    @pytest.mark.pair_slave
     def test_pause_when_slave(self, client):
         # note - we MUST primeForStart before playing
         client.get("/enslave")
@@ -312,6 +316,7 @@ class TestPartyPairingModeSlave:
         assert slaveStatus['playerState'] == 'Paused'
         assert slaveStatus['position'] > 0
 
+    @pytest.mark.pair_slave
     def test_stop_when_slave(self, client):
         # note - we MUST primeForStart before playing
         client.get("/enslave")
@@ -376,6 +381,7 @@ class TestPartyPairingModeSlave:
         assert slaveStatus['playerState'] == ''
         assert slaveStatus['position'] == ''
 
+    @pytest.mark.pair_slave
     def test_seek_when_slave(self, client):
         # note - we MUST primeForStart before playing
         client.get("/enslave")
@@ -447,6 +453,7 @@ class TestPartyPairingModeSlave:
         assert slaveStatusAfterSeek['playerState'] == 'Playing'
         assert slaveStatusAfterSeek['position'] > 187.11 / 2
 
+    @pytest.mark.pair_slave
     def test_crossfade_when_slave(self, client):
         # note - we MUST primeForStart before playing
         client.get("/enslave")
@@ -518,6 +525,7 @@ class TestPartyPairingModeSlave:
         assert slaveStatusAfterFadeDown['playerState'] == ''
         assert slaveStatusAfterFadeDown['volume'] == 0
 
+    @pytest.mark.pair_slave
     def test_does_not_error_after_free(self, client):
         # enslave
         client.get("/enslave")
@@ -591,12 +599,15 @@ class TestPartyPairingModeSlave:
         sleep(1)
 
         slaveTracksAfterFree = client.get('/get-track-list')
-
         slaveTracksAfterFree = slaveTracksAfterFree.json
 
-        print('status from slave, tracks AFTER FREE: ')
-        pp.pprint(slaveTracksAfterFree)
+        statusAfterFree = client.get('/status')
+        statusAfterFree = statusAfterFree.json
 
         # should NOT get an error result
 
         assert slaveTracksAfterFree != 1
+        assert len(slaveTracksAfterFree) == 3
+        assert statusAfterFree['canControl'] == False
+        assert statusAfterFree['position'] == ''
+        assert len(statusAfterFree['error']) > 0

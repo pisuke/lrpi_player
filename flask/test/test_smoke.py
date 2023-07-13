@@ -53,6 +53,7 @@ def equal_dicts(a, b, ignore_keys=[]):
 
 
 class TestLrpiPlayerSmokeTests:
+    @pytest.mark.smoke
     def test_server_starts(self, client):
         response = client.get("/status")
 
@@ -60,6 +61,7 @@ class TestLrpiPlayerSmokeTests:
         # bad design (so far!) but this is what we expect
         assert b"1" in response.data
 
+    @pytest.mark.smoke
     def test_server_returns_tracklist(self, client):
 
         response = client.get("/get-track-list")
@@ -89,12 +91,14 @@ class TestLrpiPlayerSmokeTests:
                 ignore_keys=['ModTime']
             )
 
+    @pytest.mark.smoke
     def test_server_returns_tablet_ui(self, client):
         response = client.get("/tracks")
 
         assert response.status_code == 200
         assert "LushRoom Pi</title>" in str(response.data)
 
+    @pytest.mark.smoke
     def test_server_returns_status(self, client):
         client.get("/get-track-list")
         response = client.get("/status")
@@ -128,6 +132,7 @@ class TestLrpiPlayerSmokeTests:
                          'mediaBasePath', 'source', 'subsPath'],
         )
 
+    @pytest.mark.smoke
     def test_server_plays_one_track_no_lights(self, client):
         client.get("/get-track-list")
         client.get("/get-track-list?id=" + known_folder_id)
@@ -149,6 +154,7 @@ class TestLrpiPlayerSmokeTests:
         assert status_response['volume'] > 20
         assert "Misophonia/ff-16b-2c-44100hz.mp4" in status_response['source']
 
+    @pytest.mark.smoke
     def test_server_crossfade(self, client):
         client.get("/get-track-list")
         client.get("/get-track-list?id=" + known_folder_id)
