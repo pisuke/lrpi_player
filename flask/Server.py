@@ -9,18 +9,16 @@
 
 from Connections import Connections
 from Player import LushRoomsPlayer
+from FileExplorer import BasePathInvalid, FileExplorer
 import settings
 import logging
-from content_reader import content_in_dir
 from pysrt import open as srtopen  # pylint: disable=import-error
 import signal
 import time
 from time import sleep
-from time import ctime
 import ntplib  # pylint: disable=import-error
 from flask_restful import reqparse
 from flask_jsonpify import jsonify
-from json import dumps
 from flask_restful import Resource, Api
 from flask_cors import CORS
 from flask import Flask, request, send_from_directory
@@ -31,10 +29,6 @@ import os.path
 import datetime
 from platform_helpers import killOmx
 os.environ["FLASK_ENV"] = "development"
-
-# From vendors
-
-# From LushRooms
 
 # Remove initial Flask messages and warning
 cli = sys.modules['flask.cli']
@@ -63,8 +57,6 @@ if SENTRY_URL is not None:
     from raven.contrib.flask import Sentry
     sentry = Sentry(app, dsn=SENTRY_URL)
 
-BUILT_PATH = None
-JSON_LIST_FILE = "content.json"
 MENU_DMX_VAL = os.environ.get("MENU_DMX_VAL", None)
 NUM_DMX_CHANNELS = os.environ.get("NUM_DMX_CHANNELS", None)
 HOST = os.environ.get("BRICKD_HOST", "127.0.0.1")
@@ -201,119 +193,6 @@ def getInput():
     return args
 
 
-class BasePathInvalid(Exception):
-    pass
-
-
-class FileNotFound(Exception):
-    pass
-
-
-class FileExplorer():
-    def __init__(self, media_base_path) -> None:
-        self.media_base_path = media_base_path
-        self.mpegOnly = True
-        self.mlpOnly = False
-        self.allFormats = False
-        self.BUILT_PATH = None
-
-    def audio_srt_pair_by_id(self, track_or_folder_id: str):
-
-        NEW_TRACK_ARRAY = None
-        NEW_SRT_ARRAY = None
-        TRACK_ARRAY_WITH_CONTENTS = None
-
-        # return a graceful error if the usb stick isn't mounted
-        # or if the base path is corrutpted somehow
-        if os.path.isdir(self.media_base_path) == False:
-            raise BasePathInvalid
-
-        # from here, we know that we're starting in a good place
-        # we have an id (there may be hash collisions if the filenames are the same)
-        # with this id, walk the directories until we have a match
-        # it might return at least one folder, in which case we display the filenames
-        # it might return an array of audio files (size 1 or more), in which case we display the player screen
-        #
-        # note - the frontend probably handles the above, this just needs to return arrays
-
-        def find_path_with_file_id(track_or_folder_id: str, built_path: str):
-
-            print("Recursive, finding file id: " + track_or_folder_id)
-            print("Starting with path :: ", built_path)
-
-            try:
-                this_dir = content_in_dir(built_path)
-            except NotADirectoryError as e:
-                return
-
-            # print("this_dir: " + str(this_dir))
-
-            for file in this_dir:
-
-                print("*************")
-                print("This file :: ", file)
-                print("Has ID :: ", file['ID'])
-                print("We compare with :: ", track_or_folder_id)
-                print("*************")
-
-                if file['ID'] == track_or_folder_id:
-                    built_path += file['Path'] + "/"
-                    print("********")
-                    print("FOUND IT! the new path is :: ", built_path)
-                    print("********")
-                    return built_path
-
-            return find_path_with_file_id(
-                track_or_folder_id,
-                built_path + file['Path'] + "/"
-            )
-
-            # raise FileNotFound
-
-            # self.BUILT_PATH += [x['Path']
-            #                     for x in NEW_TRACK_ARRAY if x['ID'] == track_or_folder_id][0] + "/"
-
-        if self.BUILT_PATH is None:
-            self.BUILT_PATH = self.media_base_path
-
-        TRACK_ARRAY_WITH_CONTENTS = content_in_dir(self.BUILT_PATH)
-        NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
-
-        # print("TRACK_ARRAY_WITH_CONTENTS", TRACK_ARRAY_WITH_CONTENTS)
-
-        # print("track list id from args: " + str(track_or_folder_id))
-
-        if track_or_folder_id:
-            print("We have a file id, here it is :: ", track_or_folder_id)
-
-            try:
-                self.BUILT_PATH = find_path_with_file_id(
-                    track_or_folder_id, self.media_base_path)
-            except FileNotFound as e:
-                print(e)
-
-            print(self.BUILT_PATH[0])
-
-        print('BUILT_PATH: ' + str(self.BUILT_PATH))
-
-        TRACK_ARRAY_WITH_CONTENTS = content_in_dir(self.BUILT_PATH)
-
-        if mpegOnly:
-            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (
-                splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
-        elif mlpOnly:
-            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (
-                splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
-        elif allFormats:
-            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if (
-                (x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
-
-        NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[
-            1].lower() == ".srt"]
-
-        return (NEW_TRACK_ARRAY, NEW_SRT_ARRAY, TRACK_ARRAY_WITH_CONTENTS)
-
-
 class GetTrackList(Resource):
     def get(self):
         # note: these globals could also be folded into
@@ -327,8 +206,8 @@ class GetTrackList(Resource):
             track_or_folder_id = args['id']
 
             try:
-                (NEW_TRACK_ARRAY, NEW_SRT_ARRAY,
-                 TRACK_ARRAY_WITH_CONTENTS) = file_explorer.audio_srt_pair_by_id(track_or_folder_id)
+                (NEW_TRACK_ARRAY, _) = file_explorer.contents_by_directory_id(
+                    track_or_folder_id)
             except BasePathInvalid:
                 logging.error(
                     MEDIA_BASE_PATH + " is not a valid os file path - cannot load media from this directory!")
@@ -351,34 +230,21 @@ class GetTrackList(Resource):
 
 class PlaySingleTrack(Resource):
     def get(self):
-
         MEDIA_BASE_PATH = loadSettings()["media_base_path"]
         file_explorer = FileExplorer(MEDIA_BASE_PATH)
         args = getInput()
-        track_or_folder_id = args['id']
+        track_id = args['id']
 
-        (NEW_TRACK_ARRAY, NEW_SRT_ARRAY,
-         TRACK_ARRAY_WITH_CONTENTS) = file_explorer.audio_srt_pair_by_id(track_or_folder_id)
+        (_, path_to_track, path_to_srt) = file_explorer.track_by_track_id(track_id)
 
-        # global BUILT_PATH
-
-        # pathToTrack = "/not/valid/path/at/all"
-
-        # args = getInput()
-
-        for track in NEW_TRACK_ARRAY:
-            if track["ID"] == args["id"]:
-                srtFileName = splitext(track["Path"])[0]+".srt"
-                pathToTrack = BUILT_PATH + track["Path"]
-
-        if os.path.isfile(pathToTrack) == False:
+        if os.path.isfile(path_to_track) == False:
             print('Bad file path, will not attempt to play...')
-            return jsonify("(Playing) File not found! " + str(pathToTrack))
+            return jsonify("(Playing) File not found! " + str(path_to_track))
 
-        print("Playing: " + pathToTrack)
+        print("Playing: " + path_to_track)
 
         duration = LushRoomsPlayerWrapped.instance().start(
-            pathToTrack, None, BUILT_PATH + srtFileName)
+            path_to_track, None, path_to_srt)
 
         return jsonify(duration)
 
@@ -391,34 +257,33 @@ class PlayPause(Resource):
 
 class FadeDown(Resource):
     def get(self):
-        global BUILT_PATH
-
+        MEDIA_BASE_PATH = loadSettings()["media_base_path"]
+        file_explorer = FileExplorer(MEDIA_BASE_PATH)
         args = getInput()
-        pathToTrack = None
-        subs = None
-        srtFileName = None
+        track_id = args['id']
 
-        for track in NEW_TRACK_ARRAY:
-            if track["ID"] == args["id"]:
-                srtFileName = splitext(track["Path"])[0]+".srt"
-                if os.path.isfile(str(BUILT_PATH) + srtFileName):
-                    print(srtFileName)
-                    start_time = time.time()
-                    print("Loading SRT file " + srtFileName +
-                          " - " + str(start_time))
-                    subs = srtopen(BUILT_PATH + srtFileName)
-                    end_time = time.time()
-                    print("Finished loading SRT file " +
-                          srtFileName + " - " + str(end_time))
-                    print("Total time elapsed: " + str(end_time - start_time))
-                pathToTrack = BUILT_PATH + track["Path"]
+        (_, path_to_track, path_to_srt) = file_explorer.track_by_track_id(track_id)
 
-        if pathToTrack is None or not os.path.isfile(pathToTrack):
+        if os.path.isfile(path_to_track) == False:
             print('Bad file path, will not attempt to play...')
             return jsonify(1)
 
-        response = LushRoomsPlayerWrapped.instance().fadeDown(pathToTrack, int(
-            args["interval"]),  subs, BUILT_PATH + srtFileName)
+        print(path_to_srt)
+        start_time = time.time()
+        print("Loading SRT file " + path_to_srt +
+              " - " + str(start_time))
+        subs = srtopen(path_to_srt)
+        end_time = time.time()
+        print("Finished loading SRT file " +
+              path_to_srt + " - " + str(end_time))
+        print("Total time elapsed: " + str(end_time - start_time))
+
+        response = LushRoomsPlayerWrapped.instance().fadeDown(
+            path_to_track,
+            int(args["interval"]),
+            subs,
+            path_to_srt
+        )
 
         return jsonify(response)
 

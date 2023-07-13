@@ -94,13 +94,10 @@ def getSyncTime(slaveCommandOffsetSeconds):
         datetime.timedelta(seconds=slaveCommandOffsetSeconds)
 
 
-# Note that these hashes will changed based on
-# file attributes like 'last modified' etc...
-known_folder_id = "b4f1020c48a28b3cdf6be408c4f585d7"
-known_track_id = "7d55a142b188ef1c903798fbf735e2aa"
 testSlaveCommandOffsetSeconds = 3
 
 
+@pytest.mark.pair_slave
 class TestPartyPairingModeSlave:
     @pytest.mark.pair_slave
     def test_can_be_paired_with(self, client):
@@ -142,15 +139,15 @@ class TestPartyPairingModeSlave:
                     "IsDir": False,
                     "MimeType": "video/mp4",
                     "ModTime": "2023-05-04T20:35:03.216627Z",
-                    "Name": "ff-16b-2c-44100hz.mp4",
-                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+                    "Name": "misophonia.mp4",
+                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
                     "Size": 3079106
                 },
             ],
             "position": 2.32589569160998,
             "slave_url": None,
-            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
-            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt",
+            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
+            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.srt",
             "trackDuration": 187.11,
             "volume": 55
         }
@@ -196,15 +193,15 @@ class TestPartyPairingModeSlave:
                     "IsDir": False,
                     "MimeType": "video/mp4",
                     "ModTime": "2023-05-04T20:35:03.216627Z",
-                    "Name": "ff-16b-2c-44100hz.mp4",
-                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+                    "Name": "misophonia.mp4",
+                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
                     "Size": 3079106
                 },
             ],
             "position": 2.32589569160998,
             "slave_url": None,
-            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
-            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt",
+            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
+            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.srt",
             "trackDuration": 187.11,
             "volume": 55
         }
@@ -269,15 +266,15 @@ class TestPartyPairingModeSlave:
                     "IsDir": False,
                     "MimeType": "video/mp4",
                     "ModTime": "2023-05-04T20:35:03.216627Z",
-                    "Name": "ff-16b-2c-44100hz.mp4",
-                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+                    "Name": "misophonia.mp4",
+                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
                     "Size": 3079106
                 },
             ],
             "position": 2.32589569160998,
             "slave_url": None,
-            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
-            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt",
+            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
+            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.srt",
             "trackDuration": 187.11,
             "volume": 55
         }
@@ -334,15 +331,15 @@ class TestPartyPairingModeSlave:
                     "IsDir": False,
                     "MimeType": "video/mp4",
                     "ModTime": "2023-05-04T20:35:03.216627Z",
-                    "Name": "ff-16b-2c-44100hz.mp4",
-                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+                    "Name": "misophonia.mp4",
+                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
                     "Size": 3079106
                 },
             ],
             "position": 2.32589569160998,
             "slave_url": None,
-            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
-            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt",
+            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
+            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.srt",
             "trackDuration": 187.11,
             "volume": 55
         }
@@ -399,15 +396,15 @@ class TestPartyPairingModeSlave:
                     "IsDir": False,
                     "MimeType": "video/mp4",
                     "ModTime": "2023-05-04T20:35:03.216627Z",
-                    "Name": "ff-16b-2c-44100hz.mp4",
-                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+                    "Name": "misophonia.mp4",
+                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
                     "Size": 3079106
                 },
             ],
             "position": 2.32589569160998,
             "slave_url": None,
-            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
-            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt",
+            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
+            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.srt",
             "trackDuration": 187.11,
             "volume": 55
         }
@@ -472,15 +469,15 @@ class TestPartyPairingModeSlave:
                     "IsDir": False,
                     "MimeType": "video/mp4",
                     "ModTime": "2023-05-04T20:35:03.216627Z",
-                    "Name": "ff-16b-2c-44100hz.mp4",
-                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+                    "Name": "misophonia.mp4",
+                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
                     "Size": 3079106
                 },
             ],
             "position": 2.32589569160998,
             "slave_url": None,
-            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
-            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt",
+            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
+            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.srt",
             "trackDuration": 187.11,
             "volume": 55
         }
@@ -538,22 +535,21 @@ class TestPartyPairingModeSlave:
             "paired": True,
             "playerState": "Paused",
             "playerType": "MPV",
-            "interval": 2,  # interval must be int!
             "playlist": [
                 {
                     "ID": "bc1e0c153609b9abdad741fbb13d9623",
                     "IsDir": False,
                     "MimeType": "video/mp4",
                     "ModTime": "2023-05-04T20:35:03.216627Z",
-                    "Name": "ff-16b-2c-44100hz.mp4",
-                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
+                    "Name": "misophonia.mp4",
+                    "Path": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
                     "Size": 3079106
                 },
             ],
             "position": 2.32589569160998,
             "slave_url": None,
-            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4",
-            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt",
+            "source": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4",
+            "subsPath": "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.srt",
             "trackDuration": 187.11,
             "volume": 55
         }
@@ -598,16 +594,16 @@ class TestPartyPairingModeSlave:
 
         sleep(1)
 
-        slaveTracksAfterFree = client.get('/get-track-list')
-        slaveTracksAfterFree = slaveTracksAfterFree.json
+        slavePlaylistAfterFree = client.get('/get-track-list')
+        slavePlaylistAfterFree = slavePlaylistAfterFree.json
 
         statusAfterFree = client.get('/status')
         statusAfterFree = statusAfterFree.json
 
         # should NOT get an error result
 
-        assert slaveTracksAfterFree != 1
-        assert len(slaveTracksAfterFree) == 3
+        assert slavePlaylistAfterFree != 1
+        assert len(slavePlaylistAfterFree) == 4
         assert statusAfterFree['canControl'] == False
         assert statusAfterFree['position'] == ''
         assert len(statusAfterFree['error']) > 0

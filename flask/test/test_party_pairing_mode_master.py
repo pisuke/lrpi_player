@@ -103,8 +103,8 @@ def getSyncTime(slaveCommandOffsetSeconds):
 
 # Note that these hashes will changed based on
 # file attributes like 'last modified' etc...
-known_mp4_path = "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-44100hz.mp4"
-known_srt_path = "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/ff-16b-2c-folder2.srt"
+known_mp4_path = "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.mp4"
+known_srt_path = "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.srt"
 
 
 class TestPartyPairingModeMaster:

@@ -41,7 +41,7 @@ def runner(app):
 # Note that these hashes will changed based on
 # file attributes like 'last modified' etc...
 known_folder_id = "b4f1020c48a28b3cdf6be408c4f585d7"
-known_track_id = "7d55a142b188ef1c903798fbf735e2aa"
+known_track_id = "420218864c124399a0f862947b73e321"
 
 # Thanks to https://stackoverflow.com/q/10480806/8249410
 
@@ -52,6 +52,7 @@ def equal_dicts(a, b, ignore_keys=[]):
     return ka == kb and all(a[k] == b[k] for k in ka)
 
 
+@pytest.mark.smoke
 class TestLrpiPlayerSmokeTests:
     @pytest.mark.smoke
     def test_server_starts(self, client):
@@ -66,20 +67,37 @@ class TestLrpiPlayerSmokeTests:
 
         response = client.get("/get-track-list")
 
-        print(response)
+        print("____tracklist response")
+        pp.pprint(response.json)
 
-        expected_track_list = [
-            {
-                'ID': 'b4f1020c48a28b3cdf6be408c4f585d7', 'IsDir': True, 'MimeType': 'inode/directory', 'ModTime': '2023-02-24T17:15:40.908032Z', 'Name': 'Misophonia', 'Path': 'Misophonia', 'Size': -1
-            },
-            {
-                'ID': '3eb6e775e805ceae25d1a654de85c467', 'IsDir': True, 'MimeType': 'inode/directory',
-                'ModTime': '2023-02-24T17:15:40.920031Z', 'Name': 'Synthesia', 'Path': 'Synthesia', 'Size': -1
-            },
-            {
-                'ID': '494c2af90288e87f304b0e2a3e37d65d', 'IsDir': True, 'MimeType': 'inode/directory', 'ModTime': '2023-02-24T17:15:40.892035Z', 'Name': 'Tales_of_Bath', 'Path': 'Tales_of_Bath', 'Size': -1
-            }
-        ]
+        expected_track_list = [{'ID': 'b4f1020c48a28b3cdf6be408c4f585d7',
+                                'IsDir': True,
+                                      'MimeType': 'inode/directory',
+                                      'ModTime': '2023-07-13T19:19:56.000000Z',
+                                      'Name': 'Misophonia',
+                                      'Path': 'Misophonia',
+                                      'Size': -1},
+                               {'ID': 'c6d8fd89154161b3ff6bb02f4f42b4ee',
+                                'IsDir': True,
+                                'MimeType': 'inode/directory',
+                                'ModTime': '2023-07-13T19:19:36.000000Z',
+                                'Name': 'NestedParent',
+                                'Path': 'NestedParent',
+                                'Size': -1},
+                               {'ID': '3eb6e775e805ceae25d1a654de85c467',
+                                'IsDir': True,
+                                'MimeType': 'inode/directory',
+                                'ModTime': '2023-05-24T19:53:17.000000Z',
+                                'Name': 'Synthesia',
+                                'Path': 'Synthesia',
+                                'Size': -1},
+                               {'ID': '494c2af90288e87f304b0e2a3e37d65d',
+                                'IsDir': True,
+                                'MimeType': 'inode/directory',
+                                'ModTime': '2023-05-24T19:53:22.000000Z',
+                                'Name': 'Tales_of_Bath',
+                                'Path': 'Tales_of_Bath',
+                                'Size': -1}]
 
         print(expected_track_list)
 
@@ -152,7 +170,7 @@ class TestLrpiPlayerSmokeTests:
         assert status_response['trackDuration'] == 187.11
         assert status_response['position'] > 0
         assert status_response['volume'] > 20
-        assert "Misophonia/ff-16b-2c-44100hz.mp4" in status_response['source']
+        assert "NestedChild/ff-16b-2c-nested.mp4" in status_response['source']
 
     @pytest.mark.smoke
     def test_server_crossfade(self, client):
@@ -183,4 +201,4 @@ class TestLrpiPlayerSmokeTests:
         assert status_response['position'] > 0
         # 80 is set in flask/test/pytest_faux_usb/settings.json
         assert status_response['volume'] == 80
-        assert "Misophonia/ff-16b-2c-44100hz.mp4" in status_response['source']
+        assert "NestedChild/ff-16b-2c-nested.mp4" in status_response['source']

@@ -17,12 +17,12 @@ def get_mime_type(filename):
 
 def id_for_filename(file_name, modifed_time_pretty):
     md5 = hashlib.md5()
-    to_hash = file_name.encode("utf-8") + modifed_time_pretty.encode("utf-8")
+    to_hash = file_name.encode("utf-8")
     md5.update(to_hash)
     return md5.hexdigest()
 
 
-def content_in_dir(dir):
+def content_in_dir(dir: str):
 
     content = []
 
