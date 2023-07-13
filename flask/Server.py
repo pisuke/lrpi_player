@@ -116,6 +116,7 @@ class LushRoomsPlayerWrapped():
     _instance = None
     _instance_count = 0
     _RACE_CONDITION_GUARD = "PLAYER_IS_SETTING_UP"
+    _RACE_CONDITION_WAIT = 0.5
 
     def __init__(self):
         raise RuntimeError(
@@ -125,12 +126,12 @@ class LushRoomsPlayerWrapped():
     def instance(cls, *args, **kwargs):
         print("LushRoomsPlayerWrapped count :: ", str(cls._instance_count))
 
-        if cls._instance == cls._RACE_CONDITION_GUARD:
+        while cls._instance == cls._RACE_CONDITION_GUARD:
             # bit of a hack here
             # ideally we need to test if the lighting init
             # (which is the thing taking the time in the LushRoomsPlayer
             # init sequence) can be folded into the 'connections' object...
-            sleep(3.5)
+            sleep(cls._RACE_CONDITION_WAIT)
 
         if cls._instance is None:
             print('Creating new LushRoomsPlayer')

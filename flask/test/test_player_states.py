@@ -71,6 +71,7 @@ known_folder_id = "b4f1020c48a28b3cdf6be408c4f585d7"
 known_track_id = "420218864c124399a0f862947b73e321"
 
 
+@pytest.mark.player_states
 class TestLrpiPlayerStates:
     def test_play_pause(self, client):
         client.get("/get-track-list")

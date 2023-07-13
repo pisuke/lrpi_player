@@ -26,7 +26,6 @@ def equal_dicts(a, b, ignore_keys=[]):
 @pytest.mark.file_explorer
 class TestFileExplorer:
 
-    @pytest.mark.only
     def test_returns_track_by_id_nested(self):
         file_explorer = FileExplorer(TEST_MEDIA_BASE_PATH)
 

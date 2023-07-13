@@ -107,6 +107,7 @@ known_mp4_path = "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misopho
 known_srt_path = "/opt/code/flask/test/pytest_faux_usb/tracks/Misophonia/misophonia.srt"
 
 
+@pytest.mark.pair_master
 class TestPartyPairingModeMaster:
     # todo: learn more about pythonic, nock-like interfaces
     # @requests_mock.Mocker(kw='http_mocker', real_http=True)
@@ -138,8 +139,7 @@ class TestPartyPairingModeMaster:
         assert status["playerState"] == "Playing"
         assert status["position"] > 0
 
-    @pytest.mark.skip(reason="Need to (somehow...) intercept the request to urawizard.com")
-    @pytest.mark.pair_master
+    @pytest.mark.skip(reason="Need to (somehow...) intercept the request to urawizard.com - try the @patch thing")
     def test_can_pair_then_unpair(self, client):
         connections = Connections()
         player = LushRoomsPlayer(connections)
