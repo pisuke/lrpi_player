@@ -93,20 +93,6 @@ def sigint_handler(signum, frame):
 signal.signal(signal.SIGINT, sigint_handler)
 
 
-def getInput():
-    parser = reqparse.RequestParser()
-    parser.add_argument('id', help='error with id')
-    parser.add_argument('interval', help='error with interval')
-    parser.add_argument('position', help='error with position')
-    parser.add_argument('pairhostname', help='error with pairHostname')
-    # command and status should definitely be sent via POST...
-    parser.add_argument('commandFromMaster',
-                        help='error with commandFromMaster')
-    parser.add_argument('masterStatus', help='error with masterStatus')
-    args = parser.parse_args()
-    return args
-
-
 def printOmxVars():
     print("OMXPLAYER_LIB" in os.environ)
     print("LD_LIBRARY_PATH" in os.environ)
@@ -187,6 +173,10 @@ def serve(path):
     else:
         return send_from_directory('static/', 'index.html')
 
+
+def http_error_response(message="LushRooms, we have a problem"):
+    return 1, 500, {'content-type': 'application/json'}
+
 # API endpoints
 
 # Generic endpoints
@@ -197,54 +187,152 @@ class GetSettings(Resource):
         return jsonify(loadSettings())
 
 
+def getInput():
+    parser = reqparse.RequestParser()
+    parser.add_argument('id', help='error with id')
+    parser.add_argument('interval', help='error with interval')
+    parser.add_argument('position', help='error with position')
+    parser.add_argument('pairhostname', help='error with pairHostname')
+    # command and status should definitely be sent via POST...
+    parser.add_argument('commandFromMaster',
+                        help='error with commandFromMaster')
+    parser.add_argument('masterStatus', help='error with masterStatus')
+    args = parser.parse_args()
+    return args
+
+
+class BasePathInvalid(Exception):
+    pass
+
+
+class FileNotFound(Exception):
+    pass
+
+
+class FileExplorer():
+    def __init__(self, media_base_path) -> None:
+        self.media_base_path = media_base_path
+        self.mpegOnly = True
+        self.mlpOnly = False
+        self.allFormats = False
+        self.BUILT_PATH = None
+
+    def audio_srt_pair_by_id(self, track_or_folder_id: str):
+
+        NEW_TRACK_ARRAY = None
+        NEW_SRT_ARRAY = None
+        TRACK_ARRAY_WITH_CONTENTS = None
+
+        # return a graceful error if the usb stick isn't mounted
+        # or if the base path is corrutpted somehow
+        if os.path.isdir(self.media_base_path) == False:
+            raise BasePathInvalid
+
+        # from here, we know that we're starting in a good place
+        # we have an id (there may be hash collisions if the filenames are the same)
+        # with this id, walk the directories until we have a match
+        # it might return at least one folder, in which case we display the filenames
+        # it might return an array of audio files (size 1 or more), in which case we display the player screen
+        #
+        # note - the frontend probably handles the above, this just needs to return arrays
+
+        def find_path_with_file_id(track_or_folder_id: str, built_path: str):
+
+            print("Recursive, finding file id: " + track_or_folder_id)
+            print("Starting with path :: ", built_path)
+
+            try:
+                this_dir = content_in_dir(built_path)
+            except NotADirectoryError as e:
+                return
+
+            # print("this_dir: " + str(this_dir))
+
+            for file in this_dir:
+
+                print("*************")
+                print("This file :: ", file)
+                print("Has ID :: ", file['ID'])
+                print("We compare with :: ", track_or_folder_id)
+                print("*************")
+
+                if file['ID'] == track_or_folder_id:
+                    built_path += file['Path'] + "/"
+                    print("********")
+                    print("FOUND IT! the new path is :: ", built_path)
+                    print("********")
+                    return built_path
+
+            return find_path_with_file_id(
+                track_or_folder_id,
+                built_path + file['Path'] + "/"
+            )
+
+            # raise FileNotFound
+
+            # self.BUILT_PATH += [x['Path']
+            #                     for x in NEW_TRACK_ARRAY if x['ID'] == track_or_folder_id][0] + "/"
+
+        if self.BUILT_PATH is None:
+            self.BUILT_PATH = self.media_base_path
+
+        TRACK_ARRAY_WITH_CONTENTS = content_in_dir(self.BUILT_PATH)
+        NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
+
+        # print("TRACK_ARRAY_WITH_CONTENTS", TRACK_ARRAY_WITH_CONTENTS)
+
+        # print("track list id from args: " + str(track_or_folder_id))
+
+        if track_or_folder_id:
+            print("We have a file id, here it is :: ", track_or_folder_id)
+
+            try:
+                self.BUILT_PATH = find_path_with_file_id(
+                    track_or_folder_id, self.media_base_path)
+            except FileNotFound as e:
+                print(e)
+
+            print(self.BUILT_PATH[0])
+
+        print('BUILT_PATH: ' + str(self.BUILT_PATH))
+
+        TRACK_ARRAY_WITH_CONTENTS = content_in_dir(self.BUILT_PATH)
+
+        if mpegOnly:
+            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (
+                splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
+        elif mlpOnly:
+            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (
+                splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
+        elif allFormats:
+            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if (
+                (x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
+
+        NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[
+            1].lower() == ".srt"]
+
+        return (NEW_TRACK_ARRAY, NEW_SRT_ARRAY, TRACK_ARRAY_WITH_CONTENTS)
+
+
 class GetTrackList(Resource):
     def get(self):
         # note: these globals could also be folded into
         # 'LushRoomsPlayer' internal state
-        global NEW_TRACK_ARRAY
-        global NEW_SRT_ARRAY
-        global BUILT_PATH
-
-        MEDIA_BASE_PATH = loadSettings()["media_base_path"]
 
         try:
 
-            # return a graceful error if the usb stick isn't mounted
-            if os.path.isdir(MEDIA_BASE_PATH) == False:
+            MEDIA_BASE_PATH = loadSettings()["media_base_path"]
+            file_explorer = FileExplorer(MEDIA_BASE_PATH)
+            args = getInput()
+            track_or_folder_id = args['id']
+
+            try:
+                (NEW_TRACK_ARRAY, NEW_SRT_ARRAY,
+                 TRACK_ARRAY_WITH_CONTENTS) = file_explorer.audio_srt_pair_by_id(track_or_folder_id)
+            except BasePathInvalid:
                 logging.error(
                     MEDIA_BASE_PATH + " is not a valid os file path - cannot load media from this directory!")
                 return jsonify(1)
-
-            if BUILT_PATH is None:
-                BUILT_PATH = MEDIA_BASE_PATH
-
-            args = getInput()
-
-            print("track list id from args: " + str(args['id']))
-
-            if args['id']:
-                if NEW_TRACK_ARRAY:
-                    BUILT_PATH += [x['Path']
-                                   for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
-                    print(BUILT_PATH[0])
-
-            print('BUILT_PATH: ' + str(BUILT_PATH))
-
-            TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
-            NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
-
-            if mpegOnly:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (
-                    splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
-            elif mlpOnly:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (
-                    splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
-            elif allFormats:
-                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if (
-                    (x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
-
-            NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[
-                1].lower() == ".srt"]
 
             LushRoomsPlayerWrapped.instance() \
                 .setPlaylist(NEW_TRACK_ARRAY) \
@@ -258,17 +346,25 @@ class GetTrackList(Resource):
             logging.error(
                 "Path building has probably failed. Sending error code and cleaning up...")
             logging.error(e)
-            BUILT_PATH = None
-            return 1, 500, {'content-type': 'application/json'}
+            return http_error_response()
 
 
 class PlaySingleTrack(Resource):
     def get(self):
-        global BUILT_PATH
 
-        pathToTrack = "/not/valid/path/at/all"
-
+        MEDIA_BASE_PATH = loadSettings()["media_base_path"]
+        file_explorer = FileExplorer(MEDIA_BASE_PATH)
         args = getInput()
+        track_or_folder_id = args['id']
+
+        (NEW_TRACK_ARRAY, NEW_SRT_ARRAY,
+         TRACK_ARRAY_WITH_CONTENTS) = file_explorer.audio_srt_pair_by_id(track_or_folder_id)
+
+        # global BUILT_PATH
+
+        # pathToTrack = "/not/valid/path/at/all"
+
+        # args = getInput()
 
         for track in NEW_TRACK_ARRAY:
             if track["ID"] == args["id"]:
@@ -331,8 +427,10 @@ class Seek(Resource):
     def get(self):
         args = getInput()
         print('position to seek (%%): ', args["position"])
+
         response = LushRoomsPlayerWrapped.instance().seek(
             int(args["position"]))
+
         print('pos: ', response)
 
         return jsonify(response)
@@ -342,7 +440,8 @@ class PlayerStatus(Resource):
     def get(self):
         try:
             response = LushRoomsPlayerWrapped.instance().getStatus()
-        except:
+        except Exception as e:
+            print('Could not get PlayerStatus: ', e)
             response = 1
 
         return jsonify(response)
@@ -357,7 +456,7 @@ class Pair(Resource):
             pairRes = LushRoomsPlayerWrapped.instance(
             ).pairAsMaster(args["pairhostname"])
         except Exception as e:
-            print('Exception: ', e)
+            print('Pair as Master Exception: ', e)
             pairRes = 1
             LushRoomsPlayerWrapped.instance(
             ).setUnpaired()
@@ -370,7 +469,7 @@ class Unpair(Resource):
         try:
             unpairRes = LushRoomsPlayerWrapped.instance().unpairAsMaster()
         except Exception as e:
-            print('Exception: ', e)
+            print('Unpair as master Exception: ', e)
             unpairRes = 1
 
         return jsonify(unpairRes)
@@ -455,13 +554,10 @@ class Command(Resource):
 
 class Stop(Resource):
     def get(self):
-        global BUILT_PATH
-
-        BUILT_PATH = None
-
         try:
             response = LushRoomsPlayerWrapped.instance().stop()
-        except:
+        except Exception as e:
+            print('Could not Stop: ', e)
             response = 1
 
         return jsonify(response)
