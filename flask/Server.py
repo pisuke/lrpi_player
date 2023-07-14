@@ -126,6 +126,13 @@ class LushRoomsPlayerWrapped():
     def instance(cls, *args, **kwargs):
         print("LushRoomsPlayerWrapped count :: ", str(cls._instance_count))
 
+        if cls._instance_count > 1:
+            # ideally, this should never happen
+            # if this DOES happen, it is likely two or more
+            # of the same track will be playing simultaneously
+            logging.error(
+                "DANGER : LushRoomsPlayerWrapped count is " + str(cls._instance_count))
+
         while cls._instance == cls._RACE_CONDITION_GUARD:
             # bit of a hack here
             # ideally we need to test if the lighting init

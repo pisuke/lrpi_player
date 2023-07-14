@@ -156,6 +156,9 @@ class LushRoomsPlayer():
             self.audioPlayer.exit()
             self.lighting.exit()
 
+            self.playlist = []
+            self.status["playlist"] = []
+
             return 0
         except Exception as e:
             print("stop failed: ", e)
