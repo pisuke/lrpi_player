@@ -17,6 +17,8 @@ JSON_LIST_FILE = "content.json"
 
 
 class FileExplorer():
+    # note - tree traversal here could be memo'd
+    # with a dict
     def __init__(self, media_base_path) -> None:
         self.media_base_path = media_base_path
         self.mpegOnly = True
@@ -32,7 +34,7 @@ class FileExplorer():
         path_to_track = "/not/valid.mp4"
         path_to_srt = "/not/valid.srt"
 
-        for root, dirs, files in os.walk(self.media_base_path, topdown=True):
+        for root, _, _ in os.walk(self.media_base_path, topdown=True):
             this_root_dir = content_in_dir(root)
 
             logging.debug("____content in this dir " + str(this_root_dir))
@@ -44,6 +46,9 @@ class FileExplorer():
                     expected_srt_filename = splitext(file['Path'])[0] + ".srt"
                     path_to_srt = os.path.join(
                         root, expected_srt_filename)
+                    if not os.path.exists(path_to_srt):
+                        logging.warning("SRT file: " + path_to_srt + " does not exist in the file system for track: " + path_to_track)
+                        
                     break
 
         return (track, path_to_track, path_to_srt)
@@ -67,7 +72,7 @@ class FileExplorer():
         #
         # note - the frontend probably handles the above, this just needs to return arrays
 
-        for root, dirs, files in os.walk(self.media_base_path, topdown=True):
+        for root, _, _ in os.walk(self.media_base_path, topdown=True):
             this_root_dir = content_in_dir(root)
             for file in this_root_dir:
                 if file['ID'] == directory_id:

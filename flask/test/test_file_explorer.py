@@ -14,19 +14,35 @@ synthesia_track_id = ""
 tales_of_bath_track_id = ""
 nested_track_id = "420218864c124399a0f862947b73e321"
 
-TEST_MEDIA_BASE_PATH = "/opt/code/flask/test/pytest_faux_usb/tracks/"
+# TEST_MEDIA_BASE_PATH = "/opt/code/flask/test/pytest_faux_usb/tracks/"
+TEST_MEDIA_BASE_PATH = "./pytest_faux_usb/tracks/"
 
 
-def equal_dicts(a, b, ignore_keys=[]):
+def equal_dicts(a, b, ignore_keys=['ModTime']):
     ka = set(a).difference(ignore_keys)
     kb = set(b).difference(ignore_keys)
     return ka == kb and all(a[k] == b[k] for k in ka)
+
+def path_from_base(after_base_path):
+    return TEST_MEDIA_BASE_PATH + after_base_path
 
 
 @pytest.mark.file_explorer
 class TestFileExplorer:
 
+    def test_returns_directories_in_base_path(self):
+        file_explorer = FileExplorer(TEST_MEDIA_BASE_PATH)
+        (track_array, _,) = file_explorer.contents_by_directory_id(None)
+
+        expected_track_list = [
+            {'ID': 'b4f1020c48a28b3cdf6be408c4f585d7', 'IsDir': True, 'MimeType': 'inode/directory', 'ModTime': '2023-07-13T21:13:59.587196Z', 'Name': 'Misophonia', 'Path': 'Misophonia', 'Size': -1}, {'ID': 'c6d8fd89154161b3ff6bb02f4f42b4ee', 'IsDir': True, 'MimeType': 'inode/directory', 'ModTime': '2023-10-22T22:21:44.062630Z', 'Name': 'NestedParent', 'Path': 'NestedParent', 'Size': -1}, {'ID': '0959a68fd51e117ce1e4a282c104e7f7', 'IsDir': True, 'MimeType': 'inode/directory', 'ModTime': '2023-10-22T22:23:04.054606Z', 'Name': 'NoSrt', 'Path': 'NoSrt', 'Size': -1}, {'ID': '3eb6e775e805ceae25d1a654de85c467', 'IsDir': True, 'MimeType': 'inode/directory', 'ModTime': '2023-07-13T21:14:15.859154Z', 'Name': 'Synthesia', 'Path': 'Synthesia', 'Size': -1}, {'ID': '494c2af90288e87f304b0e2a3e37d65d', 'IsDir': True, 'MimeType': 'inode/directory', 'ModTime': '2023-10-22T22:20:57.966644Z', 'Name': 'Tales_of_Bath', 'Path': 'Tales_of_Bath', 'Size': -1}
+        ]
+
+        for i in range(len(track_array)):
+            assert equal_dicts(track_array[i], expected_track_list[i])
+
     def test_returns_track_by_id_nested(self):
+        # NOTE - 23_Renaissance has nested tracks...
         file_explorer = FileExplorer(TEST_MEDIA_BASE_PATH)
 
         (track, path_to_track, path_to_srt) = file_explorer.track_by_track_id(
@@ -40,8 +56,8 @@ class TestFileExplorer:
                           'Path': 'ff-16b-2c-nested.mp4',
                           'Size': 3079106}
 
-        expected_track_path = "/opt/code/flask/test/pytest_faux_usb/tracks/NestedParent/NestedChild/ff-16b-2c-nested.mp4"
-        expected_srt_path = "/opt/code/flask/test/pytest_faux_usb/tracks/NestedParent/NestedChild/ff-16b-2c-nested.srt"
+        expected_track_path = path_from_base("NestedParent/NestedChild/ff-16b-2c-nested.mp4")
+        expected_srt_path = path_from_base("NestedParent/NestedChild/ff-16b-2c-nested.srt")
 
         print("****** test results")
         pp.pprint(track)
@@ -127,6 +143,22 @@ class TestFileExplorer:
         assert equal_dicts(NEW_TRACK_ARRAY[0], tales_of_bath_audio[0])
         assert equal_dicts(NEW_SRT_ARRAY[0], tales_of_bath_srt[0])
 
+    def test_returns_correct_srt(self):
+        file_explorer = FileExplorer(TEST_MEDIA_BASE_PATH)
+
+        tales_of_bath_second_id = '179ee8dc1173019af945eb2dda1fc76c'
+
+        (track, path_to_track, path_to_srt) = file_explorer.track_by_track_id(
+            tales_of_bath_second_id)
+
+        expected_track = {'ID': '179ee8dc1173019af945eb2dda1fc76c', 'IsDir': False, 'MimeType': 'video/mp4', 'ModTime': '2023-10-22T22:20:27.278652Z', 'Name': 'tales_of_bath_second.mp4', 'Path': 'tales_of_bath_second.mp4', 'Size': 3079106}
+        expected_path_to_track = path_from_base("Tales_of_Bath/tales_of_bath_second.mp4")
+        expected_path_to_srt = path_from_base("Tales_of_Bath/tales_of_bath_second.srt")
+
+        assert equal_dicts(track, expected_track)
+        assert path_to_track == expected_path_to_track
+        assert path_to_srt == expected_path_to_srt
+        
     def test_returns_tracklist_by_dir_id_nested(self):
         file_explorer = FileExplorer(TEST_MEDIA_BASE_PATH)
 

@@ -203,9 +203,6 @@ def getInput():
 
 class GetTrackList(Resource):
     def get(self):
-        # note: these globals could also be folded into
-        # 'LushRoomsPlayer' internal state
-
         try:
 
             MEDIA_BASE_PATH = loadSettings()["media_base_path"]
