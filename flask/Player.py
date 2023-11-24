@@ -18,6 +18,8 @@ import calendar
 import json
 import Profiling
 from threading import Thread
+import logging
+logging.basicConfig(level=logging.INFO)
 
 from Lighting import LushRoomsLighting
 from platform_helpers import findArm
@@ -77,12 +79,13 @@ class LushRoomsPlayer():
         return self.playerType
 
     def loadSubtitles(self, subsPath):
+        logging.info("Loading SRT file from path :: " + subsPath)
         if os.path.isfile(subsPath):
             profiledSrtOpen = Profiling.timing(srtopen, "Loading SRT file :: ")
             subs = profiledSrtOpen(subsPath)
             return subs
         else:
-            print(
+            logging.warning(
                 "Subtitle track file " + subsPath + " is not valid. Subtitles will NOT be loaded")
             return None
 
@@ -93,7 +96,7 @@ class LushRoomsPlayer():
         self.status["subsPath"] = subsPath
 
         print("***************  player wrapper :: start  ********************")
-        print('loopval: ', loop)
+        logging.debug('loopval: ', loop)
 
         # in party mode - these subs need to be loaded _before_ playback start
         # on the slave. Otherwise audio will _always_ play 'Total time elapsed'

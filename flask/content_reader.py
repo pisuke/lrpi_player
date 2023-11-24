@@ -15,9 +15,9 @@ def get_mime_type(filename):
     return MIME_TYPES.get(ext, "application/octet-stream")
 
 
-def id_for_filename(file_name, modifed_time_pretty):
+def id_for_filename(filepath):
     md5 = hashlib.md5()
-    to_hash = file_name.encode("utf-8")
+    to_hash = filepath.encode("utf-8")
     md5.update(to_hash)
     return md5.hexdigest()
 
@@ -46,13 +46,14 @@ def content_in_dir(dir: str):
 
             content.append(
                 {
-                    "ID": id_for_filename(filename, modifed_time_pretty),
+                    "ID": id_for_filename(filepath),
                     "IsDir": is_dir,
                     "MimeType": mime_type,
                     "ModTime": modifed_time_pretty,
                     "Name": filename,
                     "Path": filename,
-                    "Size": size
+                    "Size": size,
+                    "AbsolutePath": filepath
                 }
             )
 

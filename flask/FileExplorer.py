@@ -65,7 +65,7 @@ class FileExplorer():
             raise BasePathInvalid
 
         # from here, we know that we're starting in a good place
-        # we have an id (there may be hash collisions if the filenames are the same)
+        # we have an id (there may be hash collisions if the filenames are the same) - we're here to fix this!
         # with this id, walk the directories until we have a match
         # it might return at least one folder, in which case we display the filenames
         # it might return an array of audio files (size 1 or more), in which case we display the player screen
@@ -86,10 +86,6 @@ class FileExplorer():
 
         TRACK_ARRAY_UNFILTERED = content_in_dir(self.BUILT_PATH)
         NEW_SRT_ARRAY = TRACK_ARRAY_UNFILTERED
-
-        print('BUILT_PATH: ' + str(self.BUILT_PATH))
-
-        TRACK_ARRAY_UNFILTERED = content_in_dir(self.BUILT_PATH)
 
         if self.mpegOnly:
             NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_UNFILTERED if ((x['Name'] != JSON_LIST_FILE) and (
