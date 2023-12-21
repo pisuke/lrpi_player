@@ -1,0 +1,56 @@
+# sample build command: sudo docker build -t lushroom-player . -f Dockerfile.rpi4_32bit
+# running resin.io rpi image on ubuntu with qemu
+# (but) resin images have qemu built in anyway...
+# sudo docker run -v /usr/bin/qemu-arm-static:/usr/bin/qemu-arm-static --rm -ti resin/rpi-raspbian
+# Sample run command with kernel/usb stick links
+#### create symlinks for kernel libraries first!
+#### In /opt/vc/lib of Hypriot v1.9.0:
+#### sudo ln -s libbrcmEGL.so libEGL.so
+#### sudo ln -s libbrcmGLESv2.so libGLESv2.so
+#### sudo ln -s libbrcmOpenVG.so libOpenVG.so
+#### sudo ln -s libbrcmWFC.so libWFC.so
+# Then run with:
+# docker run -it --rm -p 80:80 -v /opt/vc:/opt/vc -v /media/usb:/media/usb --device /dev/vchiq:/dev/vchiq --device /dev/fb0:/dev/fb0 lrpi_player
+
+# get base image (based itself on a resin image). Has QEMU built in
+FROM lushdigital/lushroom-base:latest
+
+RUN [ "cross-build-start" ]
+
+# make dirs
+
+RUN mkdir /opt/code
+RUN mkdir -p /media/usb
+RUN mkdir /opt/omx
+
+# install patched version of omxplayer
+RUN sed -i 's/stable\/updates/stable-security\/updates/' /etc/apt/sources.list
+RUN echo "deb http://archive.debian.org/debian stretch main contrib non-free" > /etc/apt/sources.list
+RUN sudo apt update
+RUN sudo apt upgrade
+RUN sudo apt -y remove omxplayer
+WORKDIR /opt/omx
+RUN git clone https://github.com/pisuke/omxplayer.git
+WORKDIR /opt/omx/omxplayer
+RUN sudo apt install ca-certificates git-core binutils libasound2-dev libva1 libpcre3-dev libidn11-dev libboost-dev libfreetype6-dev libdbus-1-dev libssl1.0-dev libssh-dev gcc 
+g++ sed pkg-config
+RUN make ffmpeg
+RUN sudo apt install libraspberrypi-dev
+RUN make -j$(nproc)
+RUN sudo make install
+
+#RUN sudo apt-get install libatlas-base-dev psmisc
+RUN sudo apt-get install psmisc
+
+COPY flask /opt/code/flask
+COPY requirements.txt /opt/code/requirements.txt
+RUN pip3 install -r /opt/code/requirements.txt --no-cache-dir
+
+# serve Flask from 80
+WORKDIR /opt/code/flask
+
+ENTRYPOINT ["python3"]
+CMD ["Server.py"]
+#CMD sleep 7200
+
+RUN [ "cross-build-end" ]

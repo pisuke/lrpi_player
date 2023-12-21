@@ -37,7 +37,7 @@ else:
 
 class LushRoomsPlayer():
     def __init__(self, connections):
-        if uname().machine == 'armv7l':
+        if uname().machine == 'armv7l' or uname().machine == 'aarch64':
             # we're likely on a 'Pi 3
             self.playerType = "OMX"
             print('Spawning omxplayer')
