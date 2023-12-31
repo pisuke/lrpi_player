@@ -25,15 +25,16 @@ RUN mkdir /opt/omx
 
 # install patched version of omxplayer
 RUN sed -i 's/stable\/updates/stable-security\/updates/' /etc/apt/sources.list
-RUN echo "deb http://archive.debian.org/debian stretch main contrib non-free" > /etc/apt/sources.list
+# RUN echo "deb http://archive.debian.org/debian stretch main contrib non-free" > /etc/apt/sources.list
+RUN echo "deb http://legacy.raspbian.org/raspbian/ stretch main contrib non-free" > /etc/apt/sources.list
+
 RUN sudo apt update
 RUN sudo apt upgrade
 RUN sudo apt -y remove omxplayer
 WORKDIR /opt/omx
 RUN git clone https://github.com/pisuke/omxplayer.git
 WORKDIR /opt/omx/omxplayer
-RUN sudo apt install ca-certificates git-core binutils libasound2-dev libva1 libpcre3-dev libidn11-dev libboost-dev libfreetype6-dev libdbus-1-dev libssl1.0-dev libssh-dev gcc 
-g++ sed pkg-config
+RUN sudo apt install ca-certificates git-core binutils libasound2-dev libva1 libpcre3-dev libidn11-dev libboost-dev libfreetype6-dev libdbus-1-dev libssl1.0-dev libssh-dev gcc g++ sed pkg-config
 RUN make ffmpeg
 RUN sudo apt install libraspberrypi-dev
 RUN make -j$(nproc)

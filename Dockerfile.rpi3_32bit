@@ -24,19 +24,27 @@ RUN mkdir -p /media/usb
 
 # Update stretch repositories
 # see https://stackoverflow.com/questions/76094428/debian-stretch-repositories-404-not-found/76094521#76094521
-RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
-    -e 's|security.debian.org|archive.debian.org/|g' \
-    -e '/stretch-updates/d' /etc/apt/sources.list
+# RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
+#     -e 's|security.debian.org|archive.debian.org/|g' \
+#     -e '/stretch-updates/d' /etc/apt/sources.list
+RUN sed -i 's/stable\/updates/stable-security\/updates/' /etc/apt/sources.list
+RUN echo "deb http://legacy.raspbian.org/raspbian/ stretch main contrib non-free" > /etc/apt/sources.list
+RUN cat /etc/apt/sources.list
+
+RUN sudo rm -r /var/lib/apt/lists/*
+RUN sudo apt-get clean
+
+# RUN apt-get install apt-transport-https ca-certificates
 
 # install a version of python that supports f strings (3.6)
 # otherwise some dependency of zeroconf breaks everything
 
 # deps for pyenv: https://github.com/pyenv/pyenv/wiki#suggested-build-environment
 
-# RUN apt update 
+RUN sudo apt-get update 
 # RUN apt-get install python3
 
-# RUN sudo apt-get install libatlas-base-dev psmisc
+RUN sudo apt-get install libatlas-base-dev psmisc tree
 
 COPY flask /opt/code/flask
 COPY requirements.txt /opt/code/requirements.txt
